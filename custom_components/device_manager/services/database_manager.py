@@ -76,15 +76,7 @@ class DatabaseManager:
     async def initialize(self) -> None:
         """Create all database tables if they do not exist.
 
-        Creates 7 tables in order respecting foreign key dependencies:
-        1. dm_buildings
-        2. dm_floors (FK -> dm_buildings)
-        3. dm_rooms (FK -> dm_floors)
-        4. dm_device_models
-        5. dm_device_firmwares
-        6. dm_device_functions
-        7. dm_devices (FK -> dm_rooms, dm_device_models, dm_device_firmwares,
-                       dm_device_functions, dm_devices)
+        Creates tables in order respecting foreign key dependencies.
         """
         try:
             self.db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -198,7 +190,7 @@ class DatabaseManager:
                 _LOGGER.warning("Room credentials migration skipped: %s", mig_err)
 
             _LOGGER.info(
-                "Database initialized successfully with all 7 tables"
+                "Database initialized successfully with all tables"
             )
         except Exception as err:
             _LOGGER.error("Failed to initialize database: %s", err)

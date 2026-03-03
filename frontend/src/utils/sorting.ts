@@ -42,7 +42,7 @@ export function sortIndicator(current: SortState, key: string): string {
  * Returns a **new** array (does not mutate the original).
  */
 export function sortItems<T>(items: T[], state: SortState): T[] {
-  if (!state.key || !state.dir) return items;
+  if (!state.key || !state.dir) return [...items];
   const key = state.key;
   const dir = state.dir === "asc" ? 1 : -1;
 

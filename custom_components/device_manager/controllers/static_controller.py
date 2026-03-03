@@ -95,8 +95,10 @@ class StaticView(HomeAssistantView):
                 content_type = "text/html"
             elif ext == ".svg":
                 content_type = "image/svg+xml"
-            elif ext in (".png", ".ico"):
+            elif ext == ".png":
                 content_type = "image/png"
+            elif ext == ".ico":
+                content_type = "image/x-icon"
 
             return web.Response(body=content, content_type=content_type)
         except Exception as err:

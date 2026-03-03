@@ -46,10 +46,12 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     key_path = Path(hass.config.config_dir) / ".device_manager.key"
     if key_path.exists():
         crypto_key = key_path.read_text().strip()
+        key_path.chmod(0o600)  # enforce owner-only in case it was created with wider perms
         _LOGGER.debug("Loaded encryption key from %s", key_path)
     else:
         crypto_key = generate_key()
         key_path.write_text(crypto_key)
+        key_path.chmod(0o600)
         _LOGGER.info("Generated new encryption key at %s", key_path)
 
     # Create repositories
