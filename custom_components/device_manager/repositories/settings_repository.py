@@ -55,7 +55,7 @@ class SettingsRepository:
         )
         row = await cursor.fetchone()
         if row:
-            return row["value"]
+            return str(row["value"])
 
         # Key not in DB yet → seed it
         default = DEFAULT_SETTINGS.get(key, "")

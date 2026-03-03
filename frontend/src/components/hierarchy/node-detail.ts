@@ -135,7 +135,7 @@ export class DmNodeDetail extends LitElement {
 
   render() {
     if (!this.node)
-      return html`<div class="empty-state">${i18n.t("no_homes")}</div>`;
+      return html`<div class="empty-state">${i18n.t("no_buildings")}</div>`;
 
     const typeLabel = i18n.t(this.node.type);
     return html`
@@ -453,7 +453,7 @@ export class DmNodeDetail extends LitElement {
 
   private _childLabel(): string {
     if (!this.node) return "";
-    if (this.node.type === "building") return i18n.t("levels");
+    if (this.node.type === "building") return i18n.t("floors");
     if (this.node.type === "floor") return i18n.t("rooms");
     return "";
   }

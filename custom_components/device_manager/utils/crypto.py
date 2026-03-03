@@ -25,7 +25,7 @@ def generate_key() -> str:
     Returns:
         A 44-character URL-safe base64 string suitable for Fernet.
     """
-    return Fernet.generate_key().decode()
+    return str(Fernet.generate_key().decode())
 
 
 def encrypt(plain: str, key: str) -> str:
@@ -47,7 +47,7 @@ def encrypt(plain: str, key: str) -> str:
         return ""
     try:
         f = Fernet(key.encode())
-        return f.encrypt(plain.encode()).decode()
+        return str(f.encrypt(plain.encode()).decode())
     except Exception as err:  # noqa: BLE001
         _LOGGER.error("Encryption failed: %s", err)
         raise EncryptionError(str(err)) from err
@@ -74,7 +74,7 @@ def decrypt(cipher: str, key: str) -> str:
         return ""
     try:
         f = Fernet(key.encode())
-        return f.decrypt(cipher.encode()).decode()
+        return str(f.decrypt(cipher.encode()).decode())
     except InvalidToken as exc:
         _LOGGER.warning("Decryption failed: invalid token (bad key or corrupted data)")
         raise DecryptionError("Invalid Fernet token – bad key or corrupted data") from exc

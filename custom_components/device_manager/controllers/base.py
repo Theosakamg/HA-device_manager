@@ -15,7 +15,7 @@ _LOGGER = logging.getLogger(__name__)
 __all__ = ["to_camel_case_dict", "to_snake_case_dict", "get_repos"]
 
 
-def get_repos(request: web.Request) -> dict:
+def get_repos(request: web.Request) -> dict[str, Any]:
     """Get the repository dict from the request's hass data.
 
     Args:
@@ -25,4 +25,5 @@ def get_repos(request: web.Request) -> dict:
         Dict of repository instances.
     """
     hass = request.app["hass"]
-    return hass.data[DOMAIN]["repos"]
+    repos: dict[str, Any] = hass.data[DOMAIN]["repos"]
+    return repos

@@ -1029,7 +1029,7 @@ export class DmMapView extends LitElement {
 
   render() {
     const legendItems: [string, string][] = [
-      ["#fbbf24", i18n.t("home")],
+      ["#fbbf24", i18n.t("building")],
       ["#14b8a6", i18n.t("floor")],
       ["#6366f1", i18n.t("room")],
       ["#64748b", i18n.t("device")],
@@ -1045,7 +1045,7 @@ export class DmMapView extends LitElement {
     }[] = [
       {
         key: "building",
-        label: i18n.t("home"),
+        label: i18n.t("building"),
         opts: this._homeOptions,
         val: this._filterHome,
       },
@@ -1166,9 +1166,11 @@ export class DmMapView extends LitElement {
 
       <div class="stats-bar">
         <span
-          ><strong>${this._stats.buildings}</strong> ${i18n.t("homes")}</span
+          ><strong>${this._stats.buildings}</strong> ${i18n.t(
+            "buildings"
+          )}</span
         >
-        <span><strong>${this._stats.floors}</strong> ${i18n.t("levels")}</span>
+        <span><strong>${this._stats.floors}</strong> ${i18n.t("floors")}</span>
         <span><strong>${this._stats.rooms}</strong> ${i18n.t("rooms")}</span>
         <span
           ><strong>${this._stats.devices}</strong> ${i18n.t("devices")}</span

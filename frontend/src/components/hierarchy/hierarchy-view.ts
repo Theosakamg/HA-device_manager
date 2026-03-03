@@ -71,14 +71,42 @@ export class DmHierarchyView extends LitElement {
     this._loading = true;
     try {
       this._tree = await this._client.getTree();
-      // Auto-select first item if nothing is selected
       if (!this._selectedNode && this._tree?.buildings?.length) {
+        // Nothing selected yet: auto-select first building
         this._selectedNode = this._tree.buildings[0];
+      } else if (this._selectedNode) {
+        // Refresh the selected node reference from the new tree so the detail
+        // panel reflects the latest saved values.
+        const refreshed = this._findNodeByIdAndType(
+          this._tree,
+          this._selectedNode.id,
+          this._selectedNode.type
+        );
+        if (refreshed) this._selectedNode = refreshed;
       }
     } catch (err) {
       console.error("Failed to load hierarchy:", err);
     }
     this._loading = false;
+  }
+
+  /** Depth-first search for a node by id and type across the entire hierarchy tree.
+   * Matching on both fields is required because IDs are only unique within a type
+   * (a building and a floor can share the same numeric id).
+   */
+  private _findNodeByIdAndType(
+    tree: HierarchyTree | null,
+    id: number,
+    type: string
+  ): HierarchyNode | null {
+    if (!tree) return null;
+    const stack: HierarchyNode[] = [...(tree.buildings ?? [])];
+    while (stack.length) {
+      const node = stack.pop()!;
+      if (node.id === id && node.type === type) return node;
+      if (node.children?.length) stack.push(...node.children);
+    }
+    return null;
   }
 
   render() {
@@ -107,7 +135,7 @@ export class DmHierarchyView extends LitElement {
             : html`<div class="empty-state">
                 <p>${i18n.t("hierarchy_title")}</p>
                 <p style="font-size: 14px; color: var(--dm-text-secondary);">
-                  ${i18n.t("no_homes")}
+                  ${i18n.t("no_buildings")}
                 </p>
               </div>`}
         </div>

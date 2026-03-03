@@ -142,7 +142,7 @@ export class DmHierarchyTreeComponent extends LitElement {
           style="padding: 4px 10px; font-size: 12px;"
           @click=${() => this._startAdd("building", 0)}
         >
-          + ${i18n.t("home")}
+          + ${i18n.t("building")}
         </button>
       </div>
 
@@ -190,7 +190,7 @@ export class DmHierarchyTreeComponent extends LitElement {
           <span class="node-actions">
             <button
               class="btn-icon"
-              title="${i18n.t("add_level")}"
+              title="${i18n.t("add_floor")}"
               @click=${(e: Event) => {
                 e.stopPropagation();
                 this._startAdd("floor", building.id);
@@ -200,7 +200,7 @@ export class DmHierarchyTreeComponent extends LitElement {
             </button>
             <button
               class="btn-icon"
-              title="${i18n.t("delete_home")}"
+              title="${i18n.t("delete_building")}"
               @click=${(e: Event) => {
                 e.stopPropagation();
                 this._requestDelete("building", building.id);
@@ -260,7 +260,7 @@ export class DmHierarchyTreeComponent extends LitElement {
             </button>
             <button
               class="btn-icon"
-              title="${i18n.t("delete_level")}"
+              title="${i18n.t("delete_floor")}"
               @click=${(e: Event) => {
                 e.stopPropagation();
                 this._requestDelete("floor", floor.id);

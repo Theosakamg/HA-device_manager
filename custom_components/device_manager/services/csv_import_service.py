@@ -328,8 +328,8 @@ class CSVImportService:
             items = await repo.find_all()
         for item in items:
             if item.get(match_field) == match_value:
-                return item["id"]
-        return await repo.create(create_data)
+                return int(item["id"])
+        return int(await repo.create(create_data))
 
     async def _find_or_create_ref(self, repo: Any, name: str) -> int:
         """Find or create a reference entity by name.
@@ -346,5 +346,5 @@ class CSVImportService:
         items = await repo.find_all()
         for item in items:
             if item.get("name") == name:
-                return item["id"]
-        return await repo.create({"name": name, "enabled": True})
+                return int(item["id"])
+        return int(await repo.create({"name": name, "enabled": True}))

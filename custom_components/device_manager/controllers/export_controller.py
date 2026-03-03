@@ -204,7 +204,7 @@ class ExportAPIView(HomeAssistantView):
     def _resolve_format(request: web.Request) -> str:
         """Determine the export format from query param or Accept header."""
         # Query param takes priority
-        fmt = request.query.get("format", "").lower()
+        fmt = str(request.query.get("format", "")).lower()
         if fmt in ("csv", "json", "yaml"):
             return fmt
 
