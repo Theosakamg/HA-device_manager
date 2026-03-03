@@ -36,7 +36,7 @@ requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.black]
-line-length = 88
+line-length = 120
 target-version = ["py311"]
 include = '\.pyi?$'
 extend-exclude = '''
@@ -54,7 +54,7 @@ extend-exclude = '''
 '''
 
 [tool.ruff]
-line-length = 88
+line-length = 120
 target-version = "py311"
 exclude = [
     ".git",

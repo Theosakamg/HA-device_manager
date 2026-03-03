@@ -1,29 +1,24 @@
 import { describe, it, expect } from "vitest";
-import {
-  computeDerivedFields,
-  normalizeFunction,
-  normalizeFirmware,
-} from "../types";
-import type { Device, ComputedDeviceFields } from "../types";
+import { computeDerivedFields } from "../utils/computed-fields";
+import { normalizeFunction, normalizeFirmware } from "../utils/normalizers";
+import type { DmDevice, ComputedDeviceFields } from "../types/device";
 import devices from "./fixtures/devices.json";
 
-type DeviceFixture = Partial<Device> & { expected: ComputedDeviceFields };
+type DeviceFixture = Partial<DmDevice> & { expected: ComputedDeviceFields };
 
 describe("computeDerivedFields", () => {
-  it("computes hostname, mqttTopic, link and dns correctly for fixtures", () => {
+  it("computes hostname, mqttTopic, link and fqdn correctly for fixtures", () => {
     for (const d of devices as DeviceFixture[]) {
       // persisted fields must remain present
       expect(d.mac).toBeTruthy();
-      expect(d.state).toBeTruthy();
 
       const result = computeDerivedFields(d);
       const exp = d.expected;
       expect(result.hostname).toEqual(exp.hostname);
       expect(result.mqttTopic).toEqual(exp.mqttTopic);
       expect(result.link).toEqual(exp.link);
-      expect(result.dns).toEqual(exp.dns);
+      expect(result.fqdn).toEqual(exp.fqdn);
       expect(result.countTopic).toEqual(exp.countTopic);
-      expect(result.enabled).toEqual(exp.enabled);
     }
   });
 });

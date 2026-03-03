@@ -1,0 +1,56 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start Dev Environment",
+      "type": "shell",
+      "command": "./dev-start.sh",
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "Stop Dev Environment",
+      "type": "shell",
+      "command": "./dev-stop.sh",
+      "problemMatcher": []
+    },
+    {
+      "label": "View Logs",
+      "type": "shell",
+      "command": "./dev-logs.sh",
+      "problemMatcher": [],
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Build Frontend",
+      "type": "shell",
+      "command": "cd frontend && npm run build",
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Build & Restart HA",
+      "type": "shell",
+      "command": "cd frontend && npm run build && cd .. && mkdir -p custom_components/device_manager/frontend/dist && cp frontend/dist/device-manager.js custom_components/device_manager/frontend/dist/ && docker compose restart",
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Open in Browser",
+      "type": "shell",
+      "command": "xdg-open http://localhost:8123/device_manager || open http://localhost:8123/device_manager",
+      "problemMatcher": []
+    }
+  ]
+}

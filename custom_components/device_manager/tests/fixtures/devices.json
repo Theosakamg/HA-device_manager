@@ -20,7 +20,7 @@
       "hostname": "l0_office_button_lunch",
       "mqtt_topic": "home/l0/office/button/lunch",
       "link": "http://192.168.0.77",
-      "dns": "l0_office_button_lunch.domo.in-res.net",
+      "dns": "l0_office_button_lunch.domo.local",
       "count_topic": 22,
       "enabled": true
     }
@@ -46,7 +46,7 @@
       "hostname": "l0_office_door_lake",
       "mqtt_topic": "home/l0/office/door/lake",
       "link": null,
-      "dns": "l0_office_door_lake.domo.in-res.net",
+      "dns": "l0_office_door_lake.domo.local",
       "count_topic": 19,
       "enabled": true
     }

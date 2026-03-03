@@ -66,3 +66,5 @@ htmlcov/
 # Samples/
 
 custom_components/device_manager/frontend/dist/device-manager.js
+samples/**
+scripts/**

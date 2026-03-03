@@ -16,10 +16,16 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "lit": "^3.2.1"
+    "dompurify": "^3.3.1",
+    "lit": "^3.2.1",
+    "marked": "^17.0.3",
+    "three": "^0.183.2"
   },
   "devDependencies": {
+    "@types/dompurify": "^3.0.5",
+    "@types/marked": "^5.0.2",
     "@types/node": "^22.10.2",
+    "@types/three": "^0.183.1",
     "@typescript-eslint/eslint-plugin": "^8.18.2",
     "@typescript-eslint/parser": "^8.18.2",
     "eslint": "^9.18.0",
