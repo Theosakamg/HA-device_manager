@@ -524,8 +524,9 @@ export class DmMaintenanceView extends LitElement {
           <label>${i18n.t("config_default_home")}</label>
           <input
             type="text"
-            .value=${f.default_home_name}
-            @input=${(e: Event) => this._updateSetting("default_home_name", e)}
+            .value=${f.default_building_name}
+            @input=${(e: Event) =>
+              this._updateSetting("default_building_name", e)}
           />
           <div class="hint">${i18n.t("config_default_home_hint")}</div>
         </div>

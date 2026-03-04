@@ -128,6 +128,7 @@ export class DmHierarchyView extends LitElement {
           ${this._selectedNode
             ? html`<dm-node-detail
                 .node=${this._selectedNode}
+                .tree=${this._tree}
                 @data-changed=${this._loadTree}
                 @node-selected=${this._onNodeSelected}
                 @expand-to-node=${this._onExpandToNode}

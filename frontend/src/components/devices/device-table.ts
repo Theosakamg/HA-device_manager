@@ -6,8 +6,8 @@ import { customElement, state } from "lit/decorators.js";
 import { sharedStyles } from "../../styles/shared-styles";
 import { i18n, localized } from "../../i18n";
 import { DeviceClient } from "../../api/device-client";
-import { getSettings } from "../../api/settings-client";
 import type { DmDevice } from "../../types/device";
+import { buildHttpFromIp } from "../../utils/computed-fields";
 import "../shared/confirm-dialog";
 import "./deploy-modal";
 import "./device-form";
@@ -176,10 +176,16 @@ export class DmDeviceTable extends LitElement {
         d.mac?.toLowerCase().includes(q) ||
         d.ip?.toLowerCase().includes(q) ||
         d.positionName?.toLowerCase().includes(q) ||
+        d.positionSlug?.toLowerCase().includes(q) ||
         d.roomName?.toLowerCase().includes(q) ||
+        d.roomSlug?.toLowerCase().includes(q) ||
+        d.floorName?.toLowerCase().includes(q) ||
+        d.floorSlug?.toLowerCase().includes(q) ||
+        d.buildingName?.toLowerCase().includes(q) ||
         d.modelName?.toLowerCase().includes(q) ||
         d.firmwareName?.toLowerCase().includes(q) ||
-        d.functionName?.toLowerCase().includes(q)
+        d.functionName?.toLowerCase().includes(q) ||
+        d.extra?.toLowerCase().includes(q)
     );
   }
 
@@ -288,7 +294,7 @@ export class DmDeviceTable extends LitElement {
                           ? html`<a
                               class="btn-icon btn-icon-link"
                               title="Open"
-                              href="${this._buildDeviceUrl(device.ip)}"
+                              href="${buildHttpFromIp(device.ip) ?? "#"}"
                               target="_blank"
                               rel="noopener noreferrer"
                               >🔗</a
@@ -392,27 +398,5 @@ export class DmDeviceTable extends LitElement {
   private _onCancelDelete() {
     this._confirmOpen = false;
     this._pendingDeleteDevice = null;
-  }
-
-  /** Build a proper URL from an IP value.
-   *
-   * Only allows numeric last octets (with ip_prefix) or valid IPv4 addresses.
-   * Rejects arbitrary URLs to prevent open redirect / phishing.
-   */
-  private _buildDeviceUrl(ip: string): string {
-    const s = ip.trim();
-    // Numeric-only: last octet, prepend ip_prefix
-    if (/^\d+$/.test(s) && Number(s) >= 0 && Number(s) <= 255) {
-      const { ip_prefix } = getSettings();
-      // Validate ip_prefix is a valid partial IP (e.g. "192.168.0")
-      if (!/^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(ip_prefix)) return "#";
-      return `http://${ip_prefix}.${s}/`;
-    }
-    // Full dotted-quad IPv4
-    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(s)) {
-      return `http://${s}/`;
-    }
-    // Reject everything else (URLs, javascript:, etc.)
-    return "#";
   }
 }

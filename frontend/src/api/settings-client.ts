@@ -8,7 +8,7 @@ export interface AppSettings {
   dns_suffix: string;
   ip_prefix: string;
   mqtt_topic_prefix: string;
-  default_home_name: string;
+  default_building_name: string;
 }
 
 export class SettingsClient extends BaseClient {
@@ -69,7 +69,7 @@ export function getSettings(): AppSettings {
       dns_suffix: "domo.local",
       ip_prefix: "192.168.0",
       mqtt_topic_prefix: "home",
-      default_home_name: "Home",
+      default_building_name: "Building",
     }
   );
 }

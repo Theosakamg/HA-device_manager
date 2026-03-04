@@ -173,6 +173,7 @@ const translations: { [lang: string]: Translations } = {
     image: "Image",
     save: "Save",
     cancel: "Cancel",
+    reset: "Reset",
     delete: "Delete",
     edit: "Edit",
     add: "Add",
@@ -198,6 +199,12 @@ const translations: { [lang: string]: Translations } = {
     no_items: "No items yet.",
     created_at: "Created At",
     updated_at: "Updated At",
+    view_in_devices: "View in Devices",
+    validation_name_required: "Name is required",
+    validation_slug_required: "Slug is required",
+    validation_slug_format:
+      "Slug must contain only letters, numbers, hyphens and underscores",
+    validation_url_format: "Image must be a valid http/https URL",
   },
   fr: {
     // Navigation
@@ -364,6 +371,7 @@ const translations: { [lang: string]: Translations } = {
     image: "Image",
     save: "Enregistrer",
     cancel: "Annuler",
+    reset: "Réinitialiser",
     delete: "Supprimer",
     edit: "Modifier",
     add: "Ajouter",
@@ -390,6 +398,12 @@ const translations: { [lang: string]: Translations } = {
     no_items: "Aucun élément.",
     created_at: "Créé le",
     updated_at: "Mis à jour le",
+    view_in_devices: "Voir dans Équipements",
+    validation_name_required: "Le nom est requis",
+    validation_slug_required: "Le slug est requis",
+    validation_slug_format:
+      "Le slug doit contenir uniquement des lettres, chiffres, tirets et underscores",
+    validation_url_format: "L'image doit être une URL http/https valide",
   },
 };
 

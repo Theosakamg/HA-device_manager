@@ -7,6 +7,7 @@ import { sharedStyles } from "../../styles/shared-styles";
 import { i18n, localized } from "../../i18n";
 import { getSettings } from "../../api/settings-client";
 import type { DmDevice } from "../../types/device";
+import { isValidSlug } from "../../utils/validators";
 import type { DmRoom } from "../../types/room";
 import type { DmDeviceModel } from "../../types/device-model";
 import type { DmDeviceFirmware } from "../../types/device-firmware";
@@ -49,6 +50,7 @@ export class DmDeviceForm extends LitElement {
   @state() private _allDevices: DmDevice[] = [];
   @state() private _loading = true;
   @state() private _form: Record<string, unknown> = {};
+  @state() private _validationError = "";
 
   private _roomClient = new RoomClient();
   private _modelClient = new DeviceModelClient();
@@ -246,7 +248,6 @@ export class DmDeviceForm extends LitElement {
             <div class="form-group">
               <label>${i18n.t("device_room")}</label>
               <select
-                .value=${String(this._form.roomId ?? "")}
                 @change=${(e: Event) =>
                   this._updateField(
                     "roomId",
@@ -258,7 +259,7 @@ export class DmDeviceForm extends LitElement {
                   (r) =>
                     html`<option
                       value=${r.id}
-                      ?selected=${this._form.roomId === r.id}
+                      ?selected=${Number(this._form.roomId) === r.id}
                     >
                       ${r.name}
                     </option>`
@@ -268,7 +269,6 @@ export class DmDeviceForm extends LitElement {
             <div class="form-group">
               <label>${i18n.t("device_model")}</label>
               <select
-                .value=${String(this._form.modelId ?? "")}
                 @change=${(e: Event) =>
                   this._updateField(
                     "modelId",
@@ -280,7 +280,7 @@ export class DmDeviceForm extends LitElement {
                   (m) =>
                     html`<option
                       value=${m.id}
-                      ?selected=${this._form.modelId === m.id}
+                      ?selected=${Number(this._form.modelId) === m.id}
                     >
                       ${m.name}
                     </option>`
@@ -290,7 +290,6 @@ export class DmDeviceForm extends LitElement {
             <div class="form-group">
               <label>${i18n.t("device_firmware")}</label>
               <select
-                .value=${String(this._form.firmwareId ?? "")}
                 @change=${(e: Event) =>
                   this._updateField(
                     "firmwareId",
@@ -302,7 +301,7 @@ export class DmDeviceForm extends LitElement {
                   (f) =>
                     html`<option
                       value=${f.id}
-                      ?selected=${this._form.firmwareId === f.id}
+                      ?selected=${Number(this._form.firmwareId) === f.id}
                     >
                       ${f.name}
                     </option>`
@@ -312,7 +311,6 @@ export class DmDeviceForm extends LitElement {
             <div class="form-group">
               <label>${i18n.t("device_function")}</label>
               <select
-                .value=${String(this._form.functionId ?? "")}
                 @change=${(e: Event) =>
                   this._updateField(
                     "functionId",
@@ -324,7 +322,7 @@ export class DmDeviceForm extends LitElement {
                   (fn) =>
                     html`<option
                       value=${fn.id}
-                      ?selected=${this._form.functionId === fn.id}
+                      ?selected=${Number(this._form.functionId) === fn.id}
                     >
                       ${fn.name}
                     </option>`
@@ -334,7 +332,6 @@ export class DmDeviceForm extends LitElement {
             <div class="form-group">
               <label>${i18n.t("device_target")}</label>
               <select
-                .value=${String(this._form.targetId ?? "")}
                 @change=${(e: Event) =>
                   this._updateField(
                     "targetId",
@@ -348,7 +345,7 @@ export class DmDeviceForm extends LitElement {
                     (d) =>
                       html`<option
                         value=${d.id}
-                        ?selected=${this._form.targetId === d.id}
+                        ?selected=${Number(this._form.targetId) === d.id}
                       >
                         ${d.mac} - ${d.positionName}
                       </option>`
@@ -370,6 +367,13 @@ export class DmDeviceForm extends LitElement {
           </div>
 
           <div class="modal-actions">
+            ${this._validationError
+              ? html`<div
+                  style="color:#f44336;font-size:13px;margin-bottom:4px"
+                >
+                  ${this._validationError}
+                </div>`
+              : ""}
             <button class="btn btn-secondary" @click=${this._cancel}>
               ${i18n.t("cancel")}
             </button>
@@ -413,6 +417,16 @@ export class DmDeviceForm extends LitElement {
   }
 
   private _save() {
+    this._validationError = "";
+    const posSlug = String(this._form.positionSlug ?? "").trim();
+    if (!posSlug) {
+      this._validationError = i18n.t("validation_slug_required");
+      return;
+    }
+    if (!isValidSlug(posSlug)) {
+      this._validationError = i18n.t("validation_slug_format");
+      return;
+    }
     const detail = {
       isEdit: this.device !== null,
       id: this.device?.id,

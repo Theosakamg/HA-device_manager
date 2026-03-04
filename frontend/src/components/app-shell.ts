@@ -11,6 +11,7 @@ import "./settings/settings-view";
 import "./devices/device-table";
 import "./maintenance/maintenance-view";
 import "./shared/toast-notification";
+import type { DmToast } from "./shared/toast-notification";
 import "./map/map-view";
 
 type AppRoute = "hierarchy" | "devices" | "map" | "settings" | "maintenance";
@@ -104,6 +105,7 @@ export class DmAppShell extends LitElement {
     super.connectedCallback();
     this._route = this._getRouteFromHash();
     window.addEventListener("hashchange", this._onHashChange);
+    window.addEventListener("show-toast", this._onShowToast);
     // Pre-load user settings so computed fields use the right values.
     loadSettings().catch((err) =>
       console.warn("Failed to pre-load settings:", err)
@@ -113,7 +115,14 @@ export class DmAppShell extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     window.removeEventListener("hashchange", this._onHashChange);
+    window.removeEventListener("show-toast", this._onShowToast);
   }
+
+  private _onShowToast = (e: Event) => {
+    const { message, type, duration } = (e as CustomEvent).detail;
+    const toast = this.shadowRoot?.querySelector<DmToast>("dm-toast");
+    toast?.show(message, type, duration);
+  };
 
   private _onHashChange = () => {
     this._route = this._getRouteFromHash();

@@ -7,6 +7,7 @@
 import type { DmDevice, ComputedDeviceFields } from "../types/device";
 import { getSettings } from "../api/settings-client";
 import { toSlug } from "./slug";
+import { IP_LAST_OCTET_REGEX, IP_PREFIX_REGEX, IPV4_REGEX } from "./validators";
 
 // Re-export DmDevice alias so callers migrating from old types can use it.
 export type { DmDevice, ComputedDeviceFields };
@@ -32,14 +33,14 @@ export function buildHttpFromIp(ip?: string | null): string | null {
   if (!ip) return null;
   const s = String(ip).trim();
   // Numeric-only: last octet, prepend ip_prefix
-  if (/^\d+$/.test(s) && Number(s) >= 0 && Number(s) <= 255) {
+  if (IP_LAST_OCTET_REGEX.test(s) && Number(s) >= 0 && Number(s) <= 255) {
     const { ip_prefix } = getSettings();
     // Validate ip_prefix is a valid partial IP (e.g. "192.168.0")
-    if (!/^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(ip_prefix)) return null;
+    if (!IP_PREFIX_REGEX.test(ip_prefix)) return null;
     return `http://${ip_prefix}.${s}`;
   }
   // Full dotted-quad IPv4
-  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(s)) {
+  if (IPV4_REGEX.test(s)) {
     return `http://${s}`;
   }
   // Reject everything else (arbitrary URLs, javascript:, etc.)
