@@ -8,12 +8,31 @@ export interface CleanDBResult {
   deleted: Record<string, number>;
 }
 
+export interface ClearIPCacheResult {
+  success: boolean;
+  updated: number;
+}
+
+export interface ScanResult {
+  result: string;
+}
+
 export type ExportFormat = "csv" | "json" | "yaml";
 
 export class MaintenanceClient extends BaseClient {
   /** Wipe all data from the database. */
   async cleanDB(confirmation: string): Promise<CleanDBResult> {
     return this.post<CleanDBResult>("/maintenance/clean-db", { confirmation });
+  }
+
+  /** Trigger a network scan to discover devices. */
+  async triggerScan(): Promise<ScanResult> {
+    return this.post<ScanResult>("/scan", {});
+  }
+
+  /** Reset the IP address of all devices to NULL. */
+  async clearIPCache(): Promise<ClearIPCacheResult> {
+    return this.post<ClearIPCacheResult>("/maintenance/clear-ip-cache", {});
   }
 
   /** Export all devices in the given format as a file download. */

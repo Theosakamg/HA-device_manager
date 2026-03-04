@@ -6,7 +6,12 @@ import { customElement, state } from "lit/decorators.js";
 import { sharedStyles } from "../../styles/shared-styles";
 import { i18n, localized } from "../../i18n";
 import { MaintenanceClient } from "../../api/maintenance-client";
-import type { CleanDBResult, ExportFormat } from "../../api/maintenance-client";
+import type {
+  CleanDBResult,
+  ClearIPCacheResult,
+  ScanResult,
+  ExportFormat,
+} from "../../api/maintenance-client";
 import { SettingsClient, refreshSettings } from "../../api/settings-client";
 import type { AppSettings } from "../../api/settings-client";
 import "../import/import-view";
@@ -261,6 +266,51 @@ export class DmMaintenanceView extends LitElement {
         background: #fce4ec;
         color: #c62828;
       }
+      .btn-scan {
+        padding: 10px 24px;
+        border: none;
+        border-radius: 6px;
+        background: #0288d1;
+        color: white;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 14px;
+        transition: background 0.15s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .btn-scan:hover {
+        background: #0277bd;
+      }
+      .btn-scan:disabled {
+        background: #e0e0e0;
+        color: #999;
+        cursor: not-allowed;
+      }
+      .scan-progress {
+        margin-top: 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #0288d1;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .scan-spinner {
+        width: 20px;
+        height: 20px;
+        border: 3px solid #bbdefb;
+        border-top-color: #0288d1;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        flex-shrink: 0;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
     `,
   ];
 
@@ -269,6 +319,12 @@ export class DmMaintenanceView extends LitElement {
   @state() private _cleaning = false;
   @state() private _cleanResult: CleanDBResult | null = null;
   @state() private _cleanError: string | null = null;
+  @state() private _scanning = false;
+  @state() private _scanResult: ScanResult | null = null;
+  @state() private _scanError: string | null = null;
+  @state() private _clearingIP = false;
+  @state() private _clearIPResult: ClearIPCacheResult | null = null;
+  @state() private _clearIPError: string | null = null;
   @state() private _exporting = false;
   @state() private _exportError: string | null = null;
 
@@ -356,6 +412,46 @@ export class DmMaintenanceView extends LitElement {
         <dm-import-view></dm-import-view>
       </div>
 
+      <!-- Scan Section -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-icon">🔍</span>
+          <h3>${i18n.t("maint_scan_network")}</h3>
+        </div>
+        <p style="color:#666; font-size:14px; margin:0 0 16px 0;">
+          ${i18n.t("maint_scan_network_desc")}
+        </p>
+        <button
+          class="btn-scan"
+          ?disabled=${this._scanning}
+          @click=${this._executeScan}
+        >
+          ${this._scanning
+            ? i18n.t("maint_scan_running")
+            : "🔍 " + i18n.t("maint_scan_network")}
+        </button>
+        ${this._scanning
+          ? html`<div class="scan-progress">
+              <div class="scan-spinner"></div>
+              <span>${i18n.t("maint_scan_running")}</span>
+            </div>`
+          : nothing}
+        ${this._scanResult
+          ? html`<div class="result-panel" style="margin-top:16px">
+              <h4>✅ ${i18n.t("maint_scan_triggered")}</h4>
+              <p style="margin:0;font-size:13px;font-family:monospace">
+                ${this._scanResult.result}
+              </p>
+            </div>`
+          : nothing}
+        ${this._scanError
+          ? html`<div class="result-panel error" style="margin-top:16px">
+              <h4>❌ ${i18n.t("error_loading")}</h4>
+              <p>${this._scanError}</p>
+            </div>`
+          : nothing}
+      </div>
+
       <!-- Danger Zone -->
       <div class="danger-zone">
         <h3>⚠️ ${i18n.t("maint_danger_zone")}</h3>
@@ -397,6 +493,39 @@ export class DmMaintenanceView extends LitElement {
           ? html` <div class="result-panel error">
               <h4>❌ ${i18n.t("error_loading")}</h4>
               <p>${this._cleanError}</p>
+            </div>`
+          : nothing}
+
+        <!-- Clear IP Cache -->
+        <div class="danger-action" style="margin-top:12px">
+          <div class="danger-action-info">
+            <h4>🌐 ${i18n.t("maint_clear_ip_cache")}</h4>
+            <p>${i18n.t("maint_clear_ip_cache_desc")}</p>
+          </div>
+          <button
+            class="btn-danger"
+            ?disabled=${this._clearingIP}
+            @click=${this._executeClearIPCache}
+          >
+            ${this._clearingIP
+              ? i18n.t("loading")
+              : i18n.t("maint_clear_ip_cache")}
+          </button>
+        </div>
+
+        ${this._clearIPResult
+          ? html`<div class="result-panel" style="margin-top:12px">
+              <h4>✅ ${i18n.t("maint_clear_ip_cache_success")}</h4>
+              <p style="margin:0;font-family:monospace;font-size:13px">
+                ${this._clearIPResult.updated}
+                ${i18n.t("maint_clear_ip_updated")}
+              </p>
+            </div>`
+          : nothing}
+        ${this._clearIPError
+          ? html`<div class="result-panel error" style="margin-top:12px">
+              <h4>❌ ${i18n.t("error_loading")}</h4>
+              <p>${this._clearIPError}</p>
             </div>`
           : nothing}
       </div>
@@ -448,6 +577,31 @@ export class DmMaintenanceView extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  private async _executeScan() {
+    this._scanning = true;
+    this._scanError = null;
+    this._scanResult = null;
+    try {
+      this._scanResult = await this._maintenanceClient.triggerScan();
+    } catch (err) {
+      this._scanError = String(err);
+    } finally {
+      this._scanning = false;
+    }
+  }
+
+  private async _executeClearIPCache() {
+    this._clearingIP = true;
+    this._clearIPError = null;
+    this._clearIPResult = null;
+    try {
+      this._clearIPResult = await this._maintenanceClient.clearIPCache();
+    } catch (err) {
+      this._clearIPError = String(err);
+    }
+    this._clearingIP = false;
   }
 
   private async _executeCleanDB() {

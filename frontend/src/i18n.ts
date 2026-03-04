@@ -165,6 +165,16 @@ const translations: { [lang: string]: Translations } = {
     maint_confirm_execute: "Wipe All Data",
     maint_clean_success: "Database cleaned successfully",
     maint_rows_deleted: "rows deleted",
+    maint_scan_network: "Scan Network",
+    maint_scan_network_desc:
+      "Scan the network to discover connected devices and update IP addresses.",
+    maint_scan_triggered: "Scan launched successfully",
+    maint_scan_running: "Scanning...",
+    maint_clear_ip_cache: "Clear IP Cache",
+    maint_clear_ip_cache_desc:
+      "Reset the IP address of all devices to NULL. Useful after a network change.",
+    maint_clear_ip_cache_success: "IP cache cleared",
+    maint_clear_ip_updated: "devices updated",
 
     // Common
     name: "Name",
@@ -363,6 +373,16 @@ const translations: { [lang: string]: Translations } = {
     maint_confirm_execute: "Tout Supprimer",
     maint_clean_success: "Base de données nettoyée",
     maint_rows_deleted: "lignes supprimées",
+    maint_scan_network: "Scanner le Réseau",
+    maint_scan_network_desc:
+      "Scanne le réseau pour découvrir les équipements connectés et mettre à jour les adresses IP.",
+    maint_scan_triggered: "Scan lancé avec succès",
+    maint_scan_running: "Scan en cours...",
+    maint_clear_ip_cache: "Vider le Cache IP",
+    maint_clear_ip_cache_desc:
+      "Réinitialise l'adresse IP de tous les équipements à NULL. Utile après un changement de réseau.",
+    maint_clear_ip_cache_success: "Cache IP effacé",
+    maint_clear_ip_updated: "équipements mis à jour",
 
     // Common
     name: "Nom",

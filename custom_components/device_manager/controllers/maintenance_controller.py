@@ -85,3 +85,37 @@ class MaintenanceCleanDBAPIView(HomeAssistantView):
                 {"error": "Database clean failed. Check server logs."},
                 status_code=500,
             )
+
+
+class MaintenanceClearIPCacheAPIView(HomeAssistantView):
+    """API endpoint to reset all device IP addresses to NULL."""
+
+    url = "/api/device_manager/maintenance/clear-ip-cache"
+    name = "api:device_manager:maintenance:clear_ip_cache"
+    requires_auth = True
+
+    async def post(self, request: web.Request) -> web.Response:
+        """Set ip = NULL for every row in dm_devices.
+
+        Returns:
+            JSON with the number of devices updated.
+        """
+        try:
+            hass = request.app["hass"]
+            db_mgr = hass.data[DOMAIN]["db"]
+            conn = await db_mgr.get_connection()
+
+            cursor = await conn.execute(
+                "UPDATE dm_devices SET ip = NULL"
+            )
+            updated = cursor.rowcount
+            await conn.commit()
+
+            _LOGGER.info("IP cache cleared: %d devices updated", updated)
+            return self.json({"success": True, "updated": updated})
+        except Exception:
+            _LOGGER.exception("Clear IP cache failed")
+            return self.json(
+                {"error": "Clear IP cache failed. Check server logs."},
+                status_code=500,
+            )

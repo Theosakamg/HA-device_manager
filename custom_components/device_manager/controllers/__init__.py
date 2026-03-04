@@ -11,7 +11,7 @@ from .device_function_controller import DeviceFunctionsAPIView, DeviceFunctionAP
 from .hierarchy_controller import HierarchyAPIView
 from .import_controller import CSVImportAPIView
 from .export_controller import ExportAPIView
-from .maintenance_controller import MaintenanceCleanDBAPIView
+from .maintenance_controller import MaintenanceCleanDBAPIView, MaintenanceClearIPCacheAPIView
 from .settings_controller import SettingsAPIView
 from .deploy_controller import DeployAPIView, DevicesScanAPIView
 
@@ -36,6 +36,7 @@ ALL_VIEWS = [
     CSVImportAPIView,
     ExportAPIView,
     MaintenanceCleanDBAPIView,
+    MaintenanceClearIPCacheAPIView,
     SettingsAPIView,
     DeployAPIView,
     DevicesScanAPIView,
