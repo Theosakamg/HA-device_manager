@@ -2,8 +2,16 @@
  * In-UI documentation registry.
  *
  * Maps dot-notation keys (e.g. "settings.models.overview") to structured doc
- * content per language. All markdown files are bundled at build time via
- * Vite's `?raw` imports — no runtime fetches needed.
+ * content per language. All markdown files under `src/docs/` are discovered
+ * and bundled automatically at build time via Vite's `import.meta.glob` —
+ * no manual registration or runtime fetches needed.
+ *
+ * ## File naming convention
+ * `src/docs/<context>/[entity/]<page>.<lang>.md`
+ *
+ * The path maps directly to the registry key:
+ * - `docs/settings/models/overview.en.md` → key `"settings.models.overview"`, lang `"en"`
+ * - `docs/settings/overview.fr.md`        → key `"settings.overview"`,         lang `"fr"`
  *
  * Each markdown file must start with a YAML frontmatter block:
  * ```markdown
@@ -15,9 +23,8 @@
  * ```
  *
  * ## Adding a new doc page
- * 1. Create `src/docs/<context>/<entity>/<page>.<lang>.md` with frontmatter
- * 2. Import the file below with `?raw`
- * 3. Add an entry to `DOC_REGISTRY`
+ * 1. Create `src/docs/<context>/[entity/]<page>.<lang>.md` with frontmatter.
+ * 2. That's it — the file is picked up automatically on the next build.
  *
  * ## Usage
  * ```ts
@@ -31,52 +38,6 @@
 
 import { i18n } from "../i18n";
 import { parseFrontmatter, type DocContent } from "./frontmatter";
-
-// ---------------------------------------------------------------------------
-// Raw markdown imports (bundled at build time by Vite)
-// ---------------------------------------------------------------------------
-
-import settingsModelsOverviewEn from "../docs/settings/models/overview.en.md?raw";
-import settingsModelsOverviewFr from "../docs/settings/models/overview.fr.md?raw";
-
-import settingsFirmwaresOverviewEn from "../docs/settings/firmwares/overview.en.md?raw";
-import settingsFirmwaresOverviewFr from "../docs/settings/firmwares/overview.fr.md?raw";
-
-import settingsFunctionsOverviewEn from "../docs/settings/functions/overview.en.md?raw";
-import settingsFunctionsOverviewFr from "../docs/settings/functions/overview.fr.md?raw";
-
-import settingsOverviewEn from "../docs/settings/overview.en.md?raw";
-import settingsOverviewFr from "../docs/settings/overview.fr.md?raw";
-
-import maintenanceOverviewEn from "../docs/maintenance/overview.en.md?raw";
-import maintenanceOverviewFr from "../docs/maintenance/overview.fr.md?raw";
-
-import maintenanceSettingsOverviewEn from "../docs/maintenance/settings/overview.en.md?raw";
-import maintenanceSettingsOverviewFr from "../docs/maintenance/settings/overview.fr.md?raw";
-
-import maintenanceExportOverviewEn from "../docs/maintenance/export/overview.en.md?raw";
-import maintenanceExportOverviewFr from "../docs/maintenance/export/overview.fr.md?raw";
-
-import maintenanceImportOverviewEn from "../docs/maintenance/import/overview.en.md?raw";
-import maintenanceImportOverviewFr from "../docs/maintenance/import/overview.fr.md?raw";
-
-import maintenanceScanOverviewEn from "../docs/maintenance/scan/overview.en.md?raw";
-import maintenanceScanOverviewFr from "../docs/maintenance/scan/overview.fr.md?raw";
-
-import maintenanceDangerOverviewEn from "../docs/maintenance/danger/overview.en.md?raw";
-import maintenanceDangerOverviewFr from "../docs/maintenance/danger/overview.fr.md?raw";
-
-import hierarchyBuildingOverviewEn from "../docs/hierarchy/building/overview.en.md?raw";
-import hierarchyBuildingOverviewFr from "../docs/hierarchy/building/overview.fr.md?raw";
-
-import hierarchyFloorOverviewEn from "../docs/hierarchy/floor/overview.en.md?raw";
-import hierarchyFloorOverviewFr from "../docs/hierarchy/floor/overview.fr.md?raw";
-
-import hierarchyRoomOverviewEn from "../docs/hierarchy/room/overview.en.md?raw";
-import hierarchyRoomOverviewFr from "../docs/hierarchy/room/overview.fr.md?raw";
-
-import hierarchyRoomDeviceListEn from "../docs/hierarchy/room/device_list.en.md?raw";
-import hierarchyRoomDeviceListFr from "../docs/hierarchy/room/device_list.fr.md?raw";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -94,75 +55,48 @@ type DocRegistry = Record<string, DocVariants>;
 export type { DocContent };
 
 // ---------------------------------------------------------------------------
-// Registry
+// Auto-discovery via Vite glob import (bundled at build time)
 // ---------------------------------------------------------------------------
 
+const _rawDocs = import.meta.glob("../docs/**/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
+
 /**
- * Central map of all in-UI documentation pages.
+ * Derives the dot-notation registry key and language code from a glob path.
  *
- * Key convention: `<context>.<entity>.<page>`
- *   - context : top-level feature area (e.g. "settings", "devices", "deploy")
- *   - entity  : specific sub-section  (e.g. "models", "firmwares", "functions")
- *   - page    : content variant       (e.g. "overview", "faq", "troubleshoot")
+ * "../docs/settings/models/overview.en.md" → { key: "settings.models.overview", lang: "en" }
+ * "../docs/settings/overview.fr.md"        → { key: "settings.overview",         lang: "fr" }
  */
-const DOC_REGISTRY: DocRegistry = {
-  "settings.overview": {
-    en: settingsOverviewEn,
-    fr: settingsOverviewFr,
-  },
-  "settings.models.overview": {
-    en: settingsModelsOverviewEn,
-    fr: settingsModelsOverviewFr,
-  },
-  "settings.firmwares.overview": {
-    en: settingsFirmwaresOverviewEn,
-    fr: settingsFirmwaresOverviewFr,
-  },
-  "settings.functions.overview": {
-    en: settingsFunctionsOverviewEn,
-    fr: settingsFunctionsOverviewFr,
-  },
-  "maintenance.overview": {
-    en: maintenanceOverviewEn,
-    fr: maintenanceOverviewFr,
-  },
-  "maintenance.settings.overview": {
-    en: maintenanceSettingsOverviewEn,
-    fr: maintenanceSettingsOverviewFr,
-  },
-  "maintenance.export.overview": {
-    en: maintenanceExportOverviewEn,
-    fr: maintenanceExportOverviewFr,
-  },
-  "maintenance.import.overview": {
-    en: maintenanceImportOverviewEn,
-    fr: maintenanceImportOverviewFr,
-  },
-  "maintenance.scan.overview": {
-    en: maintenanceScanOverviewEn,
-    fr: maintenanceScanOverviewFr,
-  },
-  "maintenance.danger.overview": {
-    en: maintenanceDangerOverviewEn,
-    fr: maintenanceDangerOverviewFr,
-  },
-  "hierarchy.building.overview": {
-    en: hierarchyBuildingOverviewEn,
-    fr: hierarchyBuildingOverviewFr,
-  },
-  "hierarchy.floor.overview": {
-    en: hierarchyFloorOverviewEn,
-    fr: hierarchyFloorOverviewFr,
-  },
-  "hierarchy.room.overview": {
-    en: hierarchyRoomOverviewEn,
-    fr: hierarchyRoomOverviewFr,
-  },
-  "hierarchy.room.device_list": {
-    en: hierarchyRoomDeviceListEn,
-    fr: hierarchyRoomDeviceListFr,
-  },
-};
+function _pathToKeyAndLang(
+  path: string,
+): { key: string; lang: string } | null {
+  const inner = path.replace(/^\.\.\/docs\//, "").replace(/\.md$/, "");
+  const segments = inner.split("/");
+  const lastSegment = segments[segments.length - 1];
+  const dotIdx = lastSegment.lastIndexOf(".");
+  if (dotIdx === -1) return null;
+  const page = lastSegment.slice(0, dotIdx);
+  const lang = lastSegment.slice(dotIdx + 1);
+  const key = [...segments.slice(0, -1), page].join(".");
+  return { key, lang };
+}
+
+// ---------------------------------------------------------------------------
+// Registry (built automatically from discovered files)
+// ---------------------------------------------------------------------------
+
+const DOC_REGISTRY: DocRegistry = {};
+
+for (const [path, content] of Object.entries(_rawDocs)) {
+  const result = _pathToKeyAndLang(path);
+  if (!result) continue;
+  const { key, lang } = result;
+  if (!DOC_REGISTRY[key]) DOC_REGISTRY[key] = {} as DocVariants;
+  DOC_REGISTRY[key][lang] = content;
+}
 
 // ---------------------------------------------------------------------------
 // Public API

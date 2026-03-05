@@ -17,6 +17,8 @@ import {
   sortIndicator,
   sortItems,
 } from "../../utils/sorting";
+import { getDoc } from "../../utils/doc-registry";
+import "../shared/doc-block";
 
 /** Column definition for device table sorting. */
 interface DeviceColumn {
@@ -242,6 +244,11 @@ export class DmDeviceTable extends LitElement {
           </button>
         </div>
       </div>
+
+      <dm-doc-block
+        .doc=${getDoc("devices.overview")}
+        storageKey="devices-overview"
+      ></dm-doc-block>
 
       ${this._loading
         ? html`<div class="loading">${i18n.t("loading")}</div>`

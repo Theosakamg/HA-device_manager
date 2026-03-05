@@ -11,6 +11,15 @@ _LOGGER = logging.getLogger(__name__)
 # Pre-computed dist directory (resolved once at import time)
 _COMPONENT_PATH = Path(__file__).parent.parent
 _DIST_DIR = (_COMPONENT_PATH / "frontend" / "dist").resolve()
+_JS_FILE = _DIST_DIR / "device-manager.js"
+
+
+def _js_cache_buster() -> str:
+    """Return the mtime of the JS file as an integer string for cache-busting."""
+    try:
+        return str(int(_JS_FILE.stat().st_mtime))
+    except OSError:
+        return "0"
 
 
 class MainView(HomeAssistantView):
@@ -22,23 +31,28 @@ class MainView(HomeAssistantView):
 
     async def get(self, request: web.Request) -> web.Response:
         """Serve the main HTML page with the web component."""
-        html_content = """<!DOCTYPE html>
+        buster = _js_cache_buster()
+        html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Device Manager</title>
     <style>
-        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont,
-            "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: #f5f5f5; }
+        body {{ margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont,
+            "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: #f5f5f5; }}
     </style>
 </head>
 <body>
     <dm-app-shell></dm-app-shell>
-    <script type="module" src="/device_manager_static/device-manager.js"></script>
+    <script type="module" src="/device_manager_static/device-manager.js?v={buster}"></script>
 </body>
 </html>"""
-        return web.Response(text=html_content, content_type="text/html")
+        return web.Response(
+            text=html_content,
+            content_type="text/html",
+            headers={"Cache-Control": "no-cache"},
+        )
 
 
 class StaticView(HomeAssistantView):
@@ -100,7 +114,11 @@ class StaticView(HomeAssistantView):
             elif ext == ".ico":
                 content_type = "image/x-icon"
 
-            return web.Response(body=content, content_type=content_type)
+            return web.Response(
+                body=content,
+                content_type=content_type,
+                headers={"Cache-Control": "no-cache"},
+            )
         except Exception as err:
             _LOGGER.error("Failed to serve static file %s: %s", filename, err)
             return web.Response(status=500, text="Internal server error")
