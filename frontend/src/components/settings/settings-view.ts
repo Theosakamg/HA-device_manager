@@ -5,11 +5,13 @@ import { LitElement, html, css } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { sharedStyles } from "../../styles/shared-styles";
 import { i18n, localized } from "../../i18n";
+import { getDoc } from "../../utils/doc-registry";
 import { DeviceModelClient } from "../../api/device-model-client";
 import { DeviceFirmwareClient } from "../../api/device-firmware-client";
 import { DeviceFunctionClient } from "../../api/device-function-client";
 import type { CrudConfig } from "../shared/crud-table";
 import "./crud-tab";
+import "../shared/doc-block";
 
 /** Navigate to devices view filtered by a setting name. */
 function navigateToDevicesWithFilter(value: string) {
@@ -90,7 +92,7 @@ export class DmSettingsView extends LitElement {
   private get _modelConfig(): CrudConfig {
     return {
       entityName: i18n.t("tab_models"),
-      description: i18n.t("tab_models_desc"),
+      description: getDoc("settings.models.overview"),
       filterDevicesKey: "name",
       columns: [
         {
@@ -118,7 +120,7 @@ export class DmSettingsView extends LitElement {
   private get _firmwareConfig(): CrudConfig {
     return {
       entityName: i18n.t("tab_firmwares"),
-      description: i18n.t("tab_firmwares_desc"),
+      description: getDoc("settings.firmwares.overview"),
       filterDevicesKey: "name",
       columns: [
         {
@@ -140,7 +142,7 @@ export class DmSettingsView extends LitElement {
   private get _functionConfig(): CrudConfig {
     return {
       entityName: i18n.t("tab_functions"),
-      description: i18n.t("tab_functions_desc"),
+      description: getDoc("settings.functions.overview"),
       filterDevicesKey: "name",
       columns: [
         {
@@ -163,6 +165,10 @@ export class DmSettingsView extends LitElement {
     return html`
       <div class="settings-container">
         <h2>${i18n.t("settings_title")}</h2>
+        <dm-doc-block
+          .doc=${getDoc("settings.overview")}
+          storageKey="settings-overview"
+        ></dm-doc-block>
 
         <div class="tabs">
           <button

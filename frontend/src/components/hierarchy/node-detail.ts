@@ -17,6 +17,8 @@ import { FloorClient } from "../../api/floor-client";
 import { RoomClient } from "../../api/room-client";
 import { showToast } from "../../utils/toast";
 import { isValidSlug, isValidUrl } from "../../utils/validators";
+import { getDoc } from "../../utils/doc-registry";
+import "../shared/doc-block";
 
 @localized
 @customElement("dm-node-detail")
@@ -234,57 +236,69 @@ export class DmNodeDetail extends LitElement {
         </div>
       </div>
 
-      ${this._editing ? this._renderEditForm() : nothing}
+      <dm-doc-block
+        .doc=${getDoc(`hierarchy.${this.node.type}.overview`)}
+        storageKey="hierarchy-${this.node.type}"
+      ></dm-doc-block>
 
-      <div class="info-grid">
-        <span class="info-label">${i18n.t("name")}</span>
-        <span class="info-value">${this.node.name}</span>
-        <span class="info-label">${i18n.t("slug")}</span>
-        <span class="info-value">${this.node.slug}</span>
-        <span class="info-label">${i18n.t("description")}</span>
-        <span class="info-value">${this.node.description || "—"}</span>
-        <span class="info-label">${i18n.t("image")}</span>
-        <span class="info-value">${this.node.image || "—"}</span>
-        <span class="info-label">${i18n.t("device_count")}</span>
-        <span class="info-value">${this.node.deviceCount}</span>
-        <span class="info-label">${i18n.t("created_at")}</span>
-        <span class="info-value">${this._formatDate(this.node.createdAt)}</span>
-        <span class="info-label">${i18n.t("updated_at")}</span>
-        <span class="info-value">${this._formatDate(this.node.updatedAt)}</span>
-        ${this.node.type === "room"
-          ? html`
-              <span class="info-label">${i18n.t("room_login")}</span>
-              <span class="info-value">${this._roomDetails?.login || "—"}</span>
-              <span class="info-label">${i18n.t("room_password")}</span>
-              <span
-                class="info-value"
-                style="display:flex; align-items:center; gap:6px;"
+      ${this._editing
+        ? this._renderEditForm()
+        : html`
+            <div class="info-grid">
+              <span class="info-label">${i18n.t("name")}</span>
+              <span class="info-value">${this.node.name}</span>
+              <span class="info-label">${i18n.t("slug")}</span>
+              <span class="info-value">${this.node.slug}</span>
+              <span class="info-label">${i18n.t("description")}</span>
+              <span class="info-value">${this.node.description || "—"}</span>
+              <span class="info-label">${i18n.t("image")}</span>
+              <span class="info-value">${this.node.image || "—"}</span>
+              <span class="info-label">${i18n.t("device_count")}</span>
+              <span class="info-value">${this.node.deviceCount}</span>
+              <span class="info-label">${i18n.t("created_at")}</span>
+              <span class="info-value"
+                >${this._formatDate(this.node.createdAt)}</span
               >
-                ${this._roomDetails?.password
-                  ? this._showPassword
-                    ? this._roomDetails.password
-                    : "••••••••"
-                  : "—"}
-                ${this._roomDetails?.password
-                  ? html`
-                      <button
-                        class="btn-icon"
-                        title=${this._showPassword
-                          ? i18n.t("hide_password")
-                          : i18n.t("show_password")}
-                        @click=${() => {
-                          this._showPassword = !this._showPassword;
-                        }}
-                      >
-                        ${this._showPassword ? "🙈" : "👁"}
-                      </button>
-                    `
-                  : nothing}
-              </span>
-            `
-          : nothing}
-      </div>
-
+              <span class="info-label">${i18n.t("updated_at")}</span>
+              <span class="info-value"
+                >${this._formatDate(this.node.updatedAt)}</span
+              >
+              ${this.node.type === "room"
+                ? html`
+                    <span class="info-label">${i18n.t("room_login")}</span>
+                    <span class="info-value"
+                      >${this._roomDetails?.login || "—"}</span
+                    >
+                    <span class="info-label">${i18n.t("room_password")}</span>
+                    <span
+                      class="info-value"
+                      style="display:flex; align-items:center; gap:6px;"
+                    >
+                      ${this._roomDetails?.password
+                        ? this._showPassword
+                          ? this._roomDetails.password
+                          : "••••••••"
+                        : "—"}
+                      ${this._roomDetails?.password
+                        ? html`
+                            <button
+                              class="btn-icon"
+                              title=${this._showPassword
+                                ? i18n.t("hide_password")
+                                : i18n.t("show_password")}
+                              @click=${() => {
+                                this._showPassword = !this._showPassword;
+                              }}
+                            >
+                              ${this._showPassword ? "🙈" : "👁"}
+                            </button>
+                          `
+                        : nothing}
+                    </span>
+                  `
+                : nothing}
+            </div>
+          `}
       ${this.node.children.length > 0
         ? html`
             <div class="section-header">
@@ -314,6 +328,10 @@ export class DmNodeDetail extends LitElement {
             <div class="section-header">
               <h3>${i18n.t("devices")} (${this._devices.length})</h3>
             </div>
+            <dm-doc-block
+              .doc=${getDoc("hierarchy.room.device_list")}
+              storageKey="hierarchy-room-device-list"
+            ></dm-doc-block>
             ${this._loadingDevices
               ? html`<div class="loading">${i18n.t("loading")}</div>`
               : this._devices.length === 0

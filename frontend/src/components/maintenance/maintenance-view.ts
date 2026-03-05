@@ -14,7 +14,9 @@ import type {
 } from "../../api/maintenance-client";
 import { SettingsClient, refreshSettings } from "../../api/settings-client";
 import type { AppSettings } from "../../api/settings-client";
+import { getDoc } from "../../utils/doc-registry";
 import "../import/import-view";
+import "../shared/doc-block";
 
 @localized
 @customElement("dm-maintenance-view")
@@ -345,6 +347,10 @@ export class DmMaintenanceView extends LitElement {
   render() {
     return html`
       <h2>🔧 ${i18n.t("nav_maintenance")}</h2>
+      <dm-doc-block
+        .doc=${getDoc("maintenance.overview")}
+        storageKey="maintenance-overview"
+      ></dm-doc-block>
 
       <!-- Settings Section -->
       <div class="section">
@@ -352,9 +358,10 @@ export class DmMaintenanceView extends LitElement {
           <span class="section-icon">⚙️</span>
           <h3>${i18n.t("config_title")}</h3>
         </div>
-        <p style="color:#666; font-size:14px; margin:0 0 16px 0;">
-          ${i18n.t("config_desc")}
-        </p>
+        <dm-doc-block
+          .doc=${getDoc("maintenance.settings.overview")}
+          storageKey="maintenance-settings"
+        ></dm-doc-block>
         ${this._settingsForm
           ? this._renderSettingsForm()
           : html`<p>${i18n.t("config_loading")}</p>`}
@@ -366,9 +373,10 @@ export class DmMaintenanceView extends LitElement {
           <span class="section-icon">📤</span>
           <h3>${i18n.t("export_title")}</h3>
         </div>
-        <p style="color:#666; font-size:14px; margin:0 0 16px 0;">
-          ${i18n.t("export_desc")}
-        </p>
+        <dm-doc-block
+          .doc=${getDoc("maintenance.export.overview")}
+          storageKey="maintenance-export"
+        ></dm-doc-block>
         <div class="export-actions">
           <button
             class="btn-export"
@@ -409,6 +417,10 @@ export class DmMaintenanceView extends LitElement {
           <span class="section-icon">📥</span>
           <h3>${i18n.t("import_csv")}</h3>
         </div>
+        <dm-doc-block
+          .doc=${getDoc("maintenance.import.overview")}
+          storageKey="maintenance-import"
+        ></dm-doc-block>
         <dm-import-view></dm-import-view>
       </div>
 
@@ -418,9 +430,10 @@ export class DmMaintenanceView extends LitElement {
           <span class="section-icon">🔍</span>
           <h3>${i18n.t("maint_scan_network")}</h3>
         </div>
-        <p style="color:#666; font-size:14px; margin:0 0 16px 0;">
-          ${i18n.t("maint_scan_network_desc")}
-        </p>
+        <dm-doc-block
+          .doc=${getDoc("maintenance.scan.overview")}
+          storageKey="maintenance-scan"
+        ></dm-doc-block>
         <button
           class="btn-scan"
           ?disabled=${this._scanning}
@@ -455,7 +468,10 @@ export class DmMaintenanceView extends LitElement {
       <!-- Danger Zone -->
       <div class="danger-zone">
         <h3>⚠️ ${i18n.t("maint_danger_zone")}</h3>
-        <p>${i18n.t("maint_danger_desc")}</p>
+        <dm-doc-block
+          .doc=${getDoc("maintenance.danger.overview")}
+          storageKey="maintenance-danger"
+        ></dm-doc-block>
 
         <!-- Clean DB -->
         <div class="danger-action">

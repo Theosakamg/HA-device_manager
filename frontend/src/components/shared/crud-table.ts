@@ -6,6 +6,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
+import { type DocContent } from "../../utils/frontmatter";
 import { sharedStyles } from "../../styles/shared-styles";
 import { i18n, localized } from "../../i18n";
 import {
@@ -27,8 +28,8 @@ export interface CrudColumn {
 export interface CrudConfig {
   columns: CrudColumn[];
   entityName: string;
-  /** Optional description displayed above the table toolbar. */
-  description?: string;
+  /** Optional structured doc content displayed above the table toolbar. */
+  description?: DocContent;
   /** Column key whose value is used for the "filter devices" action button. */
   filterDevicesKey?: string;
   /** Custom empty-state message (i18n key or literal). Falls back to 'no_items'. */
@@ -207,7 +208,7 @@ export class DmCrudTable extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     this._descExpanded =
-      localStorage.getItem(this._descStorageKey) !== "collapsed";
+      localStorage.getItem(this._descStorageKey) === "expanded";
   }
 
   private _toggleDescription() {
@@ -216,24 +217,6 @@ export class DmCrudTable extends LitElement {
       this._descStorageKey,
       this._descExpanded ? "expanded" : "collapsed"
     );
-  }
-
-  /** Extract the first sentence from the description for the collapsed view. */
-  private _firstSentence(desc: string): string {
-    const firstLine = desc.split("\n")[0];
-    const match = firstLine.match(/^(.+?[.!?])\s/);
-    return match ? match[1] : firstLine;
-  }
-
-  /** Return description without the first line (shown in the header). */
-  private _restOfDescription(desc: string): string {
-    const lines = desc.split("\n");
-    // Remove the first line and any immediately following blank line
-    const rest = lines.slice(1);
-    while (rest.length > 0 && rest[0].trim() === "") {
-      rest.shift();
-    }
-    return rest.join("\n");
   }
 
   /** Return items sorted according to current sort state. */
@@ -276,7 +259,7 @@ export class DmCrudTable extends LitElement {
                 ${unsafeHTML(
                   DOMPurify.sanitize(
                     marked.parseInline(
-                      this._firstSentence(this.config.description)
+                      this.config.description.summary
                     ) as string
                   )
                 )}
@@ -292,9 +275,7 @@ export class DmCrudTable extends LitElement {
               ? html`<div class="tab-description-body">
                   ${unsafeHTML(
                     DOMPurify.sanitize(
-                      marked.parse(
-                        this._restOfDescription(this.config.description)
-                      ) as string
+                      marked.parse(this.config.description.body) as string
                     )
                   )}
                 </div>`
