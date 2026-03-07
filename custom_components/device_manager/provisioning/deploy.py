@@ -1,5 +1,4 @@
 import logging
-import os
 
 from .common import FirmwareFactory
 from .contract import _FLD_MAC

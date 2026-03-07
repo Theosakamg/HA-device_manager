@@ -40,7 +40,7 @@ class CacheManager:
                 except yaml.YAMLError as e:
                     logger.error(e)
         else:
-            logger.warning(f"Cache file {FILE_CACHE} not found on {Path(FILE_CACHE).resolve()}. Starting with empty cache.")
+            logger.warning(f"Cache file {FILE_CACHE} not found on {Path(FILE_CACHE).resolve()}.Starting with empty cache.")
 
     def make_dict(self) -> None:
         self.load_dict()
