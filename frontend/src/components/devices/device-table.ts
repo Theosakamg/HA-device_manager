@@ -362,13 +362,13 @@ export class DmDeviceTable extends LitElement {
     return [
       { key: "enabled", label: i18n.t("device_enabled") },
       { key: "mac", label: "MAC" },
-      { key: "floorName", label: i18n.t("device_level") },
-      { key: "roomName", label: i18n.t("device_room") },
-      { key: "functionName", label: i18n.t("device_function") },
+      { key: "floor.name", label: i18n.t("device_level") },
+      { key: "room.name", label: i18n.t("device_room") },
+      { key: "refs.functionName", label: i18n.t("device_function") },
       { key: "positionName", label: i18n.t("device_position_name") },
-      { key: "firmwareName", label: i18n.t("device_firmware") },
-      { key: "modelName", label: i18n.t("device_model") },
-      { key: "targetMac", label: i18n.t("device_target") },
+      { key: "refs.firmwareName", label: i18n.t("device_firmware") },
+      { key: "refs.modelName", label: i18n.t("device_model") },
+      { key: "refs.targetMac", label: i18n.t("device_target") },
       { key: "lastDeployStatus", label: i18n.t("device_last_deploy_status") },
       { key: "lastDeployAt", label: i18n.t("device_last_deploy_at") },
     ];
@@ -490,16 +490,16 @@ export class DmDeviceTable extends LitElement {
           d.ip?.toLowerCase().includes(q) ||
           d.positionName?.toLowerCase().includes(q) ||
           d.positionSlug?.toLowerCase().includes(q) ||
-          d.roomName?.toLowerCase().includes(q) ||
-          d.roomSlug?.toLowerCase().includes(q) ||
-          d.floorName?.toLowerCase().includes(q) ||
-          d.floorSlug?.toLowerCase().includes(q) ||
-          d.buildingName?.toLowerCase().includes(q) ||
-          d.modelName?.toLowerCase().includes(q) ||
-          d.firmwareName?.toLowerCase().includes(q) ||
-          d.functionName?.toLowerCase().includes(q) ||
+          d.room?.name?.toLowerCase().includes(q) ||
+          d.room?.slug?.toLowerCase().includes(q) ||
+          d.floor?.name?.toLowerCase().includes(q) ||
+          d.floor?.slug?.toLowerCase().includes(q) ||
+          d.building?.name?.toLowerCase().includes(q) ||
+          d.refs?.modelName?.toLowerCase().includes(q) ||
+          d.refs?.firmwareName?.toLowerCase().includes(q) ||
+          d.refs?.functionName?.toLowerCase().includes(q) ||
           d.extra?.toLowerCase().includes(q) ||
-          d.targetMac?.toLowerCase().includes(q) ||
+          d.refs?.targetMac?.toLowerCase().includes(q) ||
           d.lastDeployStatus?.toLowerCase().includes(q) ||
           d.lastDeployAt?.toLowerCase().includes(q)
       );
@@ -593,7 +593,9 @@ export class DmDeviceTable extends LitElement {
     });
   }
 
-  /** Normalised filter value for a device field. */
+  /** Normalised filter value for a device field.
+   * Supports dot-path keys: "refs.modelName", "room.name", "floor.slug", etc.
+   */
   private _getFilterValue(device: DmDevice, key: string): string {
     if (key === "enabled") return String(device.enabled);
     if (key === "lastDeployStatus") {
@@ -601,7 +603,13 @@ export class DmDeviceTable extends LitElement {
       if (!s) return i18n.t("deploy_status_none");
       return s === "done" ? i18n.t("deploy_status_done") : i18n.t("deploy_status_fail");
     }
-    const val = (device as unknown as Record<string, unknown>)[key];
+    // Dot-path traversal for nested keys (e.g. "refs.modelName").
+    const parts = key.split(".");
+    let val: unknown = device;
+    for (const part of parts) {
+      if (val == null || typeof val !== "object") { val = undefined; break; }
+      val = (val as Record<string, unknown>)[part];
+    }
     if (val === null || val === undefined || val === "") return "—";
     return String(val);
   }
@@ -942,13 +950,13 @@ export class DmDeviceTable extends LitElement {
                         ></span>
                       </td>
                       <td class="mac">${device.mac}</td>
-                      <td>${device.floorName ?? "—"}</td>
-                      <td>${device.roomName ?? "—"}</td>
-                      <td>${device.functionName ?? "—"}</td>
+                      <td>${device.floor?.name ?? "—"}</td>
+                      <td>${device.room?.name ?? "—"}</td>
+                      <td>${device.refs?.functionName ?? "—"}</td>
                       <td>${device.positionName}</td>
-                      <td>${device.firmwareName ?? "—"}</td>
-                      <td>${device.modelName ?? "—"}</td>
-                      <td class="mac">${device.targetMac ?? "—"}</td>
+                      <td>${device.refs?.firmwareName ?? "—"}</td>
+                      <td>${device.refs?.modelName ?? "—"}</td>
+                      <td class="mac">${device.refs?.targetMac ?? "—"}</td>
                       <td>
                         ${device.lastDeployStatus === "done"
                           ? html`<span class="deploy-badge deploy-badge-done">✓ ${i18n.t("deploy_status_done")}</span>`

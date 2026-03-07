@@ -385,7 +385,7 @@ export class DmNodeDetail extends LitElement {
                               <td style="font-family:monospace;font-size:12px">
                                 ${d.mac}
                               </td>
-                              <td>${d.functionName || "—"}</td>
+                              <td>${d.refs?.functionName || "—"}</td>
                               <td>${d.positionName}</td>
                             </tr>
                           `

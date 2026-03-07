@@ -101,7 +101,7 @@ export class DmSettingsView extends LitElement {
       entityName: i18n.t("tab_models"),
       description: getDoc("settings.models.overview"),
       filterDevicesKey: "name",
-      filterDevicesColKey: "modelName",
+      filterDevicesColKey: "refs.modelName",
       columns: [
         {
           key: "name",
@@ -130,7 +130,7 @@ export class DmSettingsView extends LitElement {
       entityName: i18n.t("tab_firmwares"),
       description: getDoc("settings.firmwares.overview"),
       filterDevicesKey: "name",
-      filterDevicesColKey: "firmwareName",
+      filterDevicesColKey: "refs.firmwareName",
       columns: [
         {
           key: "name",
@@ -159,7 +159,7 @@ export class DmSettingsView extends LitElement {
       entityName: i18n.t("tab_functions"),
       description: getDoc("settings.functions.overview"),
       filterDevicesKey: "name",
-      filterDevicesColKey: "functionName",
+      filterDevicesColKey: "refs.functionName",
       columns: [
         {
           key: "name",

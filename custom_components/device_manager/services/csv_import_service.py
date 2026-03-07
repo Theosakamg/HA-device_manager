@@ -363,8 +363,8 @@ class CSVImportService:
         else:
             items = await repo.find_all()
         for item in items:
-            if item.get(match_field) == match_value:
-                return int(item["id"])
+            if getattr(item, match_field, None) == match_value:
+                return int(item.id)
         return int(await repo.create(create_data))
 
     async def _resolve_target(
@@ -393,10 +393,10 @@ class CSVImportService:
 
         candidates = await self.repos["device"].find_by_room(room_id)
         for device in candidates:
-            fn = (device.get("function_name") or "").strip().lower()
-            ps = (device.get("position_slug") or "").strip().lower()
+            fn = (device._refs.function_name or "").strip().lower()
+            ps = (device.position_slug or "").strip().lower()
             if fn == target_function_slug and ps == target_position_slug:
-                return int(device["id"])
+                return int(device.id)
         return None
 
     async def _find_or_create_ref(self, repo: Any, name: str) -> int:
@@ -413,6 +413,6 @@ class CSVImportService:
         """
         items = await repo.find_all()
         for item in items:
-            if item.get("name") == name:
-                return int(item["id"])
+            if item.name == name:
+                return int(item.id)
         return int(await repo.create({"name": name, "enabled": True}))

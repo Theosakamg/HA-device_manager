@@ -36,9 +36,24 @@ export function sortIndicator(current: SortState, key: string): string {
 }
 
 /**
+ * Retrieve a value from an object using a dot-path key (e.g. \"refs.modelName\").
+ * Falls back to direct property access for simple keys.
+ */
+function getNestedValue(obj: unknown, key: string): unknown {
+  const parts = key.split(".");
+  let val: unknown = obj;
+  for (const part of parts) {
+    if (val == null || typeof val !== "object") return undefined;
+    val = (val as Record<string, unknown>)[part];
+  }
+  return val;
+}
+
+/**
  * Sort an array of records by a given key and direction.
  *
  * Handles null, boolean, number and string comparison.
+ * Supports dot-path keys (e.g. \"refs.modelName\", \"floor.name\").
  * Returns a **new** array (does not mutate the original).
  */
 export function sortItems<T>(items: T[], state: SortState): T[] {
@@ -47,8 +62,8 @@ export function sortItems<T>(items: T[], state: SortState): T[] {
   const dir = state.dir === "asc" ? 1 : -1;
 
   return [...items].sort((a, b) => {
-    const va = (a as Record<string, unknown>)[key];
-    const vb = (b as Record<string, unknown>)[key];
+    const va = getNestedValue(a, key);
+    const vb = getNestedValue(b, key);
     if (va == null && vb == null) return 0;
     if (va == null) return dir;
     if (vb == null) return -dir;

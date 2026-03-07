@@ -1,5 +1,41 @@
 /**
+ * Transient joined room data attached to a device by the repository JOIN query.
+ */
+export interface DeviceRoomRef {
+  name: string;
+  slug: string;
+}
+
+/**
+ * Transient joined floor data attached to a device by the repository JOIN query.
+ */
+export interface DeviceFloorRef {
+  name: string;
+  slug: string;
+  number: number;
+}
+
+/**
+ * Transient joined building data attached to a device by the repository JOIN query.
+ */
+export interface DeviceBuildingRef {
+  name: string;
+}
+
+/**
+ * Transient joined reference names (model, firmware, function, target).
+ */
+export interface DeviceLinkedRefs {
+  modelName: string;
+  firmwareName: string;
+  functionName: string;
+  targetMac: string;
+}
+
+/**
  * DmDevice - The main device entity with foreign key references.
+ * Transient joined data is grouped into nested objects (room, floor, building, refs)
+ * instead of flat fields.
  */
 export interface DmDevice {
   id?: number;
@@ -24,17 +60,11 @@ export interface DmDevice {
   functionId: number;
   /** FK to DmDevice (self-reference, nullable) */
   targetId?: number | null;
-  /** Transient: joined data from related entities */
-  roomName?: string;
-  roomSlug?: string;
-  floorName?: string;
-  floorSlug?: string;
-  floorNumber?: number;
-  buildingName?: string;
-  modelName?: string;
-  firmwareName?: string;
-  functionName?: string;
-  targetMac?: string;
+  /** Transient: nested joined objects populated by the repository JOIN */
+  room?: DeviceRoomRef;
+  floor?: DeviceFloorRef;
+  building?: DeviceBuildingRef;
+  refs?: DeviceLinkedRefs;
   /** Deploy tracking */
   lastDeployAt?: string | null;
   lastDeployStatus?: "done" | "fail" | null;

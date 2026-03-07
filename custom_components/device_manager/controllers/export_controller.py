@@ -9,6 +9,7 @@ from typing import Any
 from aiohttp import web
 
 from .base import BaseView, get_repos
+from ..models.device import DmDevice
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,46 +53,43 @@ def _sanitize_csv_value(val: str) -> str:
     return val
 
 
-def _device_to_row(device: dict[str, Any]) -> dict[str, str]:
-    """Convert a joined device dict into a flat export row.
+def _device_to_row(device: DmDevice) -> dict[str, str]:
+    """Convert a DmDevice model into a flat export row.
 
     The returned keys must match :data:`CSV_COLUMNS` exactly so that an
     exported CSV can be re-imported by :class:`CSVImportService`.
     """
-    # Extract the numeric floor value from the slug
-    # (e.g. "l0" → "0")
-    floor_slug = device.get("floor_slug", "") or ""
+    # Extract the numeric floor value from the slug (e.g. "l0" → "0")
+    floor_slug = device._floor.slug or ""
     if floor_slug.startswith("l"):
         level_num = floor_slug.lstrip("l")
     else:
         level_num = floor_slug
 
-    # Map enabled boolean back to the State vocabulary used in the CSV
-    enabled = device.get("enabled")
-    state = "Enable" if enabled else "Disable"
+    state = "Enable" if device.enabled else "Disable"
 
     return {
         "Check": "",
-        "MAC": device.get("mac", ""),
+        "MAC": device.mac,
         "State": state,
         "Level": level_num,
-        "Room FR": device.get("room_name", "") or "",
-        "Position FR": device.get("position_name", ""),
-        "Function": device.get("function_name", "") or "",
-        "Room SLUG": device.get("room_slug", "") or "",
-        "Position SLUG": device.get("position_slug", ""),
-        "Firmware": device.get("firmware_name", "") or "",
-        "Model": device.get("model_name", "") or "",
-        "IP": device.get("ip", "") or "",
-        "Interlock": device.get("interlock", ""),
-        "Mode": device.get("mode", ""),
-        "Target": device.get("target_mac", "") or "",
-        "HA_device_class": device.get("ha_device_class", ""),
-        "Extra": device.get("extra", ""),
+        "Room FR": device._room.name or "",
+        "Position FR": device.position_name,
+        "Function": device._refs.function_name or "",
+        "Room SLUG": device._room.slug or "",
+        "Position SLUG": device.position_slug,
+        "Firmware": device._refs.firmware_name or "",
+        "Model": device._refs.model_name or "",
+        "IP": device.ip or "",
+        "Interlock": device.interlock or "",
+        "Mode": device.mode or "",
+        "Target": device._refs.target_mac or "",
+        "HA_device_class": device.ha_device_class or "",
+        "Extra": device.extra or "",
     }
 
 
-def _build_csv(devices: list[dict[str, Any]]) -> str:
+def _build_csv(devices: list[DmDevice]) -> str:
     """Build a CSV string from device records with formula-injection protection."""
     output = io.StringIO()
     writer = csv.DictWriter(
@@ -105,13 +103,13 @@ def _build_csv(devices: list[dict[str, Any]]) -> str:
     return output.getvalue()
 
 
-def _build_json(devices: list[dict[str, Any]]) -> str:
+def _build_json(devices: list[DmDevice]) -> str:
     """Build a pretty JSON string from device records."""
     rows = [_device_to_row(d) for d in devices]
     return json.dumps(rows, indent=2, ensure_ascii=False)
 
 
-def _build_yaml(devices: list[dict[str, Any]]) -> str:
+def _build_yaml(devices: list[DmDevice]) -> str:
     """Build a YAML string from device records (no PyYAML dependency).
 
     Escapes special YAML characters (newlines, backslashes, control chars)

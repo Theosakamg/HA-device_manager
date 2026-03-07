@@ -2,8 +2,9 @@
 
 import logging
 import re
-from typing import Any, Optional
+from typing import Any, Generic, Optional, Type, TypeVar, get_args
 
+from ..models.base import SerializableMixin
 from ..services.database_manager import DatabaseManager
 
 _LOGGER = logging.getLogger(__name__)
@@ -23,22 +24,58 @@ _VALID_TABLE_NAMES = frozenset({
 # Regex for safe SQL identifiers (column names)
 _SAFE_IDENTIFIER_RE = re.compile(r"^[a-z_][a-z0-9_]*$")
 
+M = TypeVar("M", bound=SerializableMixin)
 
-class BaseRepository:
+
+def _resolve_model_class(cls: type) -> Optional[Type[SerializableMixin]]:
+    """Inspect ``__orig_bases__`` to extract the concrete M type argument.
+
+    When a subclass is defined as ``class FooRepository(BaseRepository[Foo])``,
+    Python stores the parameterised base as an entry in ``__orig_bases__``.
+    We walk those bases looking for the first generic argument that is a
+    concrete subclass of :class:`SerializableMixin`.
+    """
+    for base in getattr(cls, "__orig_bases__", ()):
+        args = get_args(base)
+        if args:
+            candidate = args[0]
+            if isinstance(candidate, type) and issubclass(candidate, SerializableMixin):
+                return candidate
+    return None
+
+
+class BaseRepository(Generic[M]):
     """Base repository providing generic CRUD operations for a SQLite table.
 
     Subclasses must define:
-        - table_name: str - The SQL table name.
-        - allowed_columns: set[str] - Whitelist of column
-          names for insert/update.
+        - table_name:      str      – The SQL table name.
+        - allowed_columns: set[str] – Whitelist of column names for
+                                      insert/update.
+
+    ``model_class`` is **inferred automatically** from the generic type
+    parameter (e.g. ``class FooRepo(BaseRepository[Foo])`` → ``Foo``).
+    Subclasses may still declare it explicitly to override the inference.
 
     Optional hooks (override in subclasses):
-        - _decode_row(row): post-process a row after reading (e.g. decrypt fields).
-        - _encode_row(data): pre-process data before writing (e.g. encrypt fields).
+        - _decode_row(row):     post-process a raw dict after reading.
+        - _encode_row(data):    pre-process a dict before writing.
+        - _row_to_model(row):   convert a decoded dict to a model instance.
+                                Default implementation calls
+                                ``model_class.from_dict(row)``.
     """
 
     table_name: str = ""
+    model_class: Optional[Type[M]] = None  # type: ignore[assignment]
     allowed_columns: set[str] = set()
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        """Auto-resolve model_class from the generic type parameter."""
+        super().__init_subclass__(**kwargs)
+        # Only set when not already explicitly declared on this class.
+        if "model_class" not in cls.__dict__:
+            resolved = _resolve_model_class(cls)
+            if resolved is not None:
+                cls.model_class = resolved  # type: ignore[assignment]
 
     def __init__(self, db_manager: DatabaseManager) -> None:
         """Initialize with a shared DatabaseManager.
@@ -61,7 +98,7 @@ class BaseRepository:
     # ------------------------------------------------------------------
 
     def _decode_row(self, row: dict[str, Any]) -> dict[str, Any]:
-        """Post-process a row after reading from the DB.
+        """Post-process a raw dict after reading from the DB.
 
         Override to decrypt fields or enrich the dict.  Default is identity.
         """
@@ -74,34 +111,56 @@ class BaseRepository:
         """
         return data
 
-    async def find_all(self) -> list[dict[str, Any]]:
+    def _row_to_model(self, row: dict[str, Any]) -> M:
+        """Convert a decoded DB row dict to a typed model instance.
+
+        The default implementation delegates to ``model_class.from_dict()``.
+        Override in subclasses when additional logic is needed (e.g. JOIN
+        column mapping).
+
+        Args:
+            row: A fully decoded dict from ``_decode_row()``.
+
+        Returns:
+            A typed model instance.
+
+        Raises:
+            NotImplementedError: If ``model_class`` is not set.
+        """
+        if self.model_class is None:
+            raise NotImplementedError(
+                f"{type(self).__name__} must define 'model_class'"
+            )
+        return self.model_class.from_dict(row)  # type: ignore[return-value]
+
+    async def find_all(self) -> list[M]:
         """Retrieve all rows from the table, ordered by id ASC.
 
         Returns:
-            A list of dicts representing each row.
+            A list of typed model instances.
         """
         conn = await self.db.get_connection()
         cursor = await conn.execute(
             f"SELECT * FROM {self.table_name} ORDER BY id ASC"
         )
         rows = await cursor.fetchall()
-        return [self._decode_row(dict(row)) for row in rows]
+        return [self._row_to_model(self._decode_row(dict(row))) for row in rows]
 
-    async def find_by_id(self, entity_id: int) -> Optional[dict[str, Any]]:
+    async def find_by_id(self, entity_id: int) -> Optional[M]:
         """Retrieve a single row by its primary key.
 
         Args:
             entity_id: The integer primary key.
 
         Returns:
-            A dict representing the row, or None if not found.
+            A typed model instance, or None if not found.
         """
         conn = await self.db.get_connection()
         cursor = await conn.execute(
             f"SELECT * FROM {self.table_name} WHERE id = ?", (entity_id,)
         )
         row = await cursor.fetchone()
-        return self._decode_row(dict(row)) if row else None
+        return self._row_to_model(self._decode_row(dict(row))) if row else None
 
     async def create(self, data: dict[str, Any]) -> int:
         """Insert a new row and return its auto-generated ID.
@@ -208,14 +267,14 @@ class BaseRepository:
             _LOGGER.debug("Deleted %s (ID: %d)", self.table_name, entity_id)
         return deleted
 
-    async def find_by_parent(self, parent_id: int) -> list[dict[str, Any]]:
+    async def find_by_parent(self, parent_id: int) -> list[M]:
         """Find rows by parent FK. Subclasses should override parent_column.
 
         Args:
             parent_id: The parent foreign key value.
 
         Returns:
-            A list of dicts.
+            A list of typed model instances.
         """
         parent_column = getattr(self, "parent_column", None)
         if not parent_column:
@@ -228,4 +287,4 @@ class BaseRepository:
         )
         cursor = await conn.execute(sql, (parent_id,))
         rows = await cursor.fetchall()
-        return [self._decode_row(dict(row)) for row in rows]
+        return [self._row_to_model(self._decode_row(dict(row))) for row in rows]

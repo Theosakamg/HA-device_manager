@@ -5,9 +5,8 @@ import { LitElement, html, css } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { sharedStyles } from "../../styles/shared-styles";
 import { i18n, localized } from "../../i18n";
-import { HierarchyClient } from "../../api/hierarchy-client";
-import { DeviceClient } from "../../api/device-client";
-import type { HierarchyTree, DmDevice } from "../../types/device";
+import { StatsClient } from "../../api/stats-client";
+import type { StatEntry } from "../../api/stats-client";
 
 interface StatItem {
   label: string;
@@ -261,8 +260,7 @@ export class DmDashboardView extends LitElement {
   @state() private _byFirmware: StatItem[] = [];
   @state() private _byModel: StatItem[] = [];
 
-  private _hierarchyClient = new HierarchyClient();
-  private _deviceClient = new DeviceClient();
+  private _statsClient = new StatsClient();
 
   async connectedCallback() {
     super.connectedCallback();
@@ -272,57 +270,26 @@ export class DmDashboardView extends LitElement {
   private async _loadData() {
     this._loading = true;
     try {
-      const [tree, devices] = await Promise.all([
-        this._hierarchyClient.getTree(),
-        this._deviceClient.getAll(),
-      ]);
-      this._computeHierarchyStats(tree);
-      this._computeDeviceStats(devices);
+      const stats = await this._statsClient.getStats();
+      this._totalBuildings = stats.buildings;
+      this._totalFloors = stats.floors;
+      this._totalRooms = stats.rooms;
+      this._totalDevices = stats.devices;
+      this._byFirmware = this._toStatItems(stats.byFirmware);
+      this._byModel = this._toStatItems(stats.byModel);
     } catch (err) {
-      console.error("Dashboard: failed to load data", err);
+      console.error("Dashboard: failed to load stats", err);
     }
     this._loading = false;
   }
 
-  private _computeHierarchyStats(tree: HierarchyTree) {
-    this._totalBuildings = tree.buildings.length;
-    this._totalDevices = tree.totalDevices;
-
-    let floors = 0;
-    let rooms = 0;
-    for (const building of tree.buildings) {
-      floors += building.children.length;
-      for (const floor of building.children) {
-        rooms += floor.children.length;
-      }
-    }
-    this._totalFloors = floors;
-    this._totalRooms = rooms;
-  }
-
-  private _computeDeviceStats(devices: DmDevice[]) {
-    const firmwareMap = new Map<string, number>();
-    const modelMap = new Map<string, number>();
-
-    for (const d of devices) {
-      const fw = d.firmwareName ?? i18n.t("unknown");
-      firmwareMap.set(fw, (firmwareMap.get(fw) ?? 0) + 1);
-      const model = d.modelName ?? i18n.t("unknown");
-      modelMap.set(model, (modelMap.get(model) ?? 0) + 1);
-    }
-
-    this._byFirmware = this._toStatItems(firmwareMap);
-    this._byModel = this._toStatItems(modelMap);
-  }
-
-  private _toStatItems(map: Map<string, number>): StatItem[] {
-    const entries = [...map.entries()].sort((a, b) => b[1] - a[1]);
-    const max = entries[0]?.[1] ?? 1;
-    return entries.map(([label, count], i) => ({
-      label,
-      count,
+  private _toStatItems(entries: StatEntry[]): StatItem[] {
+    const max = entries[0]?.count ?? 1;
+    return entries.map((entry, i) => ({
+      label: entry.name,
+      count: entry.count,
       color: `color-${i % 10}`,
-      percentage: Math.round((count / max) * 100),
+      percentage: Math.round((entry.count / max) * 100),
     }));
   }
 

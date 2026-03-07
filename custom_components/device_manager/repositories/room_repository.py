@@ -3,11 +3,12 @@
 from typing import Any, Optional
 
 from .base import BaseRepository
+from ..models.room import DmRoom
 from ..services.database_manager import DatabaseManager
 from ..utils.crypto import encrypt, decrypt, DecryptionError, EncryptionError
 
 
-class RoomRepository(BaseRepository):
+class RoomRepository(BaseRepository[DmRoom]):
     """Repository for managing DmRoom records in dm_rooms table."""
 
     table_name = "dm_rooms"
@@ -67,13 +68,13 @@ class RoomRepository(BaseRepository):
     # Filters
     # ------------------------------------------------------------------
 
-    async def find_by_floor(self, floor_id: int) -> list[dict[str, Any]]:
+    async def find_by_floor(self, floor_id: int) -> list[DmRoom]:
         """Find all rooms belonging to a specific floor.
 
         Args:
             floor_id: The floor ID to filter by.
 
         Returns:
-            A list of room dicts with password already decrypted.
+            A list of DmRoom instances with password already decrypted.
         """
         return await self.find_by_parent(floor_id)

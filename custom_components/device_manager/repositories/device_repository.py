@@ -5,11 +5,12 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from .base import BaseRepository
+from ..models.device import DmDevice
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class DeviceRepository(BaseRepository):
+class DeviceRepository(BaseRepository[DmDevice]):
     """Repository for managing DmDevice records in dm_devices table.
 
     Provides enriched queries with JOINs to include related entity names
@@ -17,6 +18,7 @@ class DeviceRepository(BaseRepository):
     """
 
     table_name = "dm_devices"
+    model_class = DmDevice
     allowed_columns = {
         "mac", "ip", "enabled", "position_name", "position_slug",
         "mode", "interlock", "ha_device_class", "extra",
@@ -46,41 +48,57 @@ class DeviceRepository(BaseRepository):
         LEFT JOIN dm_devices t ON d.target_id = t.id
     """
 
-    async def find_all(self) -> list[dict[str, Any]]:
+    def _row_to_model(self, row: dict[str, Any]) -> DmDevice:
+        """Hydrate a JOIN row into a fully-populated DmDevice instance.
+
+        The JOIN columns are mapped to the transient ``_*`` fields of
+        DmDevice so that ``to_camel_dict_full()`` exposes them to API clients.
+        Also derives ``_floor_number`` from the ``floor_slug`` (e.g. ``l2`` → 2).
+        """
+        # Derive floor_number from floor_slug (e.g. "l0" -> 0)
+        floor_slug = row.get("floor_slug") or ""
+        try:
+            floor_number = int(floor_slug.lstrip("l")) if floor_slug else 0
+        except (ValueError, AttributeError):
+            floor_number = 0
+        row["floor_number"] = floor_number
+        return DmDevice.from_dict(row)
+
+    async def find_all(self) -> list[DmDevice]:
         """Retrieve all devices with joined related entity names.
 
         Returns:
-            A list of device dicts including room_name, level_name, etc.
+            A list of DmDevice instances including transient JOIN fields.
         """
         conn = await self.db.get_connection()
         cursor = await conn.execute(f"{self._JOIN_SELECT} ORDER BY d.id ASC")
         rows = await cursor.fetchall()
-        return [dict(row) for row in rows]
+        return [self._row_to_model(dict(row)) for row in rows]
 
-    async def find_by_id(self, entity_id: int) -> Optional[dict[str, Any]]:
+    async def find_by_id(self, entity_id: int) -> Optional[DmDevice]:
         """Retrieve a single device by ID with joined names.
 
         Args:
             entity_id: The device ID.
 
         Returns:
-            A device dict or None.
+            A DmDevice instance or None.
         """
         conn = await self.db.get_connection()
         cursor = await conn.execute(
             f"{self._JOIN_SELECT} WHERE d.id = ?", (entity_id,)
         )
         row = await cursor.fetchone()
-        return dict(row) if row else None
+        return self._row_to_model(dict(row)) if row else None
 
-    async def find_by_room(self, room_id: int) -> list[dict[str, Any]]:
+    async def find_by_room(self, room_id: int) -> list[DmDevice]:
         """Find all devices in a specific room.
 
         Args:
             room_id: The room ID to filter by.
 
         Returns:
-            A list of device dicts.
+            A list of DmDevice instances.
         """
         conn = await self.db.get_connection()
         cursor = await conn.execute(
@@ -88,39 +106,39 @@ class DeviceRepository(BaseRepository):
             (room_id,),
         )
         rows = await cursor.fetchall()
-        return [dict(row) for row in rows]
+        return [self._row_to_model(dict(row)) for row in rows]
 
-    async def find_by_mac(self, mac: str) -> Optional[dict[str, Any]]:
+    async def find_by_mac(self, mac: str) -> Optional[DmDevice]:
         """Find a device by its MAC address.
 
         Args:
             mac: The MAC address string.
 
         Returns:
-            A device dict or None.
+            A DmDevice instance or None.
         """
         conn = await self.db.get_connection()
         cursor = await conn.execute(
             f"{self._JOIN_SELECT} WHERE d.mac = ?", (mac,)
         )
         row = await cursor.fetchone()
-        return dict(row) if row else None
+        return self._row_to_model(dict(row)) if row else None
 
-    async def find_by_ip(self, ip: str) -> Optional[dict[str, Any]]:
+    async def find_by_ip(self, ip: str) -> Optional[DmDevice]:
         """Find a device by its IP address.
 
         Args:
             ip: The IP address string.
 
         Returns:
-            A device dict or None.
+            A DmDevice instance or None.
         """
         conn = await self.db.get_connection()
         cursor = await conn.execute(
             f"{self._JOIN_SELECT} WHERE d.ip = ?", (ip,)
         )
         row = await cursor.fetchone()
-        return dict(row) if row else None
+        return self._row_to_model(dict(row)) if row else None
 
     async def count_by_room(self, room_id: int) -> int:
         """Count devices in a specific room.

@@ -137,7 +137,7 @@ export function buildGraphData(
             color: COLORS.device,
             radius: NODE_RADIUS.device,
             position: new THREE.Vector3(dx, TIER_Y.device, dz),
-            meta: `${dev.mac}\n${dev.firmwareName ?? ""} / ${dev.modelName ?? ""} / ${dev.functionName ?? ""}`,
+            meta: `${dev.mac}\n${dev.refs?.firmwareName ?? ""} / ${dev.refs?.modelName ?? ""} / ${dev.refs?.functionName ?? ""}`,
             buildingId,
           });
           edges.push({

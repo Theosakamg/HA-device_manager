@@ -13,6 +13,40 @@ from ..utils.case_convert import to_camel_case, to_snake_case
 from .base import SerializableMixin
 
 
+# ---------------------------------------------------------------------------
+# Transient reference sub-objects — populated by JOIN queries, never stored.
+# ---------------------------------------------------------------------------
+
+@dataclass
+class DeviceRoomRef:
+    """Transient room info joined alongside a device."""
+    name: str = ""
+    slug: str = ""
+
+
+@dataclass
+class DeviceFloorRef:
+    """Transient floor info joined alongside a device."""
+    name: str = ""
+    slug: str = ""
+    number: int = 0
+
+
+@dataclass
+class DeviceBuildingRef:
+    """Transient building info joined alongside a device."""
+    name: str = ""
+
+
+@dataclass
+class DeviceLinkedRefs:
+    """Transient reference names for model, firmware, function and target."""
+    model_name: str = ""
+    firmware_name: str = ""
+    function_name: str = ""
+    target_mac: str = ""
+
+
 @dataclass
 class DmDevice(SerializableMixin):
     """Dataclass representing a physical device.
@@ -60,13 +94,10 @@ class DmDevice(SerializableMixin):
     # ------------------------------------------------------------------
     # Transient fields – populated by repository JOINs, not persisted.
     # ------------------------------------------------------------------
-    _room_slug: str = field(default="", repr=False)
-    _room_name: str = field(default="", repr=False)
-    _floor_number: int = field(default=0, repr=False)
-    _floor_slug: str = field(default="", repr=False)
-    _function_name: str = field(default="", repr=False)
-    _model_name: str = field(default="", repr=False)
-    _firmware_name: str = field(default="", repr=False)
+    _room: DeviceRoomRef = field(default_factory=DeviceRoomRef, repr=False)
+    _floor: DeviceFloorRef = field(default_factory=DeviceFloorRef, repr=False)
+    _building: DeviceBuildingRef = field(default_factory=DeviceBuildingRef, repr=False)
+    _refs: DeviceLinkedRefs = field(default_factory=DeviceLinkedRefs, repr=False)
 
     # ------------------------------------------------------------------
     # Serialization helpers
@@ -80,8 +111,8 @@ class DmDevice(SerializableMixin):
     ) -> Dict[str, Any]:
         """Serialize all data including computed and transient fields.
 
-        Transient fields are included **without** the leading underscore so
-        they can be consumed directly by API clients.  Computed properties
+        Transient sub-objects are serialised as nested dicts under ``room``,
+        ``floor``, ``building`` and ``refs`` keys.  Computed properties
         (``link``, ``mqttTopic``, ``hostname``, ``fqdn``) are also added.
 
         Args:
@@ -94,18 +125,20 @@ class DmDevice(SerializableMixin):
         """
         data = self.to_camel_dict()
 
-        # Include transient fields without leading underscore.
-        transient: Dict[str, Any] = {
-            "room_slug": self._room_slug,
-            "room_name": self._room_name,
-            "floor_number": self._floor_number,
-            "floor_slug": self._floor_slug,
-            "function_name": self._function_name,
-            "model_name": self._model_name,
-            "firmware_name": self._firmware_name,
+        # Include transient sub-objects as nested dicts.
+        data["room"] = {"name": self._room.name, "slug": self._room.slug}
+        data["floor"] = {
+            "name": self._floor.name,
+            "slug": self._floor.slug,
+            "number": self._floor.number,
         }
-        for key, value in transient.items():
-            data[to_camel_case(key)] = value
+        data["building"] = {"name": self._building.name}
+        data["refs"] = {
+            "modelName": self._refs.model_name,
+            "firmwareName": self._refs.firmware_name,
+            "functionName": self._refs.function_name,
+            "targetMac": self._refs.target_mac,
+        }
 
         # Extract configurable prefixes/suffixes from settings.
         s = settings or {}
@@ -156,12 +189,12 @@ class DmDevice(SerializableMixin):
         Returns:
             The MQTT topic string or ``None``.
         """
-        if not self._floor_slug or not self._room_slug or not self._function_name:
+        if not self._floor.slug or not self._room.slug or not self._refs.function_name:
             return None
 
-        function_slug = self._function_name.lower().replace(" ", "_")
+        function_slug = self._refs.function_name.lower().replace(" ", "_")
         return (
-            f"{mqtt_prefix}/{self._floor_slug}/{self._room_slug}"
+            f"{mqtt_prefix}/{self._floor.slug}/{self._room.slug}"
             f"/{function_slug}/{self.position_slug}"
         )
 
@@ -173,12 +206,12 @@ class DmDevice(SerializableMixin):
         Returns:
             The hostname string or ``None`` when transient data is missing.
         """
-        if not self._floor_slug or not self._room_slug or not self._function_name:
+        if not self._floor.slug or not self._room.slug or not self._refs.function_name:
             return None
 
-        function_slug = self._function_name.lower().replace(" ", "_")
+        function_slug = self._refs.function_name.lower().replace(" ", "_")
         return (
-            f"{self._floor_slug}_{self._room_slug}"
+            f"{self._floor.slug}_{self._room.slug}"
             f"_{function_slug}_{self.position_slug}"
         )
 
@@ -236,17 +269,30 @@ class DmDevice(SerializableMixin):
             extra=normalized.get("extra", ""),
             created_at=normalized.get("created_at"),
             updated_at=normalized.get("updated_at"),
+            last_deploy_at=normalized.get("last_deploy_at"),
+            last_deploy_status=normalized.get("last_deploy_status"),
             room_id=normalized.get("room_id"),
             model_id=normalized.get("model_id"),
             firmware_id=normalized.get("firmware_id"),
             function_id=normalized.get("function_id"),
             target_id=normalized.get("target_id"),
-            # Transient fields.
-            _room_slug=normalized.get("room_slug", ""),
-            _room_name=normalized.get("room_name", ""),
-            _floor_number=normalized.get("floor_number", 0),
-            _floor_slug=normalized.get("floor_slug", ""),
-            _function_name=normalized.get("function_name", ""),
-            _model_name=normalized.get("model_name", ""),
-            _firmware_name=normalized.get("firmware_name", ""),
+            # Transient sub-objects built from JOIN columns.
+            _room=DeviceRoomRef(
+                name=normalized.get("room_name", ""),
+                slug=normalized.get("room_slug", ""),
+            ),
+            _floor=DeviceFloorRef(
+                name=normalized.get("floor_name", ""),
+                slug=normalized.get("floor_slug", ""),
+                number=normalized.get("floor_number", 0),
+            ),
+            _building=DeviceBuildingRef(
+                name=normalized.get("building_name", ""),
+            ),
+            _refs=DeviceLinkedRefs(
+                model_name=normalized.get("model_name", ""),
+                firmware_name=normalized.get("firmware_name", ""),
+                function_name=normalized.get("function_name", ""),
+                target_mac=normalized.get("target_mac", ""),
+            ),
         )

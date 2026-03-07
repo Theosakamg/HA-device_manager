@@ -2,12 +2,15 @@
 
 import logging
 import re
+from typing import Any
 
 from aiohttp import web
 
 from .crud import CrudListView, CrudDetailView, _handle_errors
 from .base import get_repos
-from ..utils.case_convert import to_camel_case_dict, to_snake_case_dict
+from ..models.base import SerializableMixin
+from ..models.device import DmDevice
+from ..utils.case_convert import to_snake_case_dict
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -41,6 +44,11 @@ class DevicesAPIView(CrudListView):
     filter_param = "room_id"
     filter_method = "find_by_room"
     normalize_data = staticmethod(_normalize_device_data)
+
+    def _serialize_entity(self, entity: SerializableMixin) -> dict[str, Any]:
+        """Serialize a DmDevice with all transient JOIN fields and computed values."""
+        assert isinstance(entity, DmDevice)
+        return entity.to_camel_dict_full()
 
     @_handle_errors("Device")
     async def post(self, request: web.Request) -> web.Response:
@@ -89,8 +97,8 @@ class DevicesAPIView(CrudListView):
                 )
 
         device_id = await repos[self.repo_key].create(snake_data)
-        device = await repos[self.repo_key].find_by_id(device_id)
-        return self.json(to_camel_case_dict(device), status_code=201)
+        device: DmDevice = await repos[self.repo_key].find_by_id(device_id)
+        return self.json(device.to_camel_dict_full(), status_code=201)
 
 
 class DeviceAPIView(CrudDetailView):
@@ -101,3 +109,8 @@ class DeviceAPIView(CrudDetailView):
     repo_key = "device"
     entity_name = "Device"
     normalize_data = staticmethod(_normalize_device_data)
+
+    def _serialize_entity(self, entity: SerializableMixin) -> dict[str, Any]:
+        """Serialize a DmDevice with all transient JOIN fields and computed values."""
+        assert isinstance(entity, DmDevice)
+        return entity.to_camel_dict_full()

@@ -11,7 +11,8 @@ from typing import Any, Callable, Optional
 from aiohttp import web
 
 from .base import BaseView, get_repos
-from ..utils.case_convert import to_camel_case_dict, to_snake_case_dict
+from ..models.base import SerializableMixin
+from ..utils.case_convert import to_snake_case_dict
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,7 +53,7 @@ async def _get_or_404(
     entity_id: int,
     entity_name: str,
 ) -> Any | web.Response:
-    """Fetch an entity by ID or return a 404 JSON response.
+    """Fetch an entity model by ID or return a 404 JSON response.
 
     Args:
         view: The current view (provides ``self.json``).
@@ -62,7 +63,7 @@ async def _get_or_404(
         entity_name: Human readable name for the error message.
 
     Returns:
-        The entity dict if found, or an ``aiohttp.web.Response`` (404).
+        A model instance if found, or an ``aiohttp.web.Response`` (404).
     """
     entity = await repos[repo_key].find_by_id(entity_id)
     if not entity:
@@ -112,9 +113,10 @@ class CrudListView(BaseView):
         * ``entity_name``– e.g. ``"Home"``
 
     Optional overrides:
-        * ``normalize_data``  – pre-process incoming data before create.
-        * ``filter_param``    – query-string key used for optional filtering.
-        * ``filter_method``   – repo method name when the filter is present.
+        * ``normalize_data``    – pre-process incoming data before create.
+        * ``filter_param``      – query-string key used for optional filtering.
+        * ``filter_method``     – repo method name when the filter is present.
+        * ``_serialize_entity`` – override to customise serialization output.
     """
 
     requires_auth = True
@@ -123,6 +125,19 @@ class CrudListView(BaseView):
     normalize_data: Optional[Callable[[dict], dict]] = None
     filter_param: Optional[str] = None
     filter_method: Optional[str] = None
+
+    def _serialize_entity(self, entity: SerializableMixin) -> dict[str, Any]:
+        """Serialize a model instance to a camelCase dict for the API response.
+
+        Override in subclasses for custom serialization (e.g. computed fields).
+
+        Args:
+            entity: A typed model instance returned by the repository.
+
+        Returns:
+            A camelCase dict suitable for JSON serialization.
+        """
+        return entity.to_camel_dict()
 
     @_handle_errors("entities")
     async def get(self, request: web.Request) -> web.Response:
@@ -140,9 +155,9 @@ class CrudListView(BaseView):
                 items = await getattr(repos[self.repo_key], self.filter_method)(
                     parent_id_int
                 )
-                return self.json([to_camel_case_dict(i) for i in items])
+                return self.json([self._serialize_entity(i) for i in items])
         items = await repos[self.repo_key].find_all()
-        return self.json([to_camel_case_dict(i) for i in items])
+        return self.json([self._serialize_entity(i) for i in items])
 
     @_handle_errors("entity")
     async def post(self, request: web.Request) -> web.Response:
@@ -158,7 +173,7 @@ class CrudListView(BaseView):
             snake_data = self.normalize_data(snake_data)
         new_id = await repos[self.repo_key].create(snake_data)
         entity = await repos[self.repo_key].find_by_id(new_id)
-        return self.json(to_camel_case_dict(entity), status_code=201)
+        return self.json(self._serialize_entity(entity), status_code=201)
 
 
 class CrudDetailView(BaseView):
@@ -171,13 +186,27 @@ class CrudDetailView(BaseView):
         * ``entity_name`` – e.g. ``"Home"``
 
     Optional overrides:
-        * ``normalize_data`` – pre-process incoming data before update.
+        * ``normalize_data``    – pre-process incoming data before update.
+        * ``_serialize_entity`` – override to customise serialization output.
     """
 
     requires_auth = True
     repo_key: str = ""
     entity_name: str = ""
     normalize_data: Optional[Callable[[dict], dict]] = None
+
+    def _serialize_entity(self, entity: SerializableMixin) -> dict[str, Any]:
+        """Serialize a model instance to a camelCase dict for the API response.
+
+        Override in subclasses for custom serialization (e.g. computed fields).
+
+        Args:
+            entity: A typed model instance returned by the repository.
+
+        Returns:
+            A camelCase dict suitable for JSON serialization.
+        """
+        return entity.to_camel_dict()
 
     @_handle_errors("entity")
     async def get(self, request: web.Request, entity_id: str) -> web.Response:
@@ -189,7 +218,7 @@ class CrudDetailView(BaseView):
         result = await _get_or_404(self, repos, self.repo_key, eid, self.entity_name)
         if isinstance(result, web.Response):
             return result
-        return self.json(to_camel_case_dict(result))
+        return self.json(self._serialize_entity(result))
 
     @_handle_errors("entity")
     async def put(self, request: web.Request, entity_id: str) -> web.Response:
@@ -211,7 +240,7 @@ class CrudDetailView(BaseView):
             snake_data = self.normalize_data(snake_data)
         await repos[self.repo_key].update(eid, snake_data)
         updated = await repos[self.repo_key].find_by_id(eid)
-        return self.json(to_camel_case_dict(updated))
+        return self.json(self._serialize_entity(updated))
 
     @_handle_errors("entity")
     async def delete(self, request: web.Request, entity_id: str) -> web.Response:

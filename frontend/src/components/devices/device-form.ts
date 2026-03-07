@@ -352,7 +352,7 @@ export class DmDeviceForm extends LitElement {
                         value=${d.id}
                         ?selected=${Number(this._form.targetId) === d.id}
                       >
-                        ${d.functionName ?? d.mac} / ${d.positionName}
+                        ${d.refs?.functionName ?? d.mac} / ${d.positionName}
                       </option>`
                   )}
               </select>

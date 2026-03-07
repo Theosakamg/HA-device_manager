@@ -15,6 +15,7 @@ from .maintenance_controller import MaintenanceCleanDBAPIView, MaintenanceClearI
 from .settings_controller import SettingsAPIView
 from .deploy_controller import DeployAPIView, DevicesScanAPIView
 from .ssh_key_controller import SSHKeyUploadAPIView
+from .stats_controller import StatsAPIView
 
 ALL_VIEWS = [
     StaticView,
@@ -41,4 +42,5 @@ ALL_VIEWS = [
     DeployAPIView,
     DevicesScanAPIView,
     SSHKeyUploadAPIView,
+    StatsAPIView,
 ]

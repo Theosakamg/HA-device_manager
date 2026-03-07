@@ -59,9 +59,9 @@ export function computeDerivedFields(
 ): ComputedDeviceFields {
   const { dns_suffix, mqtt_topic_prefix } = getSettings();
 
-  const floorSlug = sanitizeSlug(device.floorSlug) || "l0";
-  const roomSlug = sanitizeSlug(device.roomSlug);
-  const functionName = sanitizeSlug(device.functionName);
+  const floorSlug = sanitizeSlug(device.floor?.slug) || "l0";
+  const roomSlug = sanitizeSlug(device.room?.slug);
+  const functionName = sanitizeSlug(device.refs?.functionName);
   const posSlug = sanitizeSlug(device.positionSlug);
 
   // Hostname: l{floor}_{roomSlug}_{function}_{positionSlug}
