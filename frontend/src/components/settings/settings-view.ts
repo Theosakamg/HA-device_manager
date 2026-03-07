@@ -130,6 +130,12 @@ export class DmSettingsView extends LitElement {
           editable: true,
         },
         {
+          key: "deployable",
+          label: i18n.t("firmware_deployable"),
+          type: "boolean",
+          editable: true,
+        },
+        {
           key: "enabled",
           label: i18n.t("enabled"),
           type: "boolean",

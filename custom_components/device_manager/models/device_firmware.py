@@ -23,6 +23,7 @@ class DmDeviceFirmware(SerializableMixin):
 
     enabled: bool = True
     name: str = ""
+    deployable: bool = False
     id: Optional[int] = None
     created_at: Optional[str] = None
     updated_at: Optional[str] = None

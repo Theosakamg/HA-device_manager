@@ -116,7 +116,8 @@ export class DmDeployModal extends LitElement {
   private async _loadFirmwares() {
     this._loading = true;
     try {
-      this._firmwares = await this._fwClient.getAll();
+      const all = await this._fwClient.getAll();
+      this._firmwares = all.filter((f) => f.deployable);
     } catch (err) {
       console.error("Failed to load firmwares:", err);
     }

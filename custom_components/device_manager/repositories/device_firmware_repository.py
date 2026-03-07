@@ -10,4 +10,4 @@ class DeviceFirmwareRepository(BaseRepository):
     """
 
     table_name = "dm_device_firmwares"
-    allowed_columns = {"enabled", "name"}
+    allowed_columns = {"enabled", "name", "deployable"}
