@@ -324,7 +324,8 @@ export class DmDeviceTable extends LitElement {
         color: var(--dm-error);
       }
       /* Share / copy link button */
-      .filter-copy-btn {
+      .filter-copy-btn,
+      .filter-clear-btn {
         display: inline-flex;
         align-items: center;
         gap: 4px;
@@ -340,9 +341,14 @@ export class DmDeviceTable extends LitElement {
         line-height: 1.5;
         transition: background 0.15s, color 0.15s;
       }
-      .filter-copy-btn:hover {
+      .filter-copy-btn:hover,
+      .filter-clear-btn:hover {
         background: rgba(0, 0, 0, 0.06);
         color: var(--dm-text);
+      }
+      .filter-clear-btn:hover {
+        border-color: var(--dm-error);
+        color: var(--dm-error);
       }
       .filter-copy-btn.copied {
         border-color: var(--dm-success);
@@ -812,15 +818,13 @@ export class DmDeviceTable extends LitElement {
             </span>
           `;
         })}
-        ${active.length > 1
-          ? html`<button
-              class="btn btn-secondary"
-              style="padding:3px 10px; font-size:12px;"
-              @click=${this._clearAllFilters}
-            >
-              ✕ ${i18n.t("clear_all_filters")}
-            </button>`
-          : nothing}
+        <button
+          class="filter-clear-btn"
+          title="${i18n.t("clear_all_filters")}"
+          @click=${this._clearAllFilters}
+        >
+          ✕ ${i18n.t("clear_all_filters")}
+        </button>
         <button
           class="filter-copy-btn ${this._linkCopied ? "copied" : ""}"
           title="${i18n.t("filter_share")}"
@@ -871,12 +875,12 @@ export class DmDeviceTable extends LitElement {
         </div>
       </div>
 
-      ${this._renderFilterBadges()}
-
       <dm-doc-block
         .doc=${getDoc("devices.overview")}
         storageKey="devices-overview"
       ></dm-doc-block>
+
+      ${this._renderFilterBadges()}
 
       ${this._loading
         ? html`<div class="loading">${i18n.t("loading")}</div>`

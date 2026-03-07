@@ -13,9 +13,16 @@ import type { CrudConfig } from "../shared/crud-table";
 import "./crud-tab";
 import "../shared/doc-block";
 
-/** Navigate to devices view filtered by a setting name. */
-function navigateToDevicesWithFilter(value: string) {
-  window.location.hash = `#devices?filter=${encodeURIComponent(value)}`;
+/** Navigate to devices view filtered by a setting name.
+ * Uses the Excel column filter (cfilters) when a colKey is provided.
+ */
+function navigateToDevicesWithFilter(value: string, colKey?: string) {
+  if (colKey) {
+    const cfilters = JSON.stringify({ [colKey]: [value] });
+    window.location.hash = `#devices?cfilters=${encodeURIComponent(cfilters)}`;
+  } else {
+    window.location.hash = `#devices?filter=${encodeURIComponent(value)}`;
+  }
 }
 
 type SettingsTab = "models" | "firmwares" | "functions";
@@ -94,6 +101,7 @@ export class DmSettingsView extends LitElement {
       entityName: i18n.t("tab_models"),
       description: getDoc("settings.models.overview"),
       filterDevicesKey: "name",
+      filterDevicesColKey: "modelName",
       columns: [
         {
           key: "name",
@@ -122,6 +130,7 @@ export class DmSettingsView extends LitElement {
       entityName: i18n.t("tab_firmwares"),
       description: getDoc("settings.firmwares.overview"),
       filterDevicesKey: "name",
+      filterDevicesColKey: "firmwareName",
       columns: [
         {
           key: "name",
@@ -150,6 +159,7 @@ export class DmSettingsView extends LitElement {
       entityName: i18n.t("tab_functions"),
       description: getDoc("settings.functions.overview"),
       filterDevicesKey: "name",
+      filterDevicesColKey: "functionName",
       columns: [
         {
           key: "name",
@@ -208,7 +218,7 @@ export class DmSettingsView extends LitElement {
 
         <div
           @crud-filter=${(e: CustomEvent) =>
-            navigateToDevicesWithFilter(e.detail.value)}
+            navigateToDevicesWithFilter(e.detail.value, e.detail.colKey)}
           @crud-save=${() => this._onCrudChange()}
           @crud-delete=${() => this._onCrudChange()}
         >

@@ -32,6 +32,8 @@ export interface CrudConfig {
   description?: DocContent;
   /** Column key whose value is used for the "filter devices" action button. */
   filterDevicesKey?: string;
+  /** Matching column key in the devices table for the Excel column filter. */
+  filterDevicesColKey?: string;
   /** Custom empty-state message (i18n key or literal). Falls back to 'no_items'. */
   emptyMessage?: string;
 }
@@ -563,9 +565,10 @@ export class DmCrudTable extends LitElement {
     const key = this.config.filterDevicesKey;
     if (!key) return;
     const value = String(item[key] ?? "");
+    const colKey = this.config.filterDevicesColKey;
     this.dispatchEvent(
       new CustomEvent("crud-filter", {
-        detail: { value },
+        detail: { value, colKey },
         bubbles: true,
         composed: true,
       })
