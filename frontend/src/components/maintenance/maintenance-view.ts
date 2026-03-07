@@ -335,6 +335,10 @@ export class DmMaintenanceView extends LitElement {
   @state() private _settingsSaving = false;
   @state() private _settingsToast: { msg: string; ok: boolean } | null = null;
 
+  // SSH key upload state
+  @state() private _sshKeyUploading = false;
+  @state() private _sshKeyToast: { msg: string; ok: boolean } | null = null;
+
   private _maintenanceClient = new MaintenanceClient();
   private _settingsClient = new SettingsClient();
   private readonly _confirmPhrase = "DELETE ALL DATA";
@@ -701,6 +705,144 @@ export class DmMaintenanceView extends LitElement {
           <div class="hint">${i18n.t("config_default_home_hint")}</div>
         </div>
       </div>
+
+      <!-- Provisioning settings -->
+      <h4 style="margin:20px 0 8px">${i18n.t("config_prov_title")}</h4>
+      <p class="hint" style="margin-bottom:12px">${i18n.t("config_prov_desc")}</p>
+
+      <h5 style="margin:14px 0 6px">${i18n.t("config_scan_section")}</h5>
+      <div class="settings-grid">
+        <div class="settings-field" style="grid-column: span 2">
+          <label>${i18n.t("config_scan_ssh_key_upload")}</label>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <input type="text" readonly
+              .value=${f.scan_ssh_key_file || ""}
+              placeholder="/config/dm/keys/…"
+              style="flex:1;min-width:200px;background:#f5f5f5;cursor:default"
+            />
+            <label class="btn btn-secondary" style="cursor:pointer;white-space:nowrap">
+              🔑 ${this._sshKeyUploading
+                ? i18n.t("config_scan_ssh_key_uploading")
+                : i18n.t("config_scan_ssh_key_upload")}
+              <input type="file" hidden
+                ?disabled=${this._sshKeyUploading}
+                @change=${this._onSshKeyFileChange}
+              />
+            </label>
+          </div>
+          <div class="hint">${i18n.t("config_scan_ssh_key_upload_hint")}</div>
+          ${this._sshKeyToast
+            ? html`<div class="hint" style="margin-top:4px;color:${this._sshKeyToast.ok ? "#2e7d32" : "#c62828"}">
+                ${this._sshKeyToast.ok ? "✅" : "❌"} ${this._sshKeyToast.msg}
+              </div>`
+            : nothing}
+        </div>
+        <div class="settings-field">
+          <label>${i18n.t("config_scan_ssh_user")}</label>
+          <input type="text" .value=${f.scan_ssh_user}
+            @input=${(e: Event) => this._updateSetting("scan_ssh_user", e)} />
+          <div class="hint">${i18n.t("config_scan_ssh_user_hint")}</div>
+        </div>
+        <div class="settings-field">
+          <label>${i18n.t("config_scan_ssh_host")}</label>
+          <input type="text" .value=${f.scan_ssh_host}
+            @input=${(e: Event) => this._updateSetting("scan_ssh_host", e)} />
+          <div class="hint">${i18n.t("config_scan_ssh_host_hint")}</div>
+        </div>
+      </div>
+
+      <h5 style="margin:14px 0 6px">${i18n.t("config_device_section")}</h5>
+      <div class="settings-grid">
+        <div class="settings-field">
+          <label>${i18n.t("config_device_pass")}</label>
+          <input type="password" .value=${f.device_pass}
+            @input=${(e: Event) => this._updateSetting("device_pass", e)} />
+          <div class="hint">${i18n.t("config_device_pass_hint")}</div>
+        </div>
+      </div>
+
+      <h5 style="margin:14px 0 6px">${i18n.t("config_ntp_section")}</h5>
+      <div class="settings-grid">
+        <div class="settings-field">
+          <label>${i18n.t("config_ntp_server1")}</label>
+          <input type="text" .value=${f.ntp_server1}
+            @input=${(e: Event) => this._updateSetting("ntp_server1", e)} />
+          <div class="hint">${i18n.t("config_ntp_server1_hint")}</div>
+        </div>
+      </div>
+
+      <h5 style="margin:14px 0 6px">${i18n.t("config_wifi_section")}</h5>
+      <div class="settings-grid">
+        <div class="settings-field">
+          <label>${i18n.t("config_wifi1_ssid")}</label>
+          <input type="text" .value=${f.wifi1_ssid}
+            @input=${(e: Event) => this._updateSetting("wifi1_ssid", e)} />
+          <div class="hint">${i18n.t("config_wifi1_ssid_hint")}</div>
+        </div>
+        <div class="settings-field">
+          <label>${i18n.t("config_wifi1_password")}</label>
+          <input type="password" .value=${f.wifi1_password}
+            @input=${(e: Event) => this._updateSetting("wifi1_password", e)} />
+          <div class="hint">${i18n.t("config_wifi1_password_hint")}</div>
+        </div>
+        <div class="settings-field">
+          <label>${i18n.t("config_wifi2_ssid")}</label>
+          <input type="text" .value=${f.wifi2_ssid}
+            @input=${(e: Event) => this._updateSetting("wifi2_ssid", e)} />
+          <div class="hint">${i18n.t("config_wifi2_ssid_hint")}</div>
+        </div>
+        <div class="settings-field">
+          <label>${i18n.t("config_wifi2_password")}</label>
+          <input type="password" .value=${f.wifi2_password}
+            @input=${(e: Event) => this._updateSetting("wifi2_password", e)} />
+          <div class="hint">${i18n.t("config_wifi2_password_hint")}</div>
+        </div>
+      </div>
+
+      <h5 style="margin:14px 0 6px">${i18n.t("config_bus_section")}</h5>
+      <div class="settings-grid">
+        <div class="settings-field">
+          <label>${i18n.t("config_bus_host")}</label>
+          <input type="text" .value=${f.bus_host}
+            @input=${(e: Event) => this._updateSetting("bus_host", e)} />
+          <div class="hint">${i18n.t("config_bus_host_hint")}</div>
+        </div>
+        <div class="settings-field">
+          <label>${i18n.t("config_bus_port")}</label>
+          <input type="text" .value=${f.bus_port} inputmode="numeric"
+            @input=${(e: Event) => this._updateSetting("bus_port", e)} />
+          <div class="hint">${i18n.t("config_bus_port_hint")}</div>
+        </div>
+        <div class="settings-field">
+          <label>${i18n.t("config_bus_username")}</label>
+          <input type="text" .value=${f.bus_username}
+            @input=${(e: Event) => this._updateSetting("bus_username", e)} />
+          <div class="hint">${i18n.t("config_bus_username_hint")}</div>
+        </div>
+        <div class="settings-field">
+          <label>${i18n.t("config_bus_password")}</label>
+          <input type="password" .value=${f.bus_password}
+            @input=${(e: Event) => this._updateSetting("bus_password", e)} />
+          <div class="hint">${i18n.t("config_bus_password_hint")}</div>
+        </div>
+      </div>
+
+      <h5 style="margin:14px 0 6px">${i18n.t("config_bridge_section")}</h5>
+      <div class="settings-grid">
+        <div class="settings-field">
+          <label>${i18n.t("config_bridge_host")}</label>
+          <input type="text" .value=${f.bridge_host}
+            @input=${(e: Event) => this._updateSetting("bridge_host", e)} />
+          <div class="hint">${i18n.t("config_bridge_host_hint")}</div>
+        </div>
+        <div class="settings-field">
+          <label>${i18n.t("config_bridge_devices_config_path")}</label>
+          <input type="text" .value=${f.bridge_devices_config_path}
+            @input=${(e: Event) => this._updateSetting("bridge_devices_config_path", e)} />
+          <div class="hint">${i18n.t("config_bridge_devices_config_path_hint")}</div>
+        </div>
+      </div>
+
       <div class="settings-actions">
         <button
           class="btn btn-primary"
@@ -729,6 +871,38 @@ export class DmMaintenanceView extends LitElement {
     };
   }
 
+  private async _onSshKeyFileChange(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    this._sshKeyUploading = true;
+    this._sshKeyToast = null;
+    try {
+      const result = await this._settingsClient.uploadSshKey(file);
+      // Update the form with the new absolute path returned by the server
+      if (this._settingsForm) {
+        this._settingsForm = { ...this._settingsForm, scan_ssh_key_file: result.path };
+      }
+      this._sshKeyToast = {
+        msg: `${i18n.t("config_scan_ssh_key_upload_success")}: ${result.filename}`,
+        ok: true,
+      };
+      // Refresh global settings cache
+      await refreshSettings();
+    } catch (err) {
+      this._sshKeyToast = {
+        msg: `${i18n.t("config_scan_ssh_key_upload_error")}: ${err}`,
+        ok: false,
+      };
+    } finally {
+      this._sshKeyUploading = false;
+      // Reset the file input so the same file can be re-uploaded if needed
+      input.value = "";
+      // Auto-hide toast after 6s
+      setTimeout(() => { this._sshKeyToast = null; }, 6000);
+    }
+  }
   private async _saveSettings() {
     if (!this._settingsForm) return;
     this._settingsSaving = true;

@@ -16,6 +16,15 @@ _SETTING_VALIDATORS: dict[str, re.Pattern] = {
     "dns_suffix": re.compile(r"^[a-zA-Z0-9._-]+$"),
     "mqtt_topic_prefix": re.compile(r"^[a-zA-Z0-9/_-]+$"),
     "default_building_name": re.compile(r"^.{1,100}$"),
+    # Provisioning validators (all allow empty string for optional fields)
+    "scan_ssh_user": re.compile(r"^[a-zA-Z0-9._-]*$"),
+    "scan_ssh_host": re.compile(r"^[a-zA-Z0-9._:-]*$"),
+    "scan_ssh_key_file": re.compile(r"^[a-zA-Z0-9._/-]*$"),
+    "bus_port": re.compile(r"^\d{1,5}$|^$"),
+    "bus_host": re.compile(r"^[a-zA-Z0-9._:-]*$"),
+    "bus_username": re.compile(r"^[a-zA-Z0-9.@_-]*$"),
+    "ntp_server1": re.compile(r"^[a-zA-Z0-9._-]*$"),
+    "bridge_host": re.compile(r"^[a-zA-Z0-9@._:-]*$"),
 }
 
 # Maximum length for any setting value

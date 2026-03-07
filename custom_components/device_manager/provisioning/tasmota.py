@@ -35,7 +35,6 @@ DISPLAY_ENABLE = 1
 
 # DEVICE ACCESS
 DEVICE_USER = "admin"
-DEVICE_PASS = get_config('DEVICE_PASS', 'p4ssW0rD')
 
 # TIMEZONE & Location
 TZ_TIMEZONE = "99"
@@ -45,24 +44,13 @@ GEO_LATITUDE = "48.16403653881043"
 GEO_LONGITUDE = "-1.4358991384506228"
 
 # DEFINE MANUALY ! (NOT USE FROM DHCP)
-NTP_SRV1 = get_config('NTP_SRV1', 'pool.ntp.org')
 NTP_SRV2 = "pool.ntp.org"
 
 # SERIAL CONFIG
 # SER_BAUD = 9600
 
-# WIFI
-WF1_SSID = get_config('WF1_SSID', '')
-WF1_PASSWORD = get_config('WF1_PASSWORD', '')
-WF2_SSID = get_config('WF2_SSID', '')
-WF2_PASSWORD = get_config('WF2_PASSWORD', '')
-
 # MQTT
 MQTT_ENABLE = "1"
-MQTT_HOST = get_config('BUS_HOST', "bus")
-MQTT_PORT = get_config('BUS_PORT', "1883")
-MQTT_USER = get_config('BUS_USERNAME', "admin")
-MQTT_PASS = get_config('BUS_PASSWORD', "mqtt_password")
 MQTT_GRP = "all"
 MQTT_FULLTOPIC = "{}/%topic%/%prefix%/"
 MQTT_PREFIX_CMD = "cmnd"
@@ -232,7 +220,7 @@ class TasmotaManager(FirmwareManagerBase):
                 r = requests.get(
                     url,
                     allow_redirects=True, timeout=5.0,
-                    auth=HTTPBasicAuth(DEVICE_USER, DEVICE_PASS))
+                    auth=HTTPBasicAuth(DEVICE_USER, get_config('DEVICE_PASS', 'p4ssW0rD')))
 
                 filename = f"mac-{device[_FLD_MAC]}-{device[_FLD_HOST]}.bmp"
                 open(self.path + '/' + filename, 'wb').write(r.content)
@@ -269,7 +257,7 @@ class TasmotaManager(FirmwareManagerBase):
             try:
                 r = requests.get(
                     url_safe, allow_redirects=True, timeout=10.0,
-                    auth=HTTPBasicAuth(DEVICE_USER, DEVICE_PASS))
+                    auth=HTTPBasicAuth(DEVICE_USER, get_config('DEVICE_PASS', 'p4ssW0rD')))
                 logger.debug(f"status: {r.status_code} - {r.text}")
                 break
             except requests.exceptions.ConnectionError:
@@ -306,10 +294,10 @@ class TasmotaManager(FirmwareManagerBase):
             # "StatusRetain": "1",
             "TelePeriod": "120",
             # "Delay": "102",
-            "NtpServer1": NTP_SRV1,
+            "NtpServer1": get_config('NTP_SRV1', 'pool.ntp.org'),
             "NtpServer2": NTP_SRV2,
             "NtpServer3": "0",
-            "WebPassword": DEVICE_PASS,
+            "WebPassword": get_config('DEVICE_PASS', 'p4ssW0rD'),
             "Timezone": TZ_TIMEZONE,
             "TimeStd": TZ_STD,
             "TimeDst": TZ_DST,
@@ -333,7 +321,7 @@ class TasmotaManager(FirmwareManagerBase):
         ACTIONS_FORCE_REBOOT = {
             "Hostname": hostname,
             "MqttClient": f"tasmota-{mac}",
-            "MqttHost": MQTT_HOST,
+            "MqttHost": get_config('BUS_HOST', 'bus'),
             "FullTopic": MQTT_FULLTOPIC.format(
                 slug_device_topic_location(device)
             ),
@@ -341,15 +329,15 @@ class TasmotaManager(FirmwareManagerBase):
                 slug_device_topic_device(device).replace('/', '', 1)
                 # Remove first slash
             ),
-            "MqttPort": MQTT_PORT,
-            "MqttUser": MQTT_USER,
-            "MqttPassword": MQTT_PASS,
+            "MqttPort": get_config('BUS_PORT', '1883'),
+            "MqttUser": get_config('BUS_USERNAME', 'admin'),
+            "MqttPassword": get_config('BUS_PASSWORD', 'mqtt_password'),
             # "Prefix1": MQTT_PREFIX_CMD,
             # "Prefix2": MQTT_PREFIX_STA,
-            "SSID1": WF1_SSID,
-            "Password1": WF1_PASSWORD,
-            "SSID2": WF2_SSID,
-            "Password2": WF2_PASSWORD,
+            "SSID1": get_config('WF1_SSID', ''),
+            "Password1": get_config('WF1_PASSWORD', ''),
+            "SSID2": get_config('WF2_SSID', ''),
+            "Password2": get_config('WF2_PASSWORD', ''),
             "Restart": "1",
         }
         self.send_cmnds(ip, configs=ACTIONS_FORCE_REBOOT)

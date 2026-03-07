@@ -93,6 +93,38 @@ def load_configs() -> dict:
 
 CONFIGS = load_configs()
 
+# Mapping: DB settings key → env variable name used by provisioning modules
+_DB_TO_ENV_KEY: dict[str, str] = {
+    "scan_ssh_key_file": "SCAN_SCRIPT_PRIVATE_KEY_FILE",
+    "scan_ssh_user": "SCAN_SCRIPT_SSH_USER",
+    "scan_ssh_host": "SCAN_SCRIPT_SSH_HOST",
+    "device_pass": "DEVICE_PASS",
+    "ntp_server1": "NTP_SRV1",
+    "wifi1_ssid": "WF1_SSID",
+    "wifi1_password": "WF1_PASSWORD",
+    "wifi2_ssid": "WF2_SSID",
+    "wifi2_password": "WF2_PASSWORD",
+    "bus_host": "BUS_HOST",
+    "bus_port": "BUS_PORT",
+    "bus_username": "BUS_USERNAME",
+    "bus_password": "BUS_PASSWORD",
+    "bridge_host": "BRIDGE_HOST",
+    "bridge_devices_config_path": "BRIDGE_DEVICES_CONFIG_PATH",
+}
+
+
+def update_runtime_configs(settings: dict) -> None:
+    """Merge DB settings into CONFIGS (call before each deploy/scan).
+
+    Only non-empty values override existing entries so that .env fallbacks
+    are preserved when a DB setting has not been configured yet.
+    """
+    for db_key, env_key in _DB_TO_ENV_KEY.items():
+        value = settings.get(db_key)
+        if value is not None and value != "":
+            CONFIGS[env_key] = value
+    logger.debug("Runtime configs updated from DB settings.")
+
 
 def get_config(key: str, default=None):
     logger.debug(f"Get config for key: {key} with default: {default}")

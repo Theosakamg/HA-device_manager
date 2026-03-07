@@ -19,18 +19,6 @@ import re
 FOLDER_BACKUP = "backup/zigbee"
 ZIGBEE_CONFIG_FILE = "/tmp/devices.yml"
 
-# MQTT
-MQTT_HOST = get_config('BUS_HOST', "bus")
-MQTT_PORT = get_config('BUS_PORT', "1883")
-MQTT_USER = get_config('BUS_USERNAME', "admin")
-MQTT_PASS = get_config('BUS_PASSWORD', "mqtt_password")
-
-BRIDGE_HOST = get_config('BRIDGE_HOST', None)
-BRIDGE_DEVICES_CONFIG_PATH = get_config(
-    'BRIDGE_DEVICES_CONFIG_PATH',
-    '/home/pi/zigbee2mqtt/data/devices.yaml')
-
-
 FIRMWARE_TYPE = "Zigbee"
 
 logger = logging.getLogger(__name__)
@@ -198,12 +186,16 @@ class ZigbeeManager(FirmwareManagerBase):
             yaml.dump(devices, file)
 
     def _push_devices_config_file(self):
-        if BRIDGE_HOST:
+        bridge_host = get_config('BRIDGE_HOST', None)
+        if bridge_host:
             logger.info("Push devices config file to Zigbee2Mqtt")
+            bridge_config_path = get_config(
+                'BRIDGE_DEVICES_CONFIG_PATH',
+                '/home/pi/zigbee2mqtt/data/devices.yaml')
             cmd = [
                 'scp',
                 ZIGBEE_CONFIG_FILE,
-                f'{BRIDGE_HOST}:{BRIDGE_DEVICES_CONFIG_PATH}'
+                f'{bridge_host}:{bridge_config_path}'
             ]
             subprocess.run(cmd, stdout=subprocess.PIPE)
 
@@ -211,8 +203,9 @@ class ZigbeeManager(FirmwareManagerBase):
 
         message = mqtt_simple(
             topic,
-            hostname=MQTT_HOST,
-            auth={'username': MQTT_USER, 'password': MQTT_PASS},
+            hostname=get_config('BUS_HOST', 'bus'),
+            auth={'username': get_config('BUS_USERNAME', 'admin'),
+                  'password': get_config('BUS_PASSWORD', 'mqtt_password')},
             keepalive=2)
 
         message = str(message.payload.decode("utf-8"))
@@ -226,5 +219,6 @@ class ZigbeeManager(FirmwareManagerBase):
         mqtt_single(
             topic,
             json.dumps(message) if message else None,
-            hostname=MQTT_HOST,
-            auth={'username': MQTT_USER, 'password': MQTT_PASS})
+            hostname=get_config('BUS_HOST', 'bus'),
+            auth={'username': get_config('BUS_USERNAME', 'admin'),
+                  'password': get_config('BUS_PASSWORD', 'mqtt_password')})

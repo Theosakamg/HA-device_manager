@@ -50,10 +50,24 @@ class CacheManager:
             return
 
         logger.info(f"Running scan script: {SCAN_SCRIPT}")
+        # Pass SSH config from settings as environment variables to the script.
+        # SCAN_SCRIPT_PRIVATE_KEY_FILE is now the *absolute path* to the key
+        # (uploaded via the UI and stored in the settings DB).
+        env = os.environ.copy()
+        _ssh_key = get_config('SCAN_SCRIPT_PRIVATE_KEY_FILE', '')
+        _ssh_user = get_config('SCAN_SCRIPT_SSH_USER', 'root')
+        _ssh_host = get_config('SCAN_SCRIPT_SSH_HOST', '')
+        if _ssh_key:
+            env['SCAN_SCRIPT_PRIVATE_KEY_FILE'] = _ssh_key
+        if _ssh_user:
+            env['SCAN_SCRIPT_SSH_USER'] = _ssh_user
+        if _ssh_host:
+            env['SCAN_SCRIPT_SSH_HOST'] = _ssh_host
         result = subprocess.run(
             ['bash', SCAN_SCRIPT],
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
+            stderr=subprocess.PIPE,
+            env=env
         )
         stderr_output = result.stderr.decode('utf-8').strip()
         if result.returncode != 0:

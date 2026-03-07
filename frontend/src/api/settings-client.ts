@@ -5,10 +5,32 @@ import { BaseClient } from "./base-client";
 
 /** Settings key/value map returned by the API. */
 export interface AppSettings {
+  // Application
   dns_suffix: string;
   ip_prefix: string;
   mqtt_topic_prefix: string;
   default_building_name: string;
+  // Provisioning: network scan
+  scan_ssh_key_file: string;
+  scan_ssh_user: string;
+  scan_ssh_host: string;
+  // Provisioning: device access
+  device_pass: string;
+  // Provisioning: NTP
+  ntp_server1: string;
+  // Provisioning: WiFi
+  wifi1_ssid: string;
+  wifi1_password: string;
+  wifi2_ssid: string;
+  wifi2_password: string;
+  // Provisioning: MQTT bus
+  bus_host: string;
+  bus_port: string;
+  bus_username: string;
+  bus_password: string;
+  // Provisioning: Zigbee bridge
+  bridge_host: string;
+  bridge_devices_config_path: string;
 }
 
 export class SettingsClient extends BaseClient {
@@ -45,6 +67,11 @@ export class SettingsClient extends BaseClient {
     }
     return response.json();
   }
+
+  /** Upload a SSH private key file. Returns the stored absolute path. */
+  async uploadSshKey(file: File): Promise<{ success: boolean; path: string; filename: string }> {
+    return this.upload("/ssh-key/upload", file, "file");
+  }
 }
 
 /**
@@ -70,6 +97,21 @@ export function getSettings(): AppSettings {
       ip_prefix: "192.168.0",
       mqtt_topic_prefix: "home",
       default_building_name: "Building",
+      scan_ssh_key_file: "",
+      scan_ssh_user: "root",
+      scan_ssh_host: "",
+      device_pass: "",
+      ntp_server1: "pool.ntp.org",
+      wifi1_ssid: "",
+      wifi1_password: "",
+      wifi2_ssid: "",
+      wifi2_password: "",
+      bus_host: "bus",
+      bus_port: "1883",
+      bus_username: "admin",
+      bus_password: "",
+      bridge_host: "",
+      bridge_devices_config_path: "/home/pi/zigbee2mqtt/data/devices.yaml",
     }
   );
 }

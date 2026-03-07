@@ -20,27 +20,11 @@ from .utility import (Sanitizer, DeviceError, get_config)
 FOLDER_BACKUP = "backup/wled"
 NUM_RETRY = 3
 
-# DEVICE ACCESS
-DEVICE_PASS = get_config('DEVICE_PASS', 'p4ssW0rD')
-
 # TIMEZONE & Location
 TZ_OFFSET = 1  # UTC+1 (Europe/Paris)
 
-# WIFI
-WF1_SSID = get_config('WF1_SSID', '')
-WF1_PASSWORD = get_config('WF1_PASSWORD', '')
-WF2_SSID = get_config('WF2_SSID', '')
-WF2_PASSWORD = get_config('WF2_PASSWORD', '')
-
-# NTP
-NTP_SRV1 = get_config('NTP_SRV1', 'pool.ntp.org')
-
 # MQTT
 MQTT_ENABLE = True
-MQTT_HOST = get_config('BUS_HOST', "bus")
-MQTT_PORT = int(get_config('BUS_PORT', "1883"))
-MQTT_USER = get_config('BUS_USERNAME', "admin")
-MQTT_PASS = get_config('BUS_PASSWORD', "mqtt_password")
 
 # Presets file to deploy on each device
 # Path is relative to this file's location (provisioning/ -> project root)
@@ -145,7 +129,7 @@ class WLEDManager(FirmwareManagerBase):
                 r = requests.get(
                     url,
                     allow_redirects=True, timeout=5.0,
-                    auth=HTTPBasicAuth('', DEVICE_PASS))
+                    auth=HTTPBasicAuth('', get_config('DEVICE_PASS', 'p4ssW0rD')))
 
                 filename = f"mac-{device[_FLD_MAC]}-{device[_FLD_HOST]}.json"
                 with open(self.path + '/' + filename, 'w') as f:
@@ -168,7 +152,7 @@ class WLEDManager(FirmwareManagerBase):
                     url,
                     json=payload,
                     allow_redirects=True, timeout=10.0,
-                    auth=HTTPBasicAuth('', DEVICE_PASS))
+                    auth=HTTPBasicAuth('', get_config('DEVICE_PASS', 'p4ssW0rD')))
                 logger.debug(f"status: {r.status_code} - {r.text}")
                 break
             except requests.exceptions.ConnectionError:
@@ -192,7 +176,7 @@ class WLEDManager(FirmwareManagerBase):
                         url,
                         files={'data': ('/presets.json', f)},
                         allow_redirects=True, timeout=10.0,
-                        auth=HTTPBasicAuth('', DEVICE_PASS))
+                        auth=HTTPBasicAuth('', get_config('DEVICE_PASS', 'p4ssW0rD')))
                 logger.debug(f"status: {r.status_code} - {r.text}")
                 logger.info(f'{ip} - Presets uploaded successfully.')
                 break
@@ -206,7 +190,7 @@ class WLEDManager(FirmwareManagerBase):
         ip = self.get_ip(device, 'Restart...')
         url = f"http://{ip}/reset"
         try:
-            requests.get(url, timeout=5.0, auth=HTTPBasicAuth('', DEVICE_PASS))
+            requests.get(url, timeout=5.0, auth=HTTPBasicAuth('', get_config('DEVICE_PASS', 'p4ssW0rD')))
         except requests.exceptions.ConnectionError:
             pass  # Expected after reboot
 
@@ -224,29 +208,29 @@ class WLEDManager(FirmwareManagerBase):
             "nw": {
                 "ins": [
                     {
-                        "ssid": WF1_SSID,
-                        "psk": WF1_PASSWORD,
+                        "ssid": get_config('WF1_SSID', ''),
+                        "psk": get_config('WF1_PASSWORD', ''),
                     },
                     # {
-                    #     "ssid": WF2_SSID,
-                    #     "psk": WF2_PASSWORD,
+                    #     "ssid": get_config('WF2_SSID', ''),
+                    #     "psk": get_config('WF2_PASSWORD', ''),
                     # },
                 ]
             },
             # "ap": {
-            #     "psk": DEVICE_PASS,
+            #     "psk": get_config('DEVICE_PASS', 'p4ssW0rD'),
             # },
             'if': {
                 "ntp": {
-                "host": NTP_SRV1,
+                "host": get_config('NTP_SRV1', 'pool.ntp.org'),
                 "utcOffst": TZ_OFFSET * 3600,
                 },
                 "mqtt": {
                     "en": MQTT_ENABLE,
-                    "broker": MQTT_HOST,
-                    "port": MQTT_PORT,
-                    "user": MQTT_USER,
-                    "psk": MQTT_PASS,
+                    "broker": get_config('BUS_HOST', 'bus'),
+                    "port": int(get_config('BUS_PORT', '1883')),
+                    "user": get_config('BUS_USERNAME', 'admin'),
+                    "psk": get_config('BUS_PASSWORD', 'mqtt_password'),
                     "cid": f"wled-{mac}",
                     "topics": {
                         "device": topic.lstrip('/')
