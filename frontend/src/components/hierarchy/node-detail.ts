@@ -18,6 +18,7 @@ import { RoomClient } from "../../api/room-client";
 import { showToast } from "../../utils/toast";
 import { isValidSlug, isValidUrl } from "../../utils/validators";
 import { getDoc } from "../../utils/doc-registry";
+import { toSlug } from "../../utils/slug";
 import "../shared/doc-block";
 
 @localized
@@ -135,6 +136,8 @@ export class DmNodeDetail extends LitElement {
   @state() private _editPassword = "";
   @state() private _showPassword = false;
   @state() private _validationError = "";
+  @state() private _addingChild = false;
+  @state() private _newChildName = "";
 
   private _deviceClient = new DeviceClient();
   private _buildingClient = new BuildingClient();
@@ -299,11 +302,19 @@ export class DmNodeDetail extends LitElement {
                 : nothing}
             </div>
           `}
-      ${this.node.children.length > 0
+      ${this.node.children.length > 0 || this.node.type === "building" || this.node.type === "floor"
         ? html`
             <div class="section-header">
-              <h3>${this._childLabel()}</h3>
+              <h3 style="margin:0">${this._childLabel()}</h3>
+              <button
+                class="btn btn-primary"
+                style="padding: 4px 10px; font-size: 12px;"
+                @click=${() => { this._addingChild = true; this._newChildName = ""; }}
+              >${this.node.type === "building"
+                ? `+ ${i18n.t("add_floor")}`
+                : `+ ${i18n.t("add_room")}`}</button>
             </div>
+            ${this._addingChild ? this._renderInlineChildAdd() : nothing}
             <div class="children-list">
               ${this.node.children.map(
                 (child) => html`
@@ -378,6 +389,44 @@ export class DmNodeDetail extends LitElement {
           `
         : nothing}
     `;
+  }
+
+  private _renderInlineChildAdd() {
+    const childType = this.node?.type === "building" ? "floor" : "room";
+    return html`
+      <div style="display:flex; gap:6px; align-items:center; margin: 8px 0; padding: 8px 12px; border: 1px solid var(--dm-border); border-radius: 6px;">
+        <input
+          type="text"
+          style="padding: 4px 8px; font-size: 13px; border: 1px solid var(--dm-border); border-radius: 4px; flex: 1;"
+          placeholder="${i18n.t("name")}"
+          .value=${this._newChildName}
+          @input=${(e: Event) => { this._newChildName = (e.target as HTMLInputElement).value; }}
+          @keyup=${(e: KeyboardEvent) => {
+            if (e.key === "Enter") this._confirmAddChild(childType);
+            if (e.key === "Escape") this._addingChild = false;
+          }}
+        />
+        <button class="btn btn-primary" style="padding: 4px 8px; font-size: 12px;" @click=${() => this._confirmAddChild(childType)}>✓</button>
+        <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;" @click=${() => { this._addingChild = false; }}>✕</button>
+      </div>
+    `;
+  }
+
+  private async _confirmAddChild(type: string) {
+    if (!this._newChildName.trim() || !this.node) return;
+    const slug = toSlug(this._newChildName);
+    try {
+      if (type === "floor") {
+        await this._floorClient.create({ name: this._newChildName, slug, buildingId: this.node.id });
+      } else if (type === "room") {
+        await this._roomClient.create({ name: this._newChildName, slug, floorId: this.node.id });
+      }
+      this._addingChild = false;
+      this._newChildName = "";
+      this.dispatchEvent(new CustomEvent("data-changed", { bubbles: true, composed: true }));
+    } catch (err) {
+      console.error(`Failed to create ${type}:`, err);
+    }
   }
 
   private _renderEditForm() {

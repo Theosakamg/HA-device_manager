@@ -420,6 +420,14 @@ export class DmHierarchyTreeComponent extends LitElement {
           floorId: parentId,
         });
       }
+      // Ensure the parent node is expanded so the new child is visible after reload
+      if (type === "floor" || type === "room") {
+        const parentKey = type === "room" ? `floor:${parentId}` : `building:${parentId}`;
+        const nextSet = new Set(this._expandedNodes);
+        nextSet.add(parentKey);
+        this._expandedNodes = nextSet;
+        this._saveExpandedState();
+      }
       this._cancelAdd();
       this.dispatchEvent(
         new CustomEvent("tree-changed", { bubbles: true, composed: true })

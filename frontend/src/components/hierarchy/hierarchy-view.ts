@@ -61,9 +61,39 @@ export class DmHierarchyView extends LitElement {
   @state() private _loading = true;
 
   private _client = new HierarchyClient();
+  private static readonly _SELECTION_KEY = "dm_hierarchy_selected";
+
+  private _saveSelection(node: HierarchyNode | null) {
+    try {
+      if (node) {
+        sessionStorage.setItem(
+          DmHierarchyView._SELECTION_KEY,
+          JSON.stringify({ id: node.id, type: node.type })
+        );
+      } else {
+        sessionStorage.removeItem(DmHierarchyView._SELECTION_KEY);
+      }
+    } catch {
+      // Ignore
+    }
+  }
+
+  private _restoreSelection(): { id: number; type: string } | null {
+    try {
+      const raw = sessionStorage.getItem(DmHierarchyView._SELECTION_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch {
+      // Ignore corrupt data
+    }
+    return null;
+  }
 
   async connectedCallback() {
     super.connectedCallback();
+    const saved = this._restoreSelection();
+    if (saved) {
+      this._selectedNode = { id: saved.id, type: saved.type } as HierarchyNode;
+    }
     await this._loadTree();
   }
 
@@ -146,6 +176,7 @@ export class DmHierarchyView extends LitElement {
 
   private _onNodeSelected(e: CustomEvent) {
     this._selectedNode = e.detail.node;
+    this._saveSelection(this._selectedNode);
   }
 
   private _onExpandToNode(e: CustomEvent) {
