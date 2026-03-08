@@ -304,12 +304,15 @@ class TasmotaAdapter(FirmwareAdapter):
                     result = response.json()
                     # Check for Tasmota error indicators
                     if isinstance(result, dict):
-                        # Check for explicit error messages
-                        if "ERROR" in str(result).upper():
-                            raise RuntimeError(f"Tasmota error in response: {result}")
-                        # Check for WARNING in response (still log but don't fail)
-                        if "WARNING" in str(result).upper():
-                            logger.warning(f"Tasmota warning: {result}")
+                        # Check for explicit error keys or "Command unknown" in values
+                        if "ERROR" in result or "WARNING" in result:
+                            if "ERROR" in result:
+                                raise RuntimeError(f"Tasmota error in response: {result}")
+                            if "WARNING" in result:
+                                logger.warning(f"Tasmota warning: {result}")
+                        # Check for "Command unknown" in any value
+                        elif any("Command unknown" in str(v) for v in result.values() if isinstance(v, str)):
+                            raise RuntimeError(f"Tasmota command unknown: {result}")
                     logger.debug(f"  Response: {response.status_code} - {result}")
                 except ValueError:
                     # Non-JSON response, just log it (some commands return plain text)
