@@ -303,17 +303,24 @@ export class DmNodeDetail extends LitElement {
                 : nothing}
             </div>
           `}
-      ${this.node.children.length > 0 || this.node.type === "building" || this.node.type === "floor"
+      ${this.node.children.length > 0 ||
+      this.node.type === "building" ||
+      this.node.type === "floor"
         ? html`
             <div class="section-header">
               <h3 style="margin:0">${this._childLabel()}</h3>
               <button
                 class="btn btn-primary"
                 style="padding: 4px 10px; font-size: 12px;"
-                @click=${() => { this._addingChild = true; this._newChildName = ""; }}
-              >${this.node.type === "building"
-                ? `+ ${i18n.t("add_floor")}`
-                : `+ ${i18n.t("add_room")}`}</button>
+                @click=${() => {
+                  this._addingChild = true;
+                  this._newChildName = "";
+                }}
+              >
+                ${this.node.type === "building"
+                  ? `+ ${i18n.t("add_floor")}`
+                  : `+ ${i18n.t("add_room")}`}
+              </button>
             </div>
             ${this._addingChild ? this._renderInlineChildAdd() : nothing}
             <div class="children-list">
@@ -345,7 +352,9 @@ export class DmNodeDetail extends LitElement {
                 @click=${() => {
                   window.location.hash = `#devices?create=room:${this.node!.id}`;
                 }}
-              >+ ${i18n.t("add_device")}</button>
+              >
+                + ${i18n.t("add_device")}
+              </button>
             </div>
             <dm-doc-block
               .doc=${getDoc("hierarchy.room.device_list")}
@@ -382,8 +391,13 @@ export class DmNodeDetail extends LitElement {
                                 ></span>
                               </td>
                               <td>
-                                <span style="display:block;font-size:13px;">${deviceLabel(d)}</span>
-                                <span style="display:block;font-family:monospace;font-size:11px;color:var(--dm-text-secondary);margin-top:2px;">${d.mac}</span>
+                                <span style="display:block;font-size:13px;"
+                                  >${deviceLabel(d)}</span
+                                >
+                                <span
+                                  style="display:block;font-family:monospace;font-size:11px;color:var(--dm-text-secondary);margin-top:2px;"
+                                  >${d.mac}</span
+                                >
                               </td>
                             </tr>
                           `
@@ -399,20 +413,38 @@ export class DmNodeDetail extends LitElement {
   private _renderInlineChildAdd() {
     const childType = this.node?.type === "building" ? "floor" : "room";
     return html`
-      <div style="display:flex; gap:6px; align-items:center; margin: 8px 0; padding: 8px 12px; border: 1px solid var(--dm-border); border-radius: 6px;">
+      <div
+        style="display:flex; gap:6px; align-items:center; margin: 8px 0; padding: 8px 12px; border: 1px solid var(--dm-border); border-radius: 6px;"
+      >
         <input
           type="text"
           style="padding: 4px 8px; font-size: 13px; border: 1px solid var(--dm-border); border-radius: 4px; flex: 1;"
           placeholder="${i18n.t("name")}"
           .value=${this._newChildName}
-          @input=${(e: Event) => { this._newChildName = (e.target as HTMLInputElement).value; }}
+          @input=${(e: Event) => {
+            this._newChildName = (e.target as HTMLInputElement).value;
+          }}
           @keyup=${(e: KeyboardEvent) => {
             if (e.key === "Enter") this._confirmAddChild(childType);
             if (e.key === "Escape") this._addingChild = false;
           }}
         />
-        <button class="btn btn-primary" style="padding: 4px 8px; font-size: 12px;" @click=${() => this._confirmAddChild(childType)}>✓</button>
-        <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;" @click=${() => { this._addingChild = false; }}>✕</button>
+        <button
+          class="btn btn-primary"
+          style="padding: 4px 8px; font-size: 12px;"
+          @click=${() => this._confirmAddChild(childType)}
+        >
+          ✓
+        </button>
+        <button
+          class="btn btn-secondary"
+          style="padding: 4px 8px; font-size: 12px;"
+          @click=${() => {
+            this._addingChild = false;
+          }}
+        >
+          ✕
+        </button>
       </div>
     `;
   }
@@ -422,13 +454,23 @@ export class DmNodeDetail extends LitElement {
     const slug = toSlug(this._newChildName);
     try {
       if (type === "floor") {
-        await this._floorClient.create({ name: this._newChildName, slug, buildingId: this.node.id });
+        await this._floorClient.create({
+          name: this._newChildName,
+          slug,
+          buildingId: this.node.id,
+        });
       } else if (type === "room") {
-        await this._roomClient.create({ name: this._newChildName, slug, floorId: this.node.id });
+        await this._roomClient.create({
+          name: this._newChildName,
+          slug,
+          floorId: this.node.id,
+        });
       }
       this._addingChild = false;
       this._newChildName = "";
-      this.dispatchEvent(new CustomEvent("data-changed", { bubbles: true, composed: true }));
+      this.dispatchEvent(
+        new CustomEvent("data-changed", { bubbles: true, composed: true })
+      );
     } catch (err) {
       console.error(`Failed to create ${type}:`, err);
     }

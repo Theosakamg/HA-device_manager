@@ -147,12 +147,11 @@ class DmDevice(SerializableMixin):
         # Extract configurable prefixes/suffixes from settings.
         s = settings or {}
         ip_prefix = s.get("ip_prefix", "192.168.0")
-        mqtt_prefix = s.get("mqtt_topic_prefix", "home")
         dns_suffix = s.get("dns_suffix", "domo.local")
 
         # Include computed properties.
         data["link"] = self.link(ip_prefix=ip_prefix)
-        data["mqttTopic"] = self.mqtt_topic(mqtt_prefix=mqtt_prefix)
+        data["mqttTopic"] = self.mqtt_topic()
         data["hostname"] = self.hostname()
         data["fqdn"] = self.fqdn(dns_suffix=dns_suffix)
         data["displayName"] = self.display_name()
@@ -174,14 +173,15 @@ class DmDevice(SerializableMixin):
         Returns:
             A ``>``-separated string identifying the device location and role.
         """
+        sep = " > "
         parts = [
-            self._building.name,
-            self._floor.slug,
-            self._room.slug,
+            self._building.name or self._building.slug.capitalize(),
+            self._floor.name or self._floor.slug.capitalize(),
+            self._room.name or self._room.slug.capitalize(),
             self._refs.function_name,
-            self.position_slug,
+            self.position_name or self.position_slug.capitalize(),
         ]
-        label = " > ".join(p for p in parts if p)
+        label = sep.join(p for p in parts if p)
         return label or self.mac
 
     def link(self, ip_prefix: str = "192.168.0") -> Optional[str]:
@@ -204,42 +204,55 @@ class DmDevice(SerializableMixin):
 
         return f"http://{self.ip}"
 
-    def mqtt_topic(self, mqtt_prefix: str = "home") -> Optional[str]:
+    def mqtt_topic(self) -> Optional[str]:
         """Return the MQTT topic for this device.
 
-        Format: ``{mqtt_prefix}/l{floor}/{room_slug}/{function}/{position_slug}``
-
-        Args:
-            mqtt_prefix: First segment of the MQTT topic.
+        Format: ``{building_slug}/{floor_slug}/{room_slug}/{function_slug}/{position_slug}``
 
         Returns:
-            The MQTT topic string or ``None``.
+            The MQTT topic string or ``None`` when required transient data is missing.
         """
-        if not self._floor.slug or not self._room.slug or not self._refs.function_name:
+        if (
+            not self._building.slug
+            or not self._floor.slug
+            or not self._room.slug
+            or not self._refs.function_name
+        ):
             return None
 
         function_slug = self._refs.function_name.lower().replace(" ", "_")
         return (
-            f"{mqtt_prefix}/{self._floor.slug}/{self._room.slug}"
-            f"/{function_slug}/{self.position_slug}"
-        )
+            f"{self._building.slug}"
+            f"/{self._floor.slug}"
+            f"/{self._room.slug}"
+            f"/{function_slug}"
+            f"/{self.position_slug}"
+        ).lower()
 
     def hostname(self) -> Optional[str]:
         """Return the hostname for this device.
 
-        Format: ``{floor_slug}_{room_slug}_{function}_{position_slug}``
+        Format: ``{building_slug}_{floor_slug}_{room_slug}_{function_slug}_{position_slug}``
 
         Returns:
-            The hostname string or ``None`` when transient data is missing.
+            The hostname string or ``None`` when required transient data is missing.
         """
-        if not self._floor.slug or not self._room.slug or not self._refs.function_name:
+        if (
+            not self._building.slug
+            or not self._floor.slug
+            or not self._room.slug
+            or not self._refs.function_name
+        ):
             return None
 
         function_slug = self._refs.function_name.lower().replace(" ", "_")
         return (
-            f"{self._floor.slug}_{self._room.slug}"
-            f"_{function_slug}_{self.position_slug}"
-        )
+            f"{self._building.slug}"
+            f"_{self._floor.slug}"
+            f"_{self._room.slug}"
+            f"_{function_slug}"
+            f"_{self.position_slug}"
+        ).lower()
 
     def fqdn(self, dns_suffix: str = "domo.local") -> Optional[str]:
         """Return the fully-qualified domain name for this device.
@@ -256,97 +269,6 @@ class DmDevice(SerializableMixin):
         if host is None:
             return None
         return f"{host}.{dns_suffix}"
-
-    # ------------------------------------------------------------------
-    # Legacy slug methods (migrated from contract.py)
-    # ------------------------------------------------------------------
-
-    def slug_device_name(self, topic_base: str = "Home") -> str:
-        """Return a human-readable device name with hierarchy.
-
-        Format: ``{topic_base} > Level > Room > Function > Position``
-
-        Legacy method migrated from contract.py.
-
-        Args:
-            topic_base: Base prefix for the name.
-
-        Returns:
-            A ``>``-separated string with capitalized components.
-        """
-        return (
-            f"{topic_base.capitalize()}"
-            f" > {self._floor.name.capitalize()}"
-            f" > {self._room.slug.capitalize()}"
-            f" > {self._refs.function_name.capitalize()}"
-            f" > {self.position_slug.capitalize()}"
-        )
-
-    def slug_device_topic_location(self, topic_base: str = "home") -> str:
-        """Return the MQTT topic location part.
-
-        Format: ``{topic_base}/{floor}/{room}``
-
-        Legacy method migrated from contract.py.
-
-        Args:
-            topic_base: Base prefix for the topic.
-
-        Returns:
-            The location part of the MQTT topic.
-        """
-        return f"{topic_base}/{self._floor.slug}/{self._room.slug}".lower()
-
-    def slug_device_topic_device(self) -> str:
-        """Return the MQTT topic device part.
-
-        Format: ``/{function}/{position}``
-
-        Legacy method migrated from contract.py.
-
-        Returns:
-            The device part of the MQTT topic.
-        """
-        return f"/{self._refs.function_name}/{self.position_slug}".lower()
-
-    def slug_device_topic(self, topic_base: str = "home") -> str:
-        """Return the full MQTT topic.
-
-        Format: ``{topic_base}/{floor}/{room}/{function}/{position}``
-
-        Legacy method migrated from contract.py.
-
-        Args:
-            topic_base: Base prefix for the topic.
-
-        Returns:
-            The complete MQTT topic string.
-        """
-        return (
-            f"{self.slug_device_topic_location(topic_base)}"
-            f"{self.slug_device_topic_device()}"
-        )
-
-    def slug_device_id(self, topic_base: str = "home") -> str:
-        """Return a device ID with underscores.
-
-        Format: ``{topic_base}_{floor}_{room}_{function}_{position}``
-
-        Legacy method migrated from contract.py.
-
-        Args:
-            topic_base: Base prefix for the ID.
-
-        Returns:
-            The device ID string with underscore separators.
-        """
-        return (
-            f"{topic_base}"
-            f"_{self._floor.slug}"
-            f"_{self._room.slug}"
-            f"_{self._refs.function_name}"
-            f"_{self.position_slug}"
-        ).lower()
 
     # ------------------------------------------------------------------
     # Factory

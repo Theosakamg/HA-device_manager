@@ -198,7 +198,7 @@ class WLEDAdapter(FirmwareAdapter):
         logger.info(f"Configuring WLED device: {device.mac} @ {device.ip}")
 
         hostname = device.hostname() or f"wled-{device.mac}"
-        mqtt_topic = device.mqtt_topic(self.manager.get_setting('mqtt_topic_prefix', 'home'))
+        mqtt_topic = device.mqtt_topic()
 
         # Build configuration payload
         config = {

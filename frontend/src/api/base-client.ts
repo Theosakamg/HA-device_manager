@@ -116,10 +116,14 @@ export class BaseClient {
       if (window.parent && window.parent !== window) {
         docs.push(window.parent.document);
       }
-    } catch { /* cross-origin, ignore */ }
+    } catch {
+      /* cross-origin, ignore */
+    }
 
     for (const doc of docs) {
-      const ha = doc.querySelector("home-assistant") as HomeAssistantElement | null;
+      const ha = doc.querySelector(
+        "home-assistant"
+      ) as HomeAssistantElement | null;
       const auth = ha?.hass?.auth ?? ha?.hass?.connection?.options?.auth;
       if (auth?.refreshAccessToken) {
         await auth.refreshAccessToken();

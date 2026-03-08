@@ -422,7 +422,8 @@ export class DmHierarchyTreeComponent extends LitElement {
       }
       // Ensure the parent node is expanded so the new child is visible after reload
       if (type === "floor" || type === "room") {
-        const parentKey = type === "room" ? `floor:${parentId}` : `building:${parentId}`;
+        const parentKey =
+          type === "room" ? `floor:${parentId}` : `building:${parentId}`;
         const nextSet = new Set(this._expandedNodes);
         nextSet.add(parentKey);
         this._expandedNodes = nextSet;

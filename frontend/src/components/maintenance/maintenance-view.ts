@@ -457,19 +457,64 @@ export class DmMaintenanceView extends LitElement {
           ? html`<div class="result-panel" style="margin-top:16px">
               <h4>✅ ${i18n.t("maint_scan_triggered")}</h4>
               ${this._scanResult.stats
-                ? html`<table style="margin-top:8px;border-collapse:collapse;font-size:13px;font-family:monospace;width:100%">
-                    <tr><td style="padding:2px 8px 2px 0">${i18n.t("maint_scan_stat_total")}</td><td><strong>${this._scanResult.stats.total}</strong></td></tr>
-                    <tr style="color:var(--success-color,#4caf50)"><td style="padding:2px 8px 2px 0">${i18n.t("maint_scan_stat_mapped")}</td><td><strong>${this._scanResult.stats.mapped}</strong></td></tr>
-                    <tr style="color:var(--warning-color,#ff9800)"><td style="padding:2px 8px 2px 0">${i18n.t("maint_scan_stat_not_found")}</td><td><strong>${this._scanResult.stats.not_found}</strong></td></tr>
-                    <tr style="color:${this._scanResult.stats.errors > 0 ? 'var(--error-color,#f44336)' : 'inherit'}"><td style="padding:2px 8px 2px 0">${i18n.t("maint_scan_stat_errors")}</td><td><strong>${this._scanResult.stats.errors}</strong></td></tr>
-                  </table>
-                  ${this._scanResult.stats.error_details?.length
-                    ? html`<details style="margin-top:8px;font-size:12px">
-                        <summary style="cursor:pointer;color:var(--error-color,#f44336)">${i18n.t("maint_scan_stat_error_details")} (${this._scanResult.stats.error_details.length})</summary>
-                        <ul style="margin:4px 0;padding-left:16px">${this._scanResult.stats.error_details.map(e => html`<li>${e}</li>`)}</ul>
-                      </details>`
-                    : nothing}`
-                : html`<p style="margin:0;font-size:13px;font-family:monospace">${this._scanResult.result}</p>`}
+                ? html`<table
+                      style="margin-top:8px;border-collapse:collapse;font-size:13px;font-family:monospace;width:100%"
+                    >
+                      <tr>
+                        <td style="padding:2px 8px 2px 0">
+                          ${i18n.t("maint_scan_stat_total")}
+                        </td>
+                        <td>
+                          <strong>${this._scanResult.stats.total}</strong>
+                        </td>
+                      </tr>
+                      <tr style="color:var(--success-color,#4caf50)">
+                        <td style="padding:2px 8px 2px 0">
+                          ${i18n.t("maint_scan_stat_mapped")}
+                        </td>
+                        <td>
+                          <strong>${this._scanResult.stats.mapped}</strong>
+                        </td>
+                      </tr>
+                      <tr style="color:var(--warning-color,#ff9800)">
+                        <td style="padding:2px 8px 2px 0">
+                          ${i18n.t("maint_scan_stat_not_found")}
+                        </td>
+                        <td>
+                          <strong>${this._scanResult.stats.not_found}</strong>
+                        </td>
+                      </tr>
+                      <tr
+                        style="color:${this._scanResult.stats.errors > 0
+                          ? "var(--error-color,#f44336)"
+                          : "inherit"}"
+                      >
+                        <td style="padding:2px 8px 2px 0">
+                          ${i18n.t("maint_scan_stat_errors")}
+                        </td>
+                        <td>
+                          <strong>${this._scanResult.stats.errors}</strong>
+                        </td>
+                      </tr>
+                    </table>
+                    ${this._scanResult.stats.error_details?.length
+                      ? html`<details style="margin-top:8px;font-size:12px">
+                          <summary
+                            style="cursor:pointer;color:var(--error-color,#f44336)"
+                          >
+                            ${i18n.t("maint_scan_stat_error_details")}
+                            (${this._scanResult.stats.error_details.length})
+                          </summary>
+                          <ul style="margin:4px 0;padding-left:16px">
+                            ${this._scanResult.stats.error_details.map(
+                              (e) => html`<li>${e}</li>`
+                            )}
+                          </ul>
+                        </details>`
+                      : nothing}`
+                : html`<p style="margin:0;font-size:13px;font-family:monospace">
+                    ${this._scanResult.result}
+                  </p>`}
             </div>`
           : nothing}
         ${this._scanError
@@ -719,23 +764,33 @@ export class DmMaintenanceView extends LitElement {
 
       <!-- Provisioning settings -->
       <h4 style="margin:20px 0 8px">${i18n.t("config_prov_title")}</h4>
-      <p class="hint" style="margin-bottom:12px">${i18n.t("config_prov_desc")}</p>
+      <p class="hint" style="margin-bottom:12px">
+        ${i18n.t("config_prov_desc")}
+      </p>
 
       <h5 style="margin:14px 0 6px">${i18n.t("config_scan_section")}</h5>
       <div class="settings-grid">
         <div class="settings-field" style="grid-column: span 2">
           <label>${i18n.t("config_scan_ssh_key_upload")}</label>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <input type="text" readonly
+            <input
+              type="text"
+              readonly
               .value=${f.scan_ssh_key_file || ""}
               placeholder="/config/dm/keys/…"
               style="flex:1;min-width:200px;background:#f5f5f5;cursor:default"
             />
-            <label class="btn btn-secondary" style="cursor:pointer;white-space:nowrap">
-              🔑 ${this._sshKeyUploading
+            <label
+              class="btn btn-secondary"
+              style="cursor:pointer;white-space:nowrap"
+            >
+              🔑
+              ${this._sshKeyUploading
                 ? i18n.t("config_scan_ssh_key_uploading")
                 : i18n.t("config_scan_ssh_key_upload")}
-              <input type="file" hidden
+              <input
+                type="file"
+                hidden
                 ?disabled=${this._sshKeyUploading}
                 @change=${this._onSshKeyFileChange}
               />
@@ -743,21 +798,32 @@ export class DmMaintenanceView extends LitElement {
           </div>
           <div class="hint">${i18n.t("config_scan_ssh_key_upload_hint")}</div>
           ${this._sshKeyToast
-            ? html`<div class="hint" style="margin-top:4px;color:${this._sshKeyToast.ok ? "#2e7d32" : "#c62828"}">
+            ? html`<div
+                class="hint"
+                style="margin-top:4px;color:${this._sshKeyToast.ok
+                  ? "#2e7d32"
+                  : "#c62828"}"
+              >
                 ${this._sshKeyToast.ok ? "✅" : "❌"} ${this._sshKeyToast.msg}
               </div>`
             : nothing}
         </div>
         <div class="settings-field">
           <label>${i18n.t("config_scan_ssh_user")}</label>
-          <input type="text" .value=${f.scan_ssh_user}
-            @input=${(e: Event) => this._updateSetting("scan_ssh_user", e)} />
+          <input
+            type="text"
+            .value=${f.scan_ssh_user}
+            @input=${(e: Event) => this._updateSetting("scan_ssh_user", e)}
+          />
           <div class="hint">${i18n.t("config_scan_ssh_user_hint")}</div>
         </div>
         <div class="settings-field">
           <label>${i18n.t("config_scan_ssh_host")}</label>
-          <input type="text" .value=${f.scan_ssh_host}
-            @input=${(e: Event) => this._updateSetting("scan_ssh_host", e)} />
+          <input
+            type="text"
+            .value=${f.scan_ssh_host}
+            @input=${(e: Event) => this._updateSetting("scan_ssh_host", e)}
+          />
           <div class="hint">${i18n.t("config_scan_ssh_host_hint")}</div>
         </div>
       </div>
@@ -766,8 +832,11 @@ export class DmMaintenanceView extends LitElement {
       <div class="settings-grid">
         <div class="settings-field">
           <label>${i18n.t("config_device_pass")}</label>
-          <input type="password" .value=${f.device_pass}
-            @input=${(e: Event) => this._updateSetting("device_pass", e)} />
+          <input
+            type="password"
+            .value=${f.device_pass}
+            @input=${(e: Event) => this._updateSetting("device_pass", e)}
+          />
           <div class="hint">${i18n.t("config_device_pass_hint")}</div>
         </div>
       </div>
@@ -776,8 +845,11 @@ export class DmMaintenanceView extends LitElement {
       <div class="settings-grid">
         <div class="settings-field">
           <label>${i18n.t("config_ntp_server1")}</label>
-          <input type="text" .value=${f.ntp_server1}
-            @input=${(e: Event) => this._updateSetting("ntp_server1", e)} />
+          <input
+            type="text"
+            .value=${f.ntp_server1}
+            @input=${(e: Event) => this._updateSetting("ntp_server1", e)}
+          />
           <div class="hint">${i18n.t("config_ntp_server1_hint")}</div>
         </div>
       </div>
@@ -786,26 +858,38 @@ export class DmMaintenanceView extends LitElement {
       <div class="settings-grid">
         <div class="settings-field">
           <label>${i18n.t("config_wifi1_ssid")}</label>
-          <input type="text" .value=${f.wifi1_ssid}
-            @input=${(e: Event) => this._updateSetting("wifi1_ssid", e)} />
+          <input
+            type="text"
+            .value=${f.wifi1_ssid}
+            @input=${(e: Event) => this._updateSetting("wifi1_ssid", e)}
+          />
           <div class="hint">${i18n.t("config_wifi1_ssid_hint")}</div>
         </div>
         <div class="settings-field">
           <label>${i18n.t("config_wifi1_password")}</label>
-          <input type="password" .value=${f.wifi1_password}
-            @input=${(e: Event) => this._updateSetting("wifi1_password", e)} />
+          <input
+            type="password"
+            .value=${f.wifi1_password}
+            @input=${(e: Event) => this._updateSetting("wifi1_password", e)}
+          />
           <div class="hint">${i18n.t("config_wifi1_password_hint")}</div>
         </div>
         <div class="settings-field">
           <label>${i18n.t("config_wifi2_ssid")}</label>
-          <input type="text" .value=${f.wifi2_ssid}
-            @input=${(e: Event) => this._updateSetting("wifi2_ssid", e)} />
+          <input
+            type="text"
+            .value=${f.wifi2_ssid}
+            @input=${(e: Event) => this._updateSetting("wifi2_ssid", e)}
+          />
           <div class="hint">${i18n.t("config_wifi2_ssid_hint")}</div>
         </div>
         <div class="settings-field">
           <label>${i18n.t("config_wifi2_password")}</label>
-          <input type="password" .value=${f.wifi2_password}
-            @input=${(e: Event) => this._updateSetting("wifi2_password", e)} />
+          <input
+            type="password"
+            .value=${f.wifi2_password}
+            @input=${(e: Event) => this._updateSetting("wifi2_password", e)}
+          />
           <div class="hint">${i18n.t("config_wifi2_password_hint")}</div>
         </div>
       </div>
@@ -814,26 +898,39 @@ export class DmMaintenanceView extends LitElement {
       <div class="settings-grid">
         <div class="settings-field">
           <label>${i18n.t("config_bus_host")}</label>
-          <input type="text" .value=${f.bus_host}
-            @input=${(e: Event) => this._updateSetting("bus_host", e)} />
+          <input
+            type="text"
+            .value=${f.bus_host}
+            @input=${(e: Event) => this._updateSetting("bus_host", e)}
+          />
           <div class="hint">${i18n.t("config_bus_host_hint")}</div>
         </div>
         <div class="settings-field">
           <label>${i18n.t("config_bus_port")}</label>
-          <input type="text" .value=${f.bus_port} inputmode="numeric"
-            @input=${(e: Event) => this._updateSetting("bus_port", e)} />
+          <input
+            type="text"
+            .value=${f.bus_port}
+            inputmode="numeric"
+            @input=${(e: Event) => this._updateSetting("bus_port", e)}
+          />
           <div class="hint">${i18n.t("config_bus_port_hint")}</div>
         </div>
         <div class="settings-field">
           <label>${i18n.t("config_bus_username")}</label>
-          <input type="text" .value=${f.bus_username}
-            @input=${(e: Event) => this._updateSetting("bus_username", e)} />
+          <input
+            type="text"
+            .value=${f.bus_username}
+            @input=${(e: Event) => this._updateSetting("bus_username", e)}
+          />
           <div class="hint">${i18n.t("config_bus_username_hint")}</div>
         </div>
         <div class="settings-field">
           <label>${i18n.t("config_bus_password")}</label>
-          <input type="password" .value=${f.bus_password}
-            @input=${(e: Event) => this._updateSetting("bus_password", e)} />
+          <input
+            type="password"
+            .value=${f.bus_password}
+            @input=${(e: Event) => this._updateSetting("bus_password", e)}
+          />
           <div class="hint">${i18n.t("config_bus_password_hint")}</div>
         </div>
       </div>
@@ -842,15 +939,24 @@ export class DmMaintenanceView extends LitElement {
       <div class="settings-grid">
         <div class="settings-field">
           <label>${i18n.t("config_bridge_host")}</label>
-          <input type="text" .value=${f.bridge_host}
-            @input=${(e: Event) => this._updateSetting("bridge_host", e)} />
+          <input
+            type="text"
+            .value=${f.bridge_host}
+            @input=${(e: Event) => this._updateSetting("bridge_host", e)}
+          />
           <div class="hint">${i18n.t("config_bridge_host_hint")}</div>
         </div>
         <div class="settings-field">
           <label>${i18n.t("config_bridge_devices_config_path")}</label>
-          <input type="text" .value=${f.bridge_devices_config_path}
-            @input=${(e: Event) => this._updateSetting("bridge_devices_config_path", e)} />
-          <div class="hint">${i18n.t("config_bridge_devices_config_path_hint")}</div>
+          <input
+            type="text"
+            .value=${f.bridge_devices_config_path}
+            @input=${(e: Event) =>
+              this._updateSetting("bridge_devices_config_path", e)}
+          />
+          <div class="hint">
+            ${i18n.t("config_bridge_devices_config_path_hint")}
+          </div>
         </div>
       </div>
 
@@ -893,7 +999,10 @@ export class DmMaintenanceView extends LitElement {
       const result = await this._settingsClient.uploadSshKey(file);
       // Update the form with the new absolute path returned by the server
       if (this._settingsForm) {
-        this._settingsForm = { ...this._settingsForm, scan_ssh_key_file: result.path };
+        this._settingsForm = {
+          ...this._settingsForm,
+          scan_ssh_key_file: result.path,
+        };
       }
       this._sshKeyToast = {
         msg: `${i18n.t("config_scan_ssh_key_upload_success")}: ${result.filename}`,
@@ -911,7 +1020,9 @@ export class DmMaintenanceView extends LitElement {
       // Reset the file input so the same file can be re-uploaded if needed
       input.value = "";
       // Auto-hide toast after 6s
-      setTimeout(() => { this._sshKeyToast = null; }, 6000);
+      setTimeout(() => {
+        this._sshKeyToast = null;
+      }, 6000);
     }
   }
   private async _saveSettings() {

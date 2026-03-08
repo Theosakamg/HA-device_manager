@@ -15,7 +15,13 @@ import "./shared/toast-notification";
 import type { DmToast } from "./shared/toast-notification";
 import "./map/map-view";
 
-type AppRoute = "dashboard" | "hierarchy" | "devices" | "map" | "settings" | "system";
+type AppRoute =
+  | "dashboard"
+  | "hierarchy"
+  | "devices"
+  | "map"
+  | "settings"
+  | "system";
 
 @localized
 @customElement("dm-app-shell")

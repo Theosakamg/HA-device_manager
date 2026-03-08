@@ -362,8 +362,13 @@ export class DmDeployModal extends LitElement {
                                 </td>
                                 <td>${idx === 0 ? detail.deviceCount : ""}</td>
                                 <td>
-                                  <span style="display:block;font-size:13px;">${deviceLabel(dev)}</span>
-                                  <span style="display:block;font-family:monospace;font-size:11px;color:var(--dm-text-secondary);margin-top:2px;">${dev.mac}</span>
+                                  <span style="display:block;font-size:13px;"
+                                    >${deviceLabel(dev)}</span
+                                  >
+                                  <span
+                                    style="display:block;font-family:monospace;font-size:11px;color:var(--dm-text-secondary);margin-top:2px;"
+                                    >${dev.mac}</span
+                                  >
                                 </td>
                               </tr>
                             `

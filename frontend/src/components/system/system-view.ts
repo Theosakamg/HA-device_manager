@@ -28,11 +28,11 @@ type SystemTab =
 
 const TABS: { id: SystemTab; icon: string; labelKey: string }[] = [
   { id: "import-export", icon: "📦", labelKey: "system_tab_import_export" },
-  { id: "common",        icon: "⚙️", labelKey: "system_tab_common" },
-  { id: "mqtt",          icon: "📡", labelKey: "system_tab_mqtt" },
-  { id: "wifi",          icon: "📶", labelKey: "system_tab_wifi" },
-  { id: "zigbee",        icon: "🔵", labelKey: "system_tab_zigbee" },
-  { id: "maintenance",   icon: "🔧", labelKey: "system_tab_maintenance" },
+  { id: "common", icon: "⚙️", labelKey: "system_tab_common" },
+  { id: "mqtt", icon: "📡", labelKey: "system_tab_mqtt" },
+  { id: "wifi", icon: "📶", labelKey: "system_tab_wifi" },
+  { id: "zigbee", icon: "🔵", labelKey: "system_tab_zigbee" },
+  { id: "maintenance", icon: "🔧", labelKey: "system_tab_maintenance" },
 ];
 
 @localized
@@ -54,7 +54,7 @@ export class DmSystemView extends LitElement {
         background: white;
         border-radius: 10px;
         padding: 6px;
-        box-shadow: 0 1px 3px rgba(0,0,0,.08);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
         margin-bottom: 24px;
         flex-wrap: wrap;
       }
@@ -73,11 +73,13 @@ export class DmSystemView extends LitElement {
         align-items: center;
         justify-content: center;
         gap: 6px;
-        transition: background 0.15s, color 0.15s;
+        transition:
+          background 0.15s,
+          color 0.15s;
         white-space: nowrap;
       }
       .tab-btn:hover {
-        background: rgba(3,169,244,.06);
+        background: rgba(3, 169, 244, 0.06);
         color: var(--dm-text, #1a1a1a);
       }
       .tab-btn.active {
@@ -95,7 +97,7 @@ export class DmSystemView extends LitElement {
         border-radius: 8px;
         padding: 24px;
         margin-bottom: 24px;
-        box-shadow: 0 1px 3px rgba(0,0,0,.08);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
       }
       .card-header {
         display: flex;
@@ -114,7 +116,7 @@ export class DmSystemView extends LitElement {
         font-size: 13px;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: .5px;
+        letter-spacing: 0.5px;
         color: var(--dm-text-secondary, #888);
         margin: 24px 0 10px;
         border-bottom: 1px solid var(--dm-border, #e8e8e8);
@@ -131,8 +133,13 @@ export class DmSystemView extends LitElement {
         gap: 16px;
       }
       @media (max-width: 600px) {
-        .settings-grid { grid-template-columns: 1fr; }
-        .tab-btn { font-size: 12px; padding: 8px 8px; }
+        .settings-grid {
+          grid-template-columns: 1fr;
+        }
+        .tab-btn {
+          font-size: 12px;
+          padding: 8px 8px;
+        }
       }
       .settings-field label {
         display: block;
@@ -151,7 +158,7 @@ export class DmSystemView extends LitElement {
       .settings-field input:focus {
         outline: none;
         border-color: var(--dm-primary, #03a9f4);
-        box-shadow: 0 0 0 2px rgba(3,169,244,.15);
+        box-shadow: 0 0 0 2px rgba(3, 169, 244, 0.15);
       }
       .hint {
         font-size: 12px;
@@ -169,8 +176,14 @@ export class DmSystemView extends LitElement {
         padding: 6px 12px;
         border-radius: 4px;
       }
-      .settings-toast.success { background: #e8f5e9; color: #2e7d32; }
-      .settings-toast.error   { background: #fce4ec; color: #c62828; }
+      .settings-toast.success {
+        background: #e8f5e9;
+        color: #2e7d32;
+      }
+      .settings-toast.error {
+        background: #fce4ec;
+        color: #c62828;
+      }
 
       /* ── Export ── */
       .export-actions {
@@ -193,8 +206,14 @@ export class DmSystemView extends LitElement {
         align-items: center;
         gap: 8px;
       }
-      .btn-export:hover { background: var(--dm-primary, #03a9f4); color: white; }
-      .btn-export:disabled { opacity: 0.5; cursor: not-allowed; }
+      .btn-export:hover {
+        background: var(--dm-primary, #03a9f4);
+        color: white;
+      }
+      .btn-export:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
 
       /* ── Scan ── */
       .btn-scan {
@@ -211,8 +230,14 @@ export class DmSystemView extends LitElement {
         align-items: center;
         gap: 8px;
       }
-      .btn-scan:hover { background: #0277bd; }
-      .btn-scan:disabled { background: #e0e0e0; color: #999; cursor: not-allowed; }
+      .btn-scan:hover {
+        background: #0277bd;
+      }
+      .btn-scan:disabled {
+        background: #e0e0e0;
+        color: #999;
+        cursor: not-allowed;
+      }
       .scan-progress {
         margin-top: 16px;
         display: flex;
@@ -231,7 +256,11 @@ export class DmSystemView extends LitElement {
         animation: spin 0.8s linear infinite;
         flex-shrink: 0;
       }
-      @keyframes spin { to { transform: rotate(360deg); } }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
 
       /* ── Result panels ── */
       .result-panel {
@@ -241,12 +270,23 @@ export class DmSystemView extends LitElement {
         background: #e8f5e9;
         border: 1px solid #a5d6a7;
       }
-      .result-panel.error { background: #fce4ec; border-color: #ef9a9a; }
-      .result-panel h4 { margin: 0 0 8px 0; }
-      .result-list {
-        list-style: none; padding: 0; margin: 0; font-size: 13px;
+      .result-panel.error {
+        background: #fce4ec;
+        border-color: #ef9a9a;
       }
-      .result-list li { padding: 4px 0; font-family: monospace; }
+      .result-panel h4 {
+        margin: 0 0 8px 0;
+      }
+      .result-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        font-size: 13px;
+      }
+      .result-list li {
+        padding: 4px 0;
+        font-family: monospace;
+      }
 
       /* ── Danger zone ── */
       .danger-zone {
@@ -255,7 +295,10 @@ export class DmSystemView extends LitElement {
         padding: 24px;
         margin-bottom: 0;
       }
-      .danger-zone h3 { color: #c62828; margin: 0 0 8px 0; }
+      .danger-zone h3 {
+        color: #c62828;
+        margin: 0 0 8px 0;
+      }
       .danger-action {
         display: flex;
         align-items: flex-start;
@@ -266,9 +309,18 @@ export class DmSystemView extends LitElement {
         border: 1px solid #ffcdd2;
         margin-top: 12px;
       }
-      .danger-action-info { flex: 1; }
-      .danger-action-info h4 { margin: 0 0 4px 0; color: #b71c1c; }
-      .danger-action-info p  { margin: 0; font-size: 13px; color: #666; }
+      .danger-action-info {
+        flex: 1;
+      }
+      .danger-action-info h4 {
+        margin: 0 0 4px 0;
+        color: #b71c1c;
+      }
+      .danger-action-info p {
+        margin: 0;
+        font-size: 13px;
+        color: #666;
+      }
       .btn-danger {
         padding: 8px 20px;
         border: none;
@@ -280,14 +332,20 @@ export class DmSystemView extends LitElement {
         white-space: nowrap;
         transition: background 0.15s;
       }
-      .btn-danger:hover { background: #b71c1c; }
-      .btn-danger:disabled { background: #e0e0e0; cursor: not-allowed; color: #999; }
+      .btn-danger:hover {
+        background: #b71c1c;
+      }
+      .btn-danger:disabled {
+        background: #e0e0e0;
+        cursor: not-allowed;
+        color: #999;
+      }
 
       /* ── Confirm overlay ── */
       .confirm-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(0,0,0,.5);
+        background: rgba(0, 0, 0, 0.5);
         display: flex;
         justify-content: center;
         align-items: center;
@@ -299,10 +357,17 @@ export class DmSystemView extends LitElement {
         padding: 32px;
         max-width: 440px;
         width: 90%;
-        box-shadow: 0 8px 32px rgba(0,0,0,.2);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
       }
-      .confirm-dialog h3 { color: #c62828; margin: 0 0 12px 0; }
-      .confirm-dialog p  { color: #666; font-size: 14px; margin: 0 0 16px 0; }
+      .confirm-dialog h3 {
+        color: #c62828;
+        margin: 0 0 12px 0;
+      }
+      .confirm-dialog p {
+        color: #666;
+        font-size: 14px;
+        margin: 0 0 16px 0;
+      }
       .phrase-hint {
         background: #fce4ec;
         padding: 8px 12px;
@@ -324,7 +389,10 @@ export class DmSystemView extends LitElement {
         margin-bottom: 16px;
         font-family: monospace;
       }
-      .confirm-dialog input:focus { outline: none; border-color: #c62828; }
+      .confirm-dialog input:focus {
+        outline: none;
+        border-color: #c62828;
+      }
       .confirm-dialog .actions {
         display: flex;
         gap: 12px;
@@ -385,7 +453,9 @@ export class DmSystemView extends LitElement {
               class="tab-btn ${this._activeTab === t.id ? "active" : ""}"
               role="tab"
               aria-selected="${this._activeTab === t.id}"
-              @click=${() => { this._activeTab = t.id; }}
+              @click=${() => {
+                this._activeTab = t.id;
+              }}
             >
               <span class="tab-icon">${t.icon}</span>
               ${i18n.t(t.labelKey)}
@@ -395,13 +465,14 @@ export class DmSystemView extends LitElement {
       </div>
 
       <!-- Tab panels -->
-      ${this._activeTab === "import-export" ? this._renderImportExport() : nothing}
-      ${this._activeTab === "common"        ? this._renderCommon()       : nothing}
-      ${this._activeTab === "mqtt"          ? this._renderMQTT()         : nothing}
-      ${this._activeTab === "wifi"          ? this._renderWifi()         : nothing}
-      ${this._activeTab === "zigbee"        ? this._renderZigbee()       : nothing}
-      ${this._activeTab === "maintenance"   ? this._renderMaintenance()  : nothing}
-
+      ${this._activeTab === "import-export"
+        ? this._renderImportExport()
+        : nothing}
+      ${this._activeTab === "common" ? this._renderCommon() : nothing}
+      ${this._activeTab === "mqtt" ? this._renderMQTT() : nothing}
+      ${this._activeTab === "wifi" ? this._renderWifi() : nothing}
+      ${this._activeTab === "zigbee" ? this._renderZigbee() : nothing}
+      ${this._activeTab === "maintenance" ? this._renderMaintenance() : nothing}
       ${this._showConfirm ? this._renderConfirmDialog() : nothing}
     `;
   }
@@ -423,17 +494,33 @@ export class DmSystemView extends LitElement {
           storageKey="system-export"
         ></dm-doc-block>
         <div class="export-actions">
-          <button class="btn-export" ?disabled=${this._exporting} @click=${() => this._exportData("csv")}>
+          <button
+            class="btn-export"
+            ?disabled=${this._exporting}
+            @click=${() => this._exportData("csv")}
+          >
             📄 CSV
           </button>
-          <button class="btn-export" ?disabled=${this._exporting} @click=${() => this._exportData("json")}>
+          <button
+            class="btn-export"
+            ?disabled=${this._exporting}
+            @click=${() => this._exportData("json")}
+          >
             📝 JSON
           </button>
-          <button class="btn-export" ?disabled=${this._exporting} @click=${() => this._exportData("yaml")}>
+          <button
+            class="btn-export"
+            ?disabled=${this._exporting}
+            @click=${() => this._exportData("yaml")}
+          >
             📑 YAML
           </button>
         </div>
-        ${this._exporting ? html`<p class="hint" style="margin-top:12px">${i18n.t("loading")}</p>` : nothing}
+        ${this._exporting
+          ? html`<p class="hint" style="margin-top:12px">
+              ${i18n.t("loading")}
+            </p>`
+          : nothing}
         ${this._exportError
           ? html`<div class="result-panel error" style="margin-top:12px">
               <h4>❌ ${i18n.t("error_loading")}</h4>
@@ -463,7 +550,8 @@ export class DmSystemView extends LitElement {
 
   private _renderCommon() {
     const f = this._settingsForm;
-    if (!f) return html`<div class="card"><p>${i18n.t("config_loading")}</p></div>`;
+    if (!f)
+      return html`<div class="card"><p>${i18n.t("config_loading")}</p></div>`;
     return html`
       <div class="card">
         <div class="card-header">
@@ -475,20 +563,30 @@ export class DmSystemView extends LitElement {
         <div class="settings-grid">
           <div class="settings-field">
             <label>${i18n.t("config_ip_prefix")}</label>
-            <input type="text" .value=${f.ip_prefix}
-              @input=${(e: Event) => this._updateSetting("ip_prefix", e)} />
+            <input
+              type="text"
+              .value=${f.ip_prefix}
+              @input=${(e: Event) => this._updateSetting("ip_prefix", e)}
+            />
             <div class="hint">${i18n.t("config_ip_prefix_hint")}</div>
           </div>
           <div class="settings-field">
             <label>${i18n.t("config_dns_suffix")}</label>
-            <input type="text" .value=${f.dns_suffix}
-              @input=${(e: Event) => this._updateSetting("dns_suffix", e)} />
+            <input
+              type="text"
+              .value=${f.dns_suffix}
+              @input=${(e: Event) => this._updateSetting("dns_suffix", e)}
+            />
             <div class="hint">${i18n.t("config_dns_suffix_hint")}</div>
           </div>
           <div class="settings-field">
             <label>${i18n.t("config_default_home")}</label>
-            <input type="text" .value=${f.default_building_name}
-              @input=${(e: Event) => this._updateSetting("default_building_name", e)} />
+            <input
+              type="text"
+              .value=${f.default_building_name}
+              @input=${(e: Event) =>
+                this._updateSetting("default_building_name", e)}
+            />
             <div class="hint">${i18n.t("config_default_home_hint")}</div>
           </div>
         </div>
@@ -497,14 +595,20 @@ export class DmSystemView extends LitElement {
         <div class="settings-grid">
           <div class="settings-field">
             <label>${i18n.t("config_device_pass")}</label>
-            <input type="password" .value=${f.device_pass}
-              @input=${(e: Event) => this._updateSetting("device_pass", e)} />
+            <input
+              type="password"
+              .value=${f.device_pass}
+              @input=${(e: Event) => this._updateSetting("device_pass", e)}
+            />
             <div class="hint">${i18n.t("config_device_pass_hint")}</div>
           </div>
           <div class="settings-field">
             <label>${i18n.t("config_ntp_server1")}</label>
-            <input type="text" .value=${f.ntp_server1}
-              @input=${(e: Event) => this._updateSetting("ntp_server1", e)} />
+            <input
+              type="text"
+              .value=${f.ntp_server1}
+              @input=${(e: Event) => this._updateSetting("ntp_server1", e)}
+            />
             <div class="hint">${i18n.t("config_ntp_server1_hint")}</div>
           </div>
         </div>
@@ -513,17 +617,27 @@ export class DmSystemView extends LitElement {
         <div class="settings-grid">
           <div class="settings-field" style="grid-column: span 2">
             <label>${i18n.t("config_scan_ssh_key_upload")}</label>
-            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-              <input type="text" readonly
+            <div
+              style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"
+            >
+              <input
+                type="text"
+                readonly
                 .value=${f.scan_ssh_key_file || ""}
                 placeholder="/config/dm/keys/…"
                 style="flex:1;min-width:200px;background:#f5f5f5;cursor:default"
               />
-              <label class="btn btn-secondary" style="cursor:pointer;white-space:nowrap">
-                🔑 ${this._sshKeyUploading
+              <label
+                class="btn btn-secondary"
+                style="cursor:pointer;white-space:nowrap"
+              >
+                🔑
+                ${this._sshKeyUploading
                   ? i18n.t("config_scan_ssh_key_uploading")
                   : i18n.t("config_scan_ssh_key_upload")}
-                <input type="file" hidden
+                <input
+                  type="file"
+                  hidden
                   ?disabled=${this._sshKeyUploading}
                   @change=${this._onSshKeyFileChange}
                 />
@@ -531,21 +645,32 @@ export class DmSystemView extends LitElement {
             </div>
             <div class="hint">${i18n.t("config_scan_ssh_key_upload_hint")}</div>
             ${this._sshKeyToast
-              ? html`<div class="hint" style="margin-top:4px;color:${this._sshKeyToast.ok ? "#2e7d32" : "#c62828"}">
+              ? html`<div
+                  class="hint"
+                  style="margin-top:4px;color:${this._sshKeyToast.ok
+                    ? "#2e7d32"
+                    : "#c62828"}"
+                >
                   ${this._sshKeyToast.ok ? "✅" : "❌"} ${this._sshKeyToast.msg}
                 </div>`
               : nothing}
           </div>
           <div class="settings-field">
             <label>${i18n.t("config_scan_ssh_user")}</label>
-            <input type="text" .value=${f.scan_ssh_user}
-              @input=${(e: Event) => this._updateSetting("scan_ssh_user", e)} />
+            <input
+              type="text"
+              .value=${f.scan_ssh_user}
+              @input=${(e: Event) => this._updateSetting("scan_ssh_user", e)}
+            />
             <div class="hint">${i18n.t("config_scan_ssh_user_hint")}</div>
           </div>
           <div class="settings-field">
             <label>${i18n.t("config_scan_ssh_host")}</label>
-            <input type="text" .value=${f.scan_ssh_host}
-              @input=${(e: Event) => this._updateSetting("scan_ssh_host", e)} />
+            <input
+              type="text"
+              .value=${f.scan_ssh_host}
+              @input=${(e: Event) => this._updateSetting("scan_ssh_host", e)}
+            />
             <div class="hint">${i18n.t("config_scan_ssh_host_hint")}</div>
           </div>
         </div>
@@ -561,7 +686,8 @@ export class DmSystemView extends LitElement {
 
   private _renderMQTT() {
     const f = this._settingsForm;
-    if (!f) return html`<div class="card"><p>${i18n.t("config_loading")}</p></div>`;
+    if (!f)
+      return html`<div class="card"><p>${i18n.t("config_loading")}</p></div>`;
     return html`
       <div class="card">
         <div class="card-header">
@@ -573,26 +699,39 @@ export class DmSystemView extends LitElement {
         <div class="settings-grid">
           <div class="settings-field">
             <label>${i18n.t("config_bus_host")}</label>
-            <input type="text" .value=${f.bus_host}
-              @input=${(e: Event) => this._updateSetting("bus_host", e)} />
+            <input
+              type="text"
+              .value=${f.bus_host}
+              @input=${(e: Event) => this._updateSetting("bus_host", e)}
+            />
             <div class="hint">${i18n.t("config_bus_host_hint")}</div>
           </div>
           <div class="settings-field">
             <label>${i18n.t("config_bus_port")}</label>
-            <input type="text" inputmode="numeric" .value=${f.bus_port}
-              @input=${(e: Event) => this._updateSetting("bus_port", e)} />
+            <input
+              type="text"
+              inputmode="numeric"
+              .value=${f.bus_port}
+              @input=${(e: Event) => this._updateSetting("bus_port", e)}
+            />
             <div class="hint">${i18n.t("config_bus_port_hint")}</div>
           </div>
           <div class="settings-field">
             <label>${i18n.t("config_bus_username")}</label>
-            <input type="text" .value=${f.bus_username}
-              @input=${(e: Event) => this._updateSetting("bus_username", e)} />
+            <input
+              type="text"
+              .value=${f.bus_username}
+              @input=${(e: Event) => this._updateSetting("bus_username", e)}
+            />
             <div class="hint">${i18n.t("config_bus_username_hint")}</div>
           </div>
           <div class="settings-field">
             <label>${i18n.t("config_bus_password")}</label>
-            <input type="password" .value=${f.bus_password}
-              @input=${(e: Event) => this._updateSetting("bus_password", e)} />
+            <input
+              type="password"
+              .value=${f.bus_password}
+              @input=${(e: Event) => this._updateSetting("bus_password", e)}
+            />
             <div class="hint">${i18n.t("config_bus_password_hint")}</div>
           </div>
         </div>
@@ -601,8 +740,12 @@ export class DmSystemView extends LitElement {
         <div class="settings-grid">
           <div class="settings-field">
             <label>${i18n.t("config_mqtt_prefix")}</label>
-            <input type="text" .value=${f.mqtt_topic_prefix}
-              @input=${(e: Event) => this._updateSetting("mqtt_topic_prefix", e)} />
+            <input
+              type="text"
+              .value=${f.mqtt_topic_prefix}
+              @input=${(e: Event) =>
+                this._updateSetting("mqtt_topic_prefix", e)}
+            />
             <div class="hint">${i18n.t("config_mqtt_prefix_hint")}</div>
           </div>
         </div>
@@ -618,7 +761,8 @@ export class DmSystemView extends LitElement {
 
   private _renderWifi() {
     const f = this._settingsForm;
-    if (!f) return html`<div class="card"><p>${i18n.t("config_loading")}</p></div>`;
+    if (!f)
+      return html`<div class="card"><p>${i18n.t("config_loading")}</p></div>`;
     return html`
       <div class="card">
         <div class="card-header">
@@ -630,14 +774,20 @@ export class DmSystemView extends LitElement {
         <div class="settings-grid">
           <div class="settings-field">
             <label>${i18n.t("config_wifi1_ssid")}</label>
-            <input type="text" .value=${f.wifi1_ssid}
-              @input=${(e: Event) => this._updateSetting("wifi1_ssid", e)} />
+            <input
+              type="text"
+              .value=${f.wifi1_ssid}
+              @input=${(e: Event) => this._updateSetting("wifi1_ssid", e)}
+            />
             <div class="hint">${i18n.t("config_wifi1_ssid_hint")}</div>
           </div>
           <div class="settings-field">
             <label>${i18n.t("config_wifi1_password")}</label>
-            <input type="password" .value=${f.wifi1_password}
-              @input=${(e: Event) => this._updateSetting("wifi1_password", e)} />
+            <input
+              type="password"
+              .value=${f.wifi1_password}
+              @input=${(e: Event) => this._updateSetting("wifi1_password", e)}
+            />
             <div class="hint">${i18n.t("config_wifi1_password_hint")}</div>
           </div>
         </div>
@@ -646,14 +796,20 @@ export class DmSystemView extends LitElement {
         <div class="settings-grid">
           <div class="settings-field">
             <label>${i18n.t("config_wifi2_ssid")}</label>
-            <input type="text" .value=${f.wifi2_ssid}
-              @input=${(e: Event) => this._updateSetting("wifi2_ssid", e)} />
+            <input
+              type="text"
+              .value=${f.wifi2_ssid}
+              @input=${(e: Event) => this._updateSetting("wifi2_ssid", e)}
+            />
             <div class="hint">${i18n.t("config_wifi2_ssid_hint")}</div>
           </div>
           <div class="settings-field">
             <label>${i18n.t("config_wifi2_password")}</label>
-            <input type="password" .value=${f.wifi2_password}
-              @input=${(e: Event) => this._updateSetting("wifi2_password", e)} />
+            <input
+              type="password"
+              .value=${f.wifi2_password}
+              @input=${(e: Event) => this._updateSetting("wifi2_password", e)}
+            />
             <div class="hint">${i18n.t("config_wifi2_password_hint")}</div>
           </div>
         </div>
@@ -669,7 +825,8 @@ export class DmSystemView extends LitElement {
 
   private _renderZigbee() {
     const f = this._settingsForm;
-    if (!f) return html`<div class="card"><p>${i18n.t("config_loading")}</p></div>`;
+    if (!f)
+      return html`<div class="card"><p>${i18n.t("config_loading")}</p></div>`;
     return html`
       <div class="card">
         <div class="card-header">
@@ -681,15 +838,24 @@ export class DmSystemView extends LitElement {
         <div class="settings-grid">
           <div class="settings-field">
             <label>${i18n.t("config_bridge_host")}</label>
-            <input type="text" .value=${f.bridge_host}
-              @input=${(e: Event) => this._updateSetting("bridge_host", e)} />
+            <input
+              type="text"
+              .value=${f.bridge_host}
+              @input=${(e: Event) => this._updateSetting("bridge_host", e)}
+            />
             <div class="hint">${i18n.t("config_bridge_host_hint")}</div>
           </div>
           <div class="settings-field">
             <label>${i18n.t("config_bridge_devices_config_path")}</label>
-            <input type="text" .value=${f.bridge_devices_config_path}
-              @input=${(e: Event) => this._updateSetting("bridge_devices_config_path", e)} />
-            <div class="hint">${i18n.t("config_bridge_devices_config_path_hint")}</div>
+            <input
+              type="text"
+              .value=${f.bridge_devices_config_path}
+              @input=${(e: Event) =>
+                this._updateSetting("bridge_devices_config_path", e)}
+            />
+            <div class="hint">
+              ${i18n.t("config_bridge_devices_config_path_hint")}
+            </div>
           </div>
         </div>
 
@@ -714,8 +880,14 @@ export class DmSystemView extends LitElement {
           .doc=${getDoc("maintenance.scan.overview")}
           storageKey="system-scan"
         ></dm-doc-block>
-        <button class="btn-scan" ?disabled=${this._scanning} @click=${this._executeScan}>
-          ${this._scanning ? i18n.t("maint_scan_running") : "🔍 " + i18n.t("maint_scan_network")}
+        <button
+          class="btn-scan"
+          ?disabled=${this._scanning}
+          @click=${this._executeScan}
+        >
+          ${this._scanning
+            ? i18n.t("maint_scan_running")
+            : "🔍 " + i18n.t("maint_scan_network")}
         </button>
         ${this._scanning
           ? html`<div class="scan-progress">
@@ -727,19 +899,64 @@ export class DmSystemView extends LitElement {
           ? html`<div class="result-panel" style="margin-top:16px">
               <h4>✅ ${i18n.t("maint_scan_triggered")}</h4>
               ${this._scanResult.stats
-                ? html`<table style="margin-top:8px;border-collapse:collapse;font-size:13px;font-family:monospace;width:100%">
-                    <tr><td style="padding:2px 8px 2px 0">${i18n.t("maint_scan_stat_total")}</td><td><strong>${this._scanResult.stats.total}</strong></td></tr>
-                    <tr style="color:var(--success-color,#4caf50)"><td style="padding:2px 8px 2px 0">${i18n.t("maint_scan_stat_mapped")}</td><td><strong>${this._scanResult.stats.mapped}</strong></td></tr>
-                    <tr style="color:var(--warning-color,#ff9800)"><td style="padding:2px 8px 2px 0">${i18n.t("maint_scan_stat_not_found")}</td><td><strong>${this._scanResult.stats.not_found}</strong></td></tr>
-                    <tr style="color:${this._scanResult.stats.errors > 0 ? 'var(--error-color,#f44336)' : 'inherit'}"><td style="padding:2px 8px 2px 0">${i18n.t("maint_scan_stat_errors")}</td><td><strong>${this._scanResult.stats.errors}</strong></td></tr>
-                  </table>
-                  ${this._scanResult.stats.error_details?.length
-                    ? html`<details style="margin-top:8px;font-size:12px">
-                        <summary style="cursor:pointer;color:var(--error-color,#f44336)">${i18n.t("maint_scan_stat_error_details")} (${this._scanResult.stats.error_details.length})</summary>
-                        <ul style="margin:4px 0;padding-left:16px">${this._scanResult.stats.error_details.map(e => html`<li>${e}</li>`)}</ul>
-                      </details>`
-                    : nothing}`
-                : html`<p style="margin:0;font-size:13px;font-family:monospace">${this._scanResult.result}</p>`}
+                ? html`<table
+                      style="margin-top:8px;border-collapse:collapse;font-size:13px;font-family:monospace;width:100%"
+                    >
+                      <tr>
+                        <td style="padding:2px 8px 2px 0">
+                          ${i18n.t("maint_scan_stat_total")}
+                        </td>
+                        <td>
+                          <strong>${this._scanResult.stats.total}</strong>
+                        </td>
+                      </tr>
+                      <tr style="color:var(--success-color,#4caf50)">
+                        <td style="padding:2px 8px 2px 0">
+                          ${i18n.t("maint_scan_stat_mapped")}
+                        </td>
+                        <td>
+                          <strong>${this._scanResult.stats.mapped}</strong>
+                        </td>
+                      </tr>
+                      <tr style="color:var(--warning-color,#ff9800)">
+                        <td style="padding:2px 8px 2px 0">
+                          ${i18n.t("maint_scan_stat_not_found")}
+                        </td>
+                        <td>
+                          <strong>${this._scanResult.stats.not_found}</strong>
+                        </td>
+                      </tr>
+                      <tr
+                        style="color:${this._scanResult.stats.errors > 0
+                          ? "var(--error-color,#f44336)"
+                          : "inherit"}"
+                      >
+                        <td style="padding:2px 8px 2px 0">
+                          ${i18n.t("maint_scan_stat_errors")}
+                        </td>
+                        <td>
+                          <strong>${this._scanResult.stats.errors}</strong>
+                        </td>
+                      </tr>
+                    </table>
+                    ${this._scanResult.stats.error_details?.length
+                      ? html`<details style="margin-top:8px;font-size:12px">
+                          <summary
+                            style="cursor:pointer;color:var(--error-color,#f44336)"
+                          >
+                            ${i18n.t("maint_scan_stat_error_details")}
+                            (${this._scanResult.stats.error_details.length})
+                          </summary>
+                          <ul style="margin:4px 0;padding-left:16px">
+                            ${this._scanResult.stats.error_details.map(
+                              (e) => html`<li>${e}</li>`
+                            )}
+                          </ul>
+                        </details>`
+                      : nothing}`
+                : html`<p style="margin:0;font-size:13px;font-family:monospace">
+                    ${this._scanResult.result}
+                  </p>`}
             </div>`
           : nothing}
         ${this._scanError
@@ -781,7 +998,10 @@ export class DmSystemView extends LitElement {
               <h4>✅ ${i18n.t("maint_clean_success")}</h4>
               <ul class="result-list">
                 ${Object.entries(this._cleanResult.deleted).map(
-                  ([table, count]) => html`<li>${table}: ${count} ${i18n.t("maint_rows_deleted")}</li>`
+                  ([table, count]) =>
+                    html`<li>
+                      ${table}: ${count} ${i18n.t("maint_rows_deleted")}
+                    </li>`
                 )}
               </ul>
             </div>`
@@ -799,15 +1019,22 @@ export class DmSystemView extends LitElement {
             <h4>🌐 ${i18n.t("maint_clear_ip_cache")}</h4>
             <p>${i18n.t("maint_clear_ip_cache_desc")}</p>
           </div>
-          <button class="btn-danger" ?disabled=${this._clearingIP} @click=${this._executeClearIPCache}>
-            ${this._clearingIP ? i18n.t("loading") : i18n.t("maint_clear_ip_cache")}
+          <button
+            class="btn-danger"
+            ?disabled=${this._clearingIP}
+            @click=${this._executeClearIPCache}
+          >
+            ${this._clearingIP
+              ? i18n.t("loading")
+              : i18n.t("maint_clear_ip_cache")}
           </button>
         </div>
         ${this._clearIPResult
           ? html`<div class="result-panel" style="margin-top:12px">
               <h4>✅ ${i18n.t("maint_clear_ip_cache_success")}</h4>
               <p style="margin:0;font-family:monospace;font-size:13px">
-                ${this._clearIPResult.updated} ${i18n.t("maint_clear_ip_updated")}
+                ${this._clearIPResult.updated}
+                ${i18n.t("maint_clear_ip_updated")}
               </p>
             </div>`
           : nothing}
@@ -828,11 +1055,19 @@ export class DmSystemView extends LitElement {
   private _renderSettingsActions() {
     return html`
       <div class="settings-actions">
-        <button class="btn btn-primary" ?disabled=${this._settingsSaving} @click=${this._saveSettings}>
+        <button
+          class="btn btn-primary"
+          ?disabled=${this._settingsSaving}
+          @click=${this._saveSettings}
+        >
           ${this._settingsSaving ? i18n.t("loading") : i18n.t("save")}
         </button>
         ${this._settingsToast
-          ? html`<span class="settings-toast ${this._settingsToast.ok ? "success" : "error"}">
+          ? html`<span
+              class="settings-toast ${this._settingsToast.ok
+                ? "success"
+                : "error"}"
+            >
               ${this._settingsToast.msg}
             </span>`
           : nothing}
@@ -847,7 +1082,12 @@ export class DmSystemView extends LitElement {
   private _renderConfirmDialog() {
     const isMatch = this._confirmInput === this._confirmPhrase;
     return html`
-      <div class="confirm-overlay" @click=${() => { this._showConfirm = false; }}>
+      <div
+        class="confirm-overlay"
+        @click=${() => {
+          this._showConfirm = false;
+        }}
+      >
         <div class="confirm-dialog" @click=${(e: Event) => e.stopPropagation()}>
           <h3>⚠️ ${i18n.t("maint_confirm_title")}</h3>
           <p>${i18n.t("maint_confirm_desc")}</p>
@@ -856,10 +1096,17 @@ export class DmSystemView extends LitElement {
             type="text"
             placeholder="${i18n.t("maint_confirm_placeholder")}"
             .value=${this._confirmInput}
-            @input=${(e: Event) => { this._confirmInput = (e.target as HTMLInputElement).value; }}
+            @input=${(e: Event) => {
+              this._confirmInput = (e.target as HTMLInputElement).value;
+            }}
           />
           <div class="actions">
-            <button class="btn btn-secondary" @click=${() => { this._showConfirm = false; }}>
+            <button
+              class="btn btn-secondary"
+              @click=${() => {
+                this._showConfirm = false;
+              }}
+            >
               ${i18n.t("cancel")}
             </button>
             <button
@@ -867,7 +1114,9 @@ export class DmSystemView extends LitElement {
               ?disabled=${!isMatch || this._cleaning}
               @click=${this._executeCleanDB}
             >
-              ${this._cleaning ? i18n.t("loading") : i18n.t("maint_confirm_execute")}
+              ${this._cleaning
+                ? i18n.t("loading")
+                : i18n.t("maint_confirm_execute")}
             </button>
           </div>
         </div>
@@ -908,7 +1157,9 @@ export class DmSystemView extends LitElement {
     this._cleaning = true;
     this._cleanError = null;
     try {
-      this._cleanResult = await this._maintenanceClient.cleanDB(this._confirmPhrase);
+      this._cleanResult = await this._maintenanceClient.cleanDB(
+        this._confirmPhrase
+      );
     } catch (err) {
       this._cleanError = String(err);
       this._cleanResult = null;
@@ -959,7 +1210,10 @@ export class DmSystemView extends LitElement {
     try {
       const result = await this._settingsClient.uploadSshKey(file);
       if (this._settingsForm) {
-        this._settingsForm = { ...this._settingsForm, scan_ssh_key_file: result.path };
+        this._settingsForm = {
+          ...this._settingsForm,
+          scan_ssh_key_file: result.path,
+        };
       }
       this._sshKeyToast = {
         msg: `${i18n.t("config_scan_ssh_key_upload_success")}: ${result.filename}`,
@@ -974,7 +1228,9 @@ export class DmSystemView extends LitElement {
     } finally {
       this._sshKeyUploading = false;
       input.value = "";
-      setTimeout(() => { this._sshKeyToast = null; }, 6000);
+      setTimeout(() => {
+        this._sshKeyToast = null;
+      }, 6000);
     }
   }
 
@@ -994,6 +1250,8 @@ export class DmSystemView extends LitElement {
       };
     }
     this._settingsSaving = false;
-    setTimeout(() => { this._settingsToast = null; }, 4000);
+    setTimeout(() => {
+      this._settingsToast = null;
+    }, 4000);
   }
 }

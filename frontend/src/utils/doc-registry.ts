@@ -70,9 +70,7 @@ const _rawDocs = import.meta.glob("../../docs/**/*.md", {
  * "../../docs/settings/models/overview.en.md" → { key: "settings.models.overview", lang: "en" }
  * "../../docs/settings/overview.fr.md"        → { key: "settings.overview",         lang: "fr" }
  */
-function _pathToKeyAndLang(
-  path: string,
-): { key: string; lang: string } | null {
+function _pathToKeyAndLang(path: string): { key: string; lang: string } | null {
   const inner = path.replace(/^\.\.\/\.\.\/docs\//, "").replace(/\.md$/, "");
   const segments = inner.split("/");
   const lastSegment = segments[segments.length - 1];

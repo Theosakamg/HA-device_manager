@@ -70,7 +70,9 @@ export class DmDashboardView extends LitElement {
         display: flex;
         align-items: center;
         gap: 16px;
-        transition: transform 0.15s, box-shadow 0.15s;
+        transition:
+          transform 0.15s,
+          box-shadow 0.15s;
         border-top: 4px solid transparent;
         position: relative;
         overflow: hidden;
@@ -90,14 +92,30 @@ export class DmDashboardView extends LitElement {
         transform: translateY(-2px);
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
       }
-      .kpi-card.blue  { border-top-color: #03a9f4; }
-      .kpi-card.blue::before  { background: #03a9f4; }
-      .kpi-card.teal  { border-top-color: #009688; }
-      .kpi-card.teal::before  { background: #009688; }
-      .kpi-card.purple { border-top-color: #9c27b0; }
-      .kpi-card.purple::before { background: #9c27b0; }
-      .kpi-card.orange { border-top-color: #ff9800; }
-      .kpi-card.orange::before { background: #ff9800; }
+      .kpi-card.blue {
+        border-top-color: #03a9f4;
+      }
+      .kpi-card.blue::before {
+        background: #03a9f4;
+      }
+      .kpi-card.teal {
+        border-top-color: #009688;
+      }
+      .kpi-card.teal::before {
+        background: #009688;
+      }
+      .kpi-card.purple {
+        border-top-color: #9c27b0;
+      }
+      .kpi-card.purple::before {
+        background: #9c27b0;
+      }
+      .kpi-card.orange {
+        border-top-color: #ff9800;
+      }
+      .kpi-card.orange::before {
+        background: #ff9800;
+      }
 
       .kpi-icon {
         font-size: 32px;
@@ -113,10 +131,18 @@ export class DmDashboardView extends LitElement {
         line-height: 1;
         color: var(--dm-text);
       }
-      .kpi-card.blue .kpi-value  { color: #03a9f4; }
-      .kpi-card.teal .kpi-value  { color: #009688; }
-      .kpi-card.purple .kpi-value { color: #9c27b0; }
-      .kpi-card.orange .kpi-value { color: #ff9800; }
+      .kpi-card.blue .kpi-value {
+        color: #03a9f4;
+      }
+      .kpi-card.teal .kpi-value {
+        color: #009688;
+      }
+      .kpi-card.purple .kpi-value {
+        color: #9c27b0;
+      }
+      .kpi-card.orange .kpi-value {
+        color: #ff9800;
+      }
       .kpi-label {
         font-size: 13px;
         color: var(--dm-text-secondary);
@@ -197,16 +223,36 @@ export class DmDashboardView extends LitElement {
       }
 
       /* ── Color palette for bars ── */
-      .color-0 { background: #03a9f4; }
-      .color-1 { background: #9c27b0; }
-      .color-2 { background: #4caf50; }
-      .color-3 { background: #ff9800; }
-      .color-4 { background: #f44336; }
-      .color-5 { background: #009688; }
-      .color-6 { background: #3f51b5; }
-      .color-7 { background: #e91e63; }
-      .color-8 { background: #795548; }
-      .color-9 { background: #607d8b; }
+      .color-0 {
+        background: #03a9f4;
+      }
+      .color-1 {
+        background: #9c27b0;
+      }
+      .color-2 {
+        background: #4caf50;
+      }
+      .color-3 {
+        background: #ff9800;
+      }
+      .color-4 {
+        background: #f44336;
+      }
+      .color-5 {
+        background: #009688;
+      }
+      .color-6 {
+        background: #3f51b5;
+      }
+      .color-7 {
+        background: #e91e63;
+      }
+      .color-8 {
+        background: #795548;
+      }
+      .color-9 {
+        background: #607d8b;
+      }
 
       /* ── Empty / loading states ── */
       .empty-chart {
@@ -224,7 +270,12 @@ export class DmDashboardView extends LitElement {
       }
       .skeleton-bar {
         height: 10px;
-        background: linear-gradient(90deg, #eeeeee 25%, #f5f5f5 50%, #eeeeee 75%);
+        background: linear-gradient(
+          90deg,
+          #eeeeee 25%,
+          #f5f5f5 50%,
+          #eeeeee 75%
+        );
         background-size: 200% 100%;
         animation: shimmer 1.5s infinite;
         border-radius: 99px;
@@ -232,14 +283,23 @@ export class DmDashboardView extends LitElement {
       .skeleton-kpi {
         height: 36px;
         width: 80px;
-        background: linear-gradient(90deg, #eeeeee 25%, #f5f5f5 50%, #eeeeee 75%);
+        background: linear-gradient(
+          90deg,
+          #eeeeee 25%,
+          #f5f5f5 50%,
+          #eeeeee 75%
+        );
         background-size: 200% 100%;
         animation: shimmer 1.5s infinite;
         border-radius: 4px;
       }
       @keyframes shimmer {
-        0%   { background-position: 200% 0; }
-        100% { background-position: -200% 0; }
+        0% {
+          background-position: 200% 0;
+        }
+        100% {
+          background-position: -200% 0;
+        }
       }
 
       /* ── Footer note ── */
@@ -321,35 +381,32 @@ export class DmDashboardView extends LitElement {
               <div class="loading-skeleton">
                 ${[80, 60, 45, 30].map(
                   (w) =>
-                    html`<div
-                      class="skeleton-bar"
-                      style="width:${w}%"
-                    ></div>`
+                    html`<div class="skeleton-bar" style="width:${w}%"></div>`
                 )}
               </div>
             `
           : items.length === 0
-          ? html`<div class="empty-chart">${i18n.t("no_devices")}</div>`
-          : html`
-              <div class="bar-list">
-                ${items.map(
-                  (item) => html`
-                    <div class="bar-row">
-                      <span class="bar-label" title="${item.label}"
-                        >${item.label}</span
-                      >
-                      <div class="bar-track">
-                        <div
-                          class="bar-fill ${item.color}"
-                          style="width: ${item.percentage}%"
-                        ></div>
+            ? html`<div class="empty-chart">${i18n.t("no_devices")}</div>`
+            : html`
+                <div class="bar-list">
+                  ${items.map(
+                    (item) => html`
+                      <div class="bar-row">
+                        <span class="bar-label" title="${item.label}"
+                          >${item.label}</span
+                        >
+                        <div class="bar-track">
+                          <div
+                            class="bar-fill ${item.color}"
+                            style="width: ${item.percentage}%"
+                          ></div>
+                        </div>
+                        <span class="bar-count">${item.count}</span>
                       </div>
-                      <span class="bar-count">${item.count}</span>
-                    </div>
-                  `
-                )}
-              </div>
-            `}
+                    `
+                  )}
+                </div>
+              `}
       </div>
     `;
   }

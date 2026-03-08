@@ -69,7 +69,9 @@ export class SettingsClient extends BaseClient {
   }
 
   /** Upload a SSH private key file. Returns the stored absolute path. */
-  async uploadSshKey(file: File): Promise<{ success: boolean; path: string; filename: string }> {
+  async uploadSshKey(
+    file: File
+  ): Promise<{ success: boolean; path: string; filename: string }> {
     return this.upload("/ssh-key/upload", file, "file");
   }
 }
@@ -117,7 +119,9 @@ export function getSettings(): AppSettings {
 }
 
 /** Force-refresh the cache. If data is provided, use it directly; otherwise fetch from API. */
-export async function refreshSettings(data?: AppSettings): Promise<AppSettings> {
+export async function refreshSettings(
+  data?: AppSettings
+): Promise<AppSettings> {
   if (data) {
     _cached = data;
     return data;

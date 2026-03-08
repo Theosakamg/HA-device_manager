@@ -270,9 +270,7 @@ class ZigbeeAdapter(FirmwareAdapter):
             "mac": device.mac,
             "hostname": hostname,
             "friendly_name": device.display_name(),
-            "mqtt_topic": device.mqtt_topic(
-                self.manager.get_setting('mqtt_topic_prefix', 'home')
-            ),
+            "mqtt_topic": device.mqtt_topic(),
         }
 
         with open(filepath, 'w') as f:
@@ -298,9 +296,7 @@ class ZigbeeAdapter(FirmwareAdapter):
             }
 
             # Add MQTT topic if available
-            mqtt_topic = device.mqtt_topic(
-                self.manager.get_setting('mqtt_topic_prefix', 'home')
-            )
+            mqtt_topic = device.mqtt_topic()
             if mqtt_topic:
                 config[ieee]['mqtt_topic'] = mqtt_topic
 

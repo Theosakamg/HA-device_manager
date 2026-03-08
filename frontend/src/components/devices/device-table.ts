@@ -351,7 +351,9 @@ export class DmDeviceTable extends LitElement {
         min-width: unset;
         min-height: unset;
         line-height: 1.5;
-        transition: background 0.15s, color 0.15s;
+        transition:
+          background 0.15s,
+          color 0.15s;
       }
       .filter-copy-btn:hover,
       .filter-clear-btn:hover {
@@ -454,8 +456,16 @@ export class DmDeviceTable extends LitElement {
       { key: "refs.firmwareName", label: i18n.t("device_firmware") },
       { key: "refs.modelName", label: i18n.t("device_model") },
       { key: "refs.targetMac", label: i18n.t("device_target") },
-      { key: "lastDeployStatus", label: i18n.t("device_last_deploy_status"), thClass: "col-deploy-status" },
-      { key: "lastDeployAt", label: i18n.t("device_last_deploy_at"), thClass: "col-deploy-date" },
+      {
+        key: "lastDeployStatus",
+        label: i18n.t("device_last_deploy_status"),
+        thClass: "col-deploy-status",
+      },
+      {
+        key: "lastDeployAt",
+        label: i18n.t("device_last_deploy_at"),
+        thClass: "col-deploy-date",
+      },
     ];
   }
 
@@ -690,13 +700,18 @@ export class DmDeviceTable extends LitElement {
     if (key === "lastDeployStatus") {
       const s = device.lastDeployStatus;
       if (!s) return i18n.t("deploy_status_none");
-      return s === "done" ? i18n.t("deploy_status_done") : i18n.t("deploy_status_fail");
+      return s === "done"
+        ? i18n.t("deploy_status_done")
+        : i18n.t("deploy_status_fail");
     }
     // Dot-path traversal for nested keys (e.g. "refs.modelName").
     const parts = key.split(".");
     let val: unknown = device;
     for (const part of parts) {
-      if (val == null || typeof val !== "object") { val = undefined; break; }
+      if (val == null || typeof val !== "object") {
+        val = undefined;
+        break;
+      }
       val = (val as Record<string, unknown>)[part];
     }
     if (val === null || val === undefined || val === "") return "—";
@@ -861,11 +876,9 @@ export class DmDeviceTable extends LitElement {
         <div class="col-filter-items">
           ${uniqueVals.length === 0
             ? html`<div class="col-filter-no-values">
-                ${
-                  searchQuery
-                    ? i18n.t("col_filter_no_results")
-                    : i18n.t("no_items")
-                }
+                ${searchQuery
+                  ? i18n.t("col_filter_no_results")
+                  : i18n.t("no_items")}
               </div>`
             : uniqueVals.map(
                 (val) => html`
@@ -904,9 +917,7 @@ export class DmDeviceTable extends LitElement {
           return html`
             <span class="filter-badge">
               <strong>${col?.label || colKey}</strong>:
-              ${vals
-                .map((v) => this._filterValueLabel(colKey, v))
-                .join(", ")}
+              ${vals.map((v) => this._filterValueLabel(colKey, v)).join(", ")}
               <button
                 class="filter-badge-remove"
                 title="${i18n.t("clear_filter")}"
@@ -929,7 +940,9 @@ export class DmDeviceTable extends LitElement {
           title="${i18n.t("filter_share")}"
           @click=${this._copyFilterLink}
         >
-          ${this._linkCopied ? "✓ " + i18n.t("filter_link_copied") : "🔗 " + i18n.t("filter_share")}
+          ${this._linkCopied
+            ? "✓ " + i18n.t("filter_link_copied")
+            : "🔗 " + i18n.t("filter_share")}
         </button>
       </div>
     `;
@@ -966,9 +979,14 @@ export class DmDeviceTable extends LitElement {
           <button
             class="btn btn-select-mode ${this._batchMode ? "active" : ""}"
             @click=${this._toggleBatchMode}
-            title=${this._batchMode ? i18n.t("batch_exit_select_mode") : i18n.t("batch_select_mode")}
+            title=${this._batchMode
+              ? i18n.t("batch_exit_select_mode")
+              : i18n.t("batch_select_mode")}
           >
-            ☑ ${this._batchMode ? i18n.t("batch_exit_select_mode") : i18n.t("batch_select_mode")}
+            ☑
+            ${this._batchMode
+              ? i18n.t("batch_exit_select_mode")
+              : i18n.t("batch_select_mode")}
           </button>
           <button
             class="btn btn-primary"
@@ -986,9 +1004,7 @@ export class DmDeviceTable extends LitElement {
         storageKey="devices-overview"
       ></dm-doc-block>
 
-      ${this._renderFilterBadges()}
-      ${this._renderBatchToolbar()}
-
+      ${this._renderFilterBadges()} ${this._renderBatchToolbar()}
       ${this._loading
         ? html`<div class="loading">${i18n.t("loading")}</div>`
         : nothing}
@@ -1000,20 +1016,23 @@ export class DmDeviceTable extends LitElement {
             <table>
               <thead>
                 <tr>
-                  ${this._batchMode ? html`
-                  <th class="checkbox-cell">
-                    <input
-                      class="row-checkbox"
-                      type="checkbox"
-                      .checked=${this._allVisibleSelected}
-                      .indeterminate=${this._someVisibleSelected && !this._allVisibleSelected}
-                      @change=${this._toggleAllRows}
-                    />
-                  </th>` : nothing}
+                  ${this._batchMode
+                    ? html` <th class="checkbox-cell">
+                        <input
+                          class="row-checkbox"
+                          type="checkbox"
+                          .checked=${this._allVisibleSelected}
+                          .indeterminate=${this._someVisibleSelected &&
+                          !this._allVisibleSelected}
+                          @change=${this._toggleAllRows}
+                        />
+                      </th>`
+                    : nothing}
                   ${this._columns.map(
                     (col) => html`
                       <th
-                        class="sortable ${col.thClass ?? ""} ${this._sort.key === col.key
+                        class="sortable ${col.thClass ?? ""} ${this._sort
+                          .key === col.key
                           ? "sort-active"
                           : ""} ${this._hasColFilter(col.key)
                           ? "col-filtered"
@@ -1048,19 +1067,27 @@ export class DmDeviceTable extends LitElement {
               <tbody>
                 ${this._sortedDevices.map(
                   (device) => html`
-                    <tr class="${device.id != null && this._selectedIds.has(device.id) ? "row-selected" : ""}">
-                      ${this._batchMode ? html`
-                      <td class="checkbox-cell">
-                        <input
-                          class="row-checkbox"
-                          type="checkbox"
-                          .checked=${device.id != null && this._selectedIds.has(device.id)}
-                          @change=${() => {
-                            if (device.id != null) this._toggleRowSelect(device.id);
-                          }}
-                          @click=${(e: Event) => e.stopPropagation()}
-                        />
-                      </td>` : nothing}
+                    <tr
+                      class="${device.id != null &&
+                      this._selectedIds.has(device.id)
+                        ? "row-selected"
+                        : ""}"
+                    >
+                      ${this._batchMode
+                        ? html` <td class="checkbox-cell">
+                            <input
+                              class="row-checkbox"
+                              type="checkbox"
+                              .checked=${device.id != null &&
+                              this._selectedIds.has(device.id)}
+                              @change=${() => {
+                                if (device.id != null)
+                                  this._toggleRowSelect(device.id);
+                              }}
+                              @click=${(e: Event) => e.stopPropagation()}
+                            />
+                          </td>`
+                        : nothing}
                       <td class="enabled-dot">
                         <span
                           class="status-dot ${device.enabled
@@ -1079,10 +1106,16 @@ export class DmDeviceTable extends LitElement {
                       <td class="mac">${device.refs?.targetMac ?? "—"}</td>
                       <td class="deploy-status">
                         ${device.lastDeployStatus === "done"
-                          ? html`<span class="deploy-badge deploy-badge-done">✓ ${i18n.t("deploy_status_done")}</span>`
+                          ? html`<span class="deploy-badge deploy-badge-done"
+                              >✓ ${i18n.t("deploy_status_done")}</span
+                            >`
                           : device.lastDeployStatus === "fail"
-                          ? html`<span class="deploy-badge deploy-badge-fail">✗ ${i18n.t("deploy_status_fail")}</span>`
-                          : html`<span class="deploy-badge deploy-badge-none">${i18n.t("deploy_status_none")}</span>`}
+                            ? html`<span class="deploy-badge deploy-badge-fail"
+                                >✗ ${i18n.t("deploy_status_fail")}</span
+                              >`
+                            : html`<span class="deploy-badge deploy-badge-none"
+                                >${i18n.t("deploy_status_none")}</span
+                              >`}
                       </td>
                       <td class="deploy-date">
                         ${device.lastDeployAt
@@ -1271,10 +1304,10 @@ export class DmDeviceTable extends LitElement {
               >✓ ${i18n.t("batch_deploy_triggered")}</span
             >`
           : this._batchResult === "error"
-          ? html`<span class="batch-result batch-result-err"
-              >✗ ${i18n.t("batch_deploy_error")}</span
-            >`
-          : nothing}
+            ? html`<span class="batch-result batch-result-err"
+                >✗ ${i18n.t("batch_deploy_error")}</span
+              >`
+            : nothing}
         <button
           class="btn btn-secondary"
           @click=${() => {
