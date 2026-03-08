@@ -4,15 +4,16 @@
     "enabled": true,
     "ip": "77",
     "positionSlug": "lunch",
-    "floorSlug": "l0",
-    "roomSlug": "office",
-    "functionName": "button",
+    "floor": { "slug": "l0" },
+    "room": { "slug": "office" },
+    "building": { "slug": "main" },
+    "refs": { "functionName": "button" },
     "expected": {
-      "hostname": "l0_office_button_lunch",
-      "mqttTopic": "home/l0/office/button/lunch",
+      "hostname": "main_l0_office_button_lunch",
+      "mqttTopic": "main/l0/office/button/lunch",
       "link": "http://192.168.0.77",
-      "fqdn": "l0_office_button_lunch.domo.local",
-      "countTopic": 22
+      "fqdn": "main_l0_office_button_lunch.domo.local",
+      "countTopic": 27
     }
   },
   {
@@ -20,15 +21,16 @@
     "enabled": false,
     "ip": "",
     "positionSlug": "lunch",
-    "floorSlug": "l0",
-    "roomSlug": "office",
-    "functionName": "door",
+    "floor": { "slug": "l0" },
+    "room": { "slug": "office" },
+    "building": { "slug": "main" },
+    "refs": { "functionName": "door" },
     "expected": {
-      "hostname": "l0_office_door_lunch",
-      "mqttTopic": "home/l0/office/door/lunch",
+      "hostname": "main_l0_office_door_lunch",
+      "mqttTopic": "main/l0/office/door/lunch",
       "link": null,
-      "fqdn": "l0_office_door_lunch.domo.local",
-      "countTopic": 20
+      "fqdn": "main_l0_office_door_lunch.domo.local",
+      "countTopic": 25
     }
   },
   {
@@ -36,15 +38,16 @@
     "enabled": true,
     "ip": "",
     "positionSlug": "lake",
-    "floorSlug": "l0",
-    "roomSlug": "office",
-    "functionName": "door",
+    "floor": { "slug": "l0" },
+    "room": { "slug": "office" },
+    "building": { "slug": "main" },
+    "refs": { "functionName": "door" },
     "expected": {
-      "hostname": "l0_office_door_lake",
-      "mqttTopic": "home/l0/office/door/lake",
+      "hostname": "main_l0_office_door_lake",
+      "mqttTopic": "main/l0/office/door/lake",
       "link": null,
-      "fqdn": "l0_office_door_lake.domo.local",
-      "countTopic": 19
+      "fqdn": "main_l0_office_door_lake.domo.local",
+      "countTopic": 24
     }
   },
   {
@@ -52,15 +55,16 @@
     "enabled": true,
     "ip": "192.168.0.189",
     "positionSlug": "desk",
-    "floorSlug": "l0",
-    "roomSlug": "office",
-    "functionName": "energy",
+    "floor": { "slug": "l0" },
+    "room": { "slug": "office" },
+    "building": { "slug": "main" },
+    "refs": { "functionName": "energy" },
     "expected": {
-      "hostname": "l0_office_energy_desk",
-      "mqttTopic": "home/l0/office/energy/desk",
+      "hostname": "main_l0_office_energy_desk",
+      "mqttTopic": "main/l0/office/energy/desk",
       "link": "http://192.168.0.189",
-      "fqdn": "l0_office_energy_desk.domo.local",
-      "countTopic": 21
+      "fqdn": "main_l0_office_energy_desk.domo.local",
+      "countTopic": 26
     }
   },
   {
@@ -68,15 +72,16 @@
     "enabled": true,
     "ip": "",
     "positionSlug": "bed",
-    "floorSlug": "l0",
-    "roomSlug": "office",
-    "functionName": "heater",
+    "floor": { "slug": "l0" },
+    "room": { "slug": "office" },
+    "building": { "slug": "main" },
+    "refs": { "functionName": "heater" },
     "expected": {
-      "hostname": "l0_office_heater_bed",
-      "mqttTopic": "home/l0/office/heater/bed",
+      "hostname": "main_l0_office_heater_bed",
+      "mqttTopic": "main/l0/office/heater/bed",
       "link": null,
-      "fqdn": "l0_office_heater_bed.domo.local",
-      "countTopic": 20
+      "fqdn": "main_l0_office_heater_bed.domo.local",
+      "countTopic": 25
     }
   },
   {
@@ -84,15 +89,16 @@
     "enabled": false,
     "ip": "",
     "positionSlug": "ceiling",
-    "floorSlug": "l0",
-    "roomSlug": "cellar",
-    "functionName": "light",
+    "floor": { "slug": "l0" },
+    "room": { "slug": "cellar" },
+    "building": { "slug": "main" },
+    "refs": { "functionName": "light" },
     "expected": {
-      "hostname": "l0_cellar_light_ceiling",
-      "mqttTopic": "home/l0/cellar/light/ceiling",
+      "hostname": "main_l0_cellar_light_ceiling",
+      "mqttTopic": "main/l0/cellar/light/ceiling",
       "link": null,
-      "fqdn": "l0_cellar_light_ceiling.domo.local",
-      "countTopic": 23
+      "fqdn": "main_l0_cellar_light_ceiling.domo.local",
+      "countTopic": 28
     }
   },
   {
@@ -100,15 +106,16 @@
     "enabled": false,
     "ip": "",
     "positionSlug": "door",
-    "floorSlug": "l0",
-    "roomSlug": "bed",
-    "functionName": "motion",
+    "floor": { "slug": "l0" },
+    "room": { "slug": "bed" },
+    "building": { "slug": "main" },
+    "refs": { "functionName": "motion" },
     "expected": {
-      "hostname": "l0_bed_motion_door",
-      "mqttTopic": "home/l0/bed/motion/door",
+      "hostname": "main_l0_bed_motion_door",
+      "mqttTopic": "main/l0/bed/motion/door",
       "link": null,
-      "fqdn": "l0_bed_motion_door.domo.local",
-      "countTopic": 18
+      "fqdn": "main_l0_bed_motion_door.domo.local",
+      "countTopic": 23
     }
   }
 ]

@@ -57,25 +57,29 @@ export function buildHttpFromIp(ip?: string | null): string | null {
 export function computeDerivedFields(
   device: Partial<DmDevice>
 ): ComputedDeviceFields {
-  const { dns_suffix, mqtt_topic_prefix } = getSettings();
+  const { dns_suffix } = getSettings();
 
+  const buildingSlug = sanitizeSlug(device.building?.slug);
   const floorSlug = sanitizeSlug(device.floor?.slug) || "l0";
   const roomSlug = sanitizeSlug(device.room?.slug);
   const functionName = sanitizeSlug(device.refs?.functionName);
   const posSlug = sanitizeSlug(device.positionSlug);
 
-  // Hostname: l{floor}_{roomSlug}_{function}_{positionSlug}
+  // Hostname: {building}_{floor}_{room}_{function}_{position}
+  // Format changed to include building_slug (matching backend)
   const hostParts: string[] = [];
+  if (buildingSlug) hostParts.push(buildingSlug);
   if (floorSlug) hostParts.push(floorSlug);
   if (roomSlug) hostParts.push(roomSlug);
   if (functionName) hostParts.push(functionName);
   if (posSlug) hostParts.push(posSlug);
   const hostname = hostParts.length > 0 ? hostParts.join("_") : null;
 
-  // MQTT topic: {mqtt_prefix}/{floorSlug}/{roomSlug}/{function}/{positionSlug}
+  // MQTT topic: {building}/{floor}/{room}/{function}/{position}
+  // Format changed to use building_slug instead of mqtt_topic_prefix (matching backend)
   const mqttTopic =
-    roomSlug && functionName && posSlug
-      ? `${mqtt_topic_prefix}/${floorSlug}/${roomSlug}/${functionName}/${posSlug}`
+    buildingSlug && roomSlug && functionName && posSlug
+      ? `${buildingSlug}/${floorSlug}/${roomSlug}/${functionName}/${posSlug}`
       : null;
 
   // FQDN: {hostname}.{dns_suffix}

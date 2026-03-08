@@ -74,6 +74,26 @@ export interface DmDevice {
    * Computed server-side, present in full-detail API responses.
    */
   displayName?: string;
+  /**
+   * HTTP link to device (computed from IP).
+   * Computed server-side, present in full-detail API responses.
+   */
+  link?: string | null;
+  /**
+   * MQTT topic for device communication.
+   * Computed server-side, present in full-detail API responses.
+   */
+  mqttTopic?: string | null;
+  /**
+   * Device hostname.
+   * Computed server-side, present in full-detail API responses.
+   */
+  hostname?: string | null;
+  /**
+   * Fully qualified domain name.
+   * Computed server-side, present in full-detail API responses.
+   */
+  fqdn?: string | null;
 }
 
 /**
