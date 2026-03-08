@@ -3,9 +3,12 @@ _FLD_ID = 'id'
 _FLD_MAC = 'mac'
 _FLD_STATE = 'state'
 _FLD_LEVEL = 'level'
+_FLD_LEVEL_NAME = 'level_name'
 _FLD_FUNCTION = 'function'
 _FLD_ROOM = 'room_slug'
+_FLD_ROOM_NAME = 'room_name'
 _FLD_POSITION = 'position_slug'
+_FLD_POSITION_NAME = 'position_name'
 _FLD_FRMW = 'firmware'
 _FLD_MODEL = 'model'
 _FLD_INTERLOCK = 'interlock'  # DEPRECATED : remove in futur version
@@ -41,7 +44,7 @@ _TOPIC_LVL = 'Lvl'
 def slug_device_name(device) -> str:
     device_name = (
       f"{_TOPIC_BASE.capitalize()}"
-      f" > {_TOPIC_LVL.capitalize()}{device[_FLD_LEVEL]}"
+      f" > {device[_FLD_LEVEL_NAME].capitalize()}"
       f" > {device[_FLD_ROOM].capitalize()}"
       f" > {device[_FLD_FUNCTION].capitalize()}"
       f" > {device[_FLD_POSITION].capitalize()}"
@@ -52,7 +55,7 @@ def slug_device_name(device) -> str:
 def slug_device_topic_location(device) -> str:
     device_topic = (
       f"{_TOPIC_BASE}"
-      f"/l{device[_FLD_LEVEL]}"
+      f"/{device[_FLD_LEVEL]}"
       f"/{device[_FLD_ROOM]}"
       ).lower()
     return device_topic
@@ -77,7 +80,7 @@ def slug_device_topic(device) -> str:
 def slug_device_id(device) -> str:
     device_topic = (
       f"{_TOPIC_BASE}"
-      f"_{_TOPIC_LVL}{device[_FLD_LEVEL]}"
+      f"_{device[_FLD_LEVEL]}"
       f"_{device[_FLD_ROOM]}"
       f"_{device[_FLD_FUNCTION]}"
       f"_{device[_FLD_POSITION]}"

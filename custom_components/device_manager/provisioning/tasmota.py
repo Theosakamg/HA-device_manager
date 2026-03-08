@@ -365,7 +365,7 @@ class TasmotaManager(FirmwareManagerBase):
         if self.has_interlock(device):
             logger.debug(f'{ip} - Tasmota enable Interlock.')
             ACTIONS_DEVICE = {
-                "Interlock": device['Interlock'],
+                "Interlock": device[_FLD_INTERLOCK],
             }
             self.send_cmnds(ip, one=True, configs=ACTIONS_DEVICE)
 

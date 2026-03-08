@@ -21,8 +21,9 @@ class DeployAPIView(BaseView):
         hass = request.app["hass"]
         settings = await get_repos(request)["settings"].get_all()
         update_runtime_configs(settings)
-        db_path = get_db_path(request)
-        device_ids = None
+
+        # Parse JSON body if present
+        body = {}
         try:
             body = await request.json()
             if isinstance(body, dict):
@@ -31,7 +32,20 @@ class DeployAPIView(BaseView):
                     device_ids = [str(m) for m in raw_macs if isinstance(m, str)]
         except Exception:
             pass
-        await hass.async_add_executor_job(deploy, db_path, device_ids)
+
+        # firmware_types: body takes precedence over query string
+        firmware_types = body.get("firmware_types") or request.query.get("firmware_types")
+        if isinstance(firmware_types, str):
+            firmware_types = firmware_types.split(",")
+
+        # mac_filter: body takes precedence over query string
+        mac_filter = body.get("macs") or request.query.get("macs")
+        if isinstance(mac_filter, str):
+            mac_filter = mac_filter.split(",")
+
+        db_path = get_db_path(request)
+        await hass.async_add_executor_job(deploy, db_path, firmware_types, mac_filter)
+
         return self.json({"result": "Deployment triggered"}, status_code=200)
 
 

@@ -37,18 +37,20 @@ class FirmwareManagerBase:
     def process(self, device: dict):
         logger.error("Need to implement it !")
 
-    def post_process(self):
+    def post_process(self, devices):
         pass
 
 
 class FirmwareFactory:
     __fwms = []
 
-    def __init__(self, gm) -> None:
+    def __init__(self, gm, firmware_types=None) -> None:
         logger.debug("Init Firmware factory...")
 
-        __fwms_str = get_config('ENABLE_FIRMWARES',
-                                              ['tasmota', 'zigbee', 'wled'])
+        if firmware_types is None:
+            __fwms_str = 'tasmota', 'zigbee', 'wled'
+        else:
+            __fwms_str = firmware_types
 
         if 'tasmota' in __fwms_str:
             logger.info("Load Tasmota Manager...")
@@ -67,10 +69,6 @@ class FirmwareFactory:
             from .wled import WLEDManager
             __fm = WLEDManager(gm)
             self.__fwms.append(__fm)
-
-    def get_firmware_managers(self) -> list[FirmwareManagerBase]:
-        return self.__fwms
-
 
     def get_firmware_managers(self) -> list[FirmwareManagerBase]:
         return self.__fwms

@@ -17,12 +17,21 @@ def base_config(device, logger, ff):
     Sanitizer.entity_sanity(device)
 
     logger.info(f"\033[0;34mCheck Device: {device[_FLD_MAC]}\x1b[0m")
+
+    # Find if device.
+    success = False
     fwm_count = 0
     for fwm in ff.get_firmware_managers():
         if device[_FLD_MAC] and fwm.is_found(device):
+            logger.info(f"Process Device with {fwm.__class__} Manager.")
+            fwm.process(device)
+            success = True
             fwm_count += 1
 
-    return fwm_count > 0
+    if fwm_count == 0:
+        logger.warning('No Firmware found ! Firmware is supported or loaded ?')
+
+    return success
 
 
 def _persist_deploy_results(
@@ -50,30 +59,37 @@ def _persist_deploy_results(
         logger.error(f"Failed to persist deploy results: {e}")
 
 
-def deploy(db_path, macs=None):
+def deploy(db_path, firmware_types, mac_filter=None):
+    """Deploy devices with config file.
+    firmware_types is a list of firmware to deploy. Can be "tasmota", "zigbee", "wled".
+    mac_filter is an optional list of MAC addresses to restrict which devices are updated.
+    If mac_filter is empty or None, all devices are updated.
+    """
+
     Initializer()
     logger = logging.getLogger(__name__)
-    logger.info('Initialize App...')
+    logger.info('Initialize Deploy...')
 
     gm = GlobalManager(db_path)
-    ff = FirmwareFactory(gm)
+    ff = FirmwareFactory(gm, firmware_types)
 
     count = 0
     success = 0
     error = 0
     deploy_results: dict[int, str] = {}
 
-    logger.info('Run App...')
+    mac_filter = [m.upper() for m in mac_filter] if mac_filter else []
+    if mac_filter:
+        logger.info(f'Filtering devices to MACs: {mac_filter}')
+    logger.info(f'Start deploy process for all devices for firmwares: {firmware_types}...')
 
-    all_devices = gm.get_devices()
-    if macs:
-        mac_set = set(macs)
-        devices_to_process = [d for d in all_devices if d.get(_FLD_MAC) in mac_set]
-        logger.info(f"Batch deploy: {len(devices_to_process)}/{len(all_devices)} devices targeted.")
-    else:
-        devices_to_process = all_devices
+    devices = gm.get_devices()
 
-    for __dev in devices_to_process:
+    for __dev in devices:
+        if mac_filter and __dev[_FLD_MAC].upper() not in mac_filter:
+            logger.debug(f'Skipping device (not in mac_filter): {__dev[_FLD_MAC]}')
+            continue
+
         count += 1
         device_id = __dev.get(_FLD_ID)
         logger.debug(f'Process new device: {__dev[_FLD_MAC]}')
@@ -91,7 +107,8 @@ def deploy(db_path, macs=None):
                 deploy_results[device_id] = _DEPLOY_FAIL
 
     for fwm in ff.get_firmware_managers():
-        logger.debug(f"Post process for {fwm.__class__} Manager.")
+        logger.debug(f"Post process for {fwm.__class__} Manager. For {len(devices)} devices...")
+        fwm.post_process(devices)
 
     if deploy_results:
         logger.info(f"Persisting deploy status for {len(deploy_results)} devices...")
@@ -110,4 +127,3 @@ def scan(db_path):
 
     gm = GlobalManager(db_path)
     gm.update_devices_ip()
-

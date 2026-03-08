@@ -5,11 +5,11 @@ import yaml
 import logging
 
 from .contract import (
-    _FLD_ID, _FLD_MAC, _FLD_STATE, _FLD_LEVEL, _FLD_FUNCTION, _FLD_ROOM,
-    _FLD_POSITION, _FLD_FRMW, _FLD_MODEL, _FLD_INTERLOCK, _FLD_MODE,
+    _FLD_ID, _FLD_MAC, _FLD_STATE, _FLD_LEVEL, _FLD_LEVEL_NAME, _FLD_FUNCTION, _FLD_ROOM, _FLD_ROOM_NAME,
+    _FLD_POSITION, _FLD_POSITION_NAME, _FLD_FRMW, _FLD_MODEL, _FLD_INTERLOCK, _FLD_MODE,
     _FLD_TARGET, _FLD_EXTRA, _FLD_MQTT, _FLD_HOST, _FLD_HA_DEVICE_CLASS,
     _FLD_IP, _STA_ENABLE, _STA_DISABLE,
-    slug_device_topic, slug_device_id,
+    slug_device_topic, slug_device_id, slug_device_topic_device,
 )
 from .utility import get_config
 
@@ -107,30 +107,34 @@ class DevicesManager:
     def __init__(self) -> None:
         logger.debug("Init Devices manager...")
 
-    def _to_contract(self, row: dict) -> dict:
-        """Convert a repository row to a contract-field dict."""
+    def _to_contract(self, device) -> dict:
+        """Convert a DmDevice instance to a contract-field dict."""
         draft = {
-            _FLD_LEVEL:    row.get('floor_slug', ''),
-            _FLD_ROOM:     row.get('room_slug', ''),
-            _FLD_FUNCTION: row.get('function_name', ''),
-            _FLD_POSITION: row.get('position_slug', ''),
+            _FLD_LEVEL:      device._floor.slug,
+            _FLD_LEVEL_NAME: device._floor.name,
+            _FLD_ROOM:       device._room.slug,
+            _FLD_FUNCTION:   device._refs.function_name,
+            _FLD_POSITION:   device.position_slug,
         }
         return {
-            _FLD_ID:            row.get('id'),
-            _FLD_MAC:           row.get('mac', ''),
-            _FLD_STATE:         _STA_ENABLE if row.get('enabled', 0) else _STA_DISABLE,
+            _FLD_ID:            device.id,
+            _FLD_MAC:           device.mac,
+            _FLD_STATE:         _STA_ENABLE if device.enabled else _STA_DISABLE,
             _FLD_LEVEL:         draft[_FLD_LEVEL],
+            _FLD_LEVEL_NAME:    draft[_FLD_LEVEL_NAME],
             _FLD_FUNCTION:      draft[_FLD_FUNCTION],
             _FLD_ROOM:          draft[_FLD_ROOM],
+            _FLD_ROOM_NAME:     device._room.name,
             _FLD_POSITION:      draft[_FLD_POSITION],
-            _FLD_FRMW:          row.get('firmware_name', ''),
-            _FLD_MODEL:         row.get('model_name', ''),
-            _FLD_INTERLOCK:     row.get('interlock', ''),
-            _FLD_MODE:          row.get('mode', ''),
-            _FLD_TARGET:        row.get('target_mac', ''),
-            _FLD_EXTRA:         row.get('extra', ''),
-            _FLD_HA_DEVICE_CLASS: row.get('ha_device_class', ''),
-            _FLD_IP:            row.get('ip', ''),
+            _FLD_POSITION_NAME: device.position_name,
+            _FLD_FRMW:          device._refs.firmware_name,
+            _FLD_MODEL:         device._refs.model_name,
+            _FLD_INTERLOCK:     device.interlock,
+            _FLD_MODE:          device.mode,
+            _FLD_TARGET:        device.target_id or '',
+            _FLD_EXTRA:         device.extra,
+            _FLD_HA_DEVICE_CLASS: device.ha_device_class,
+            _FLD_IP:            device.ip or '',
             _FLD_MQTT:          slug_device_topic(draft),
             _FLD_HOST:          slug_device_id(draft),
         }
@@ -143,12 +147,35 @@ class DevicesManager:
 
             async def _fetch():
                 try:
-                    return await repo.find_all()
+                    rows = await repo.find_all()
+                    self.__devices = [self._to_contract(row) for row in rows]
+
+                    # Replace _FLD_TARGET (MAC) with the MQTT topic of the target device
+                    for device in self.__devices:
+                        target_id = device.get(_FLD_TARGET, '')
+                        logger.debug(f"Processing device {device[_FLD_MAC]} with target ID: {target_id}")
+                        if target_id:
+                            target_ = await repo.find_by_id(target_id)
+                            if target_:
+                                logger.debug(f"Found target device for ID {target_id}: {target_.mac}")
+                                target_draft = {
+                                    _FLD_LEVEL:      target_._floor.slug,
+                                    _FLD_LEVEL_NAME: target_._floor.name,
+                                    _FLD_ROOM:       target_._room.slug,
+                                    _FLD_FUNCTION:   target_._refs.function_name,
+                                    _FLD_POSITION:   target_.position_slug,
+                                }
+                                device[_FLD_TARGET] = slug_device_topic_device(target_draft)
+                            else:
+                                logger.warning(
+                                    "Target device with ID %s not found",
+                                    target_id,
+                                )
                 finally:
                     await db.close()
 
-            rows = asyncio.run(_fetch())
-            self.__devices = [self._to_contract(row) for row in rows]
+            asyncio.run(_fetch())
+
             logger.info(f"Reading {len(self.__devices)} devices.")
         except Exception as e:
             logger.error(f"Database error: {e}")
@@ -184,11 +211,11 @@ class GlobalManager:
             try:
                 devices = await repo.find_all()
                 for device in devices:
-                    mac = device.get('mac', '').lower()
+                    mac = device.mac.lower()
                     if mac in macs:
                         ip = macs[mac]
                         try:
-                            await repo.update(device['id'], {'ip': ip})
+                            await repo.update(device.id, {'ip': ip})
                             logger.info(f"Updated IP for {mac}: {ip}")
                         except Exception as e:
                             logger.error(f"Failed to update IP {ip} for {mac}: {e}")
