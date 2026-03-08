@@ -97,6 +97,12 @@ URL_BASE_TPL = "http://{IP_DEV}/{CMND}?"
 class TasmotaAdapter(FirmwareAdapter):
     """Adapter for provisioning Tasmota devices."""
 
+    # Sensitive fields to mask in logs
+    _SENSITIVE_FIELDS = {
+        'WebPassword', 'Password', 'Password1', 'Password2',
+        'MqttPassword', 'password', 'pass'
+    }
+
     def __init__(self, manager) -> None:
         """Initialize the Tasmota adapter.
 
@@ -110,6 +116,21 @@ class TasmotaAdapter(FirmwareAdapter):
     def get_firmware_type(self) -> str:
         """Return firmware type."""
         return FIRMWARE_TYPE
+
+    def _mask_sensitive_data(self, data: Dict[str, str]) -> Dict[str, str]:
+        """Mask sensitive values in a dictionary for logging.
+
+        Args:
+            data: Dictionary that may contain sensitive data.
+
+        Returns:
+            Copy of dictionary with sensitive values masked.
+        """
+        masked = data.copy()
+        for key in masked:
+            if key in self._SENSITIVE_FIELDS:
+                masked[key] = '***'
+        return masked
 
     def _create_backup_folder(self) -> None:
         """Create backup folder for config dumps."""
@@ -197,9 +218,8 @@ class TasmotaAdapter(FirmwareAdapter):
 
         url = self._build_url(device.ip, _CMD_DUMP)
         password = get_config('DEVICE_PASS', 'p4ssW0rD')
-        
-        logger.debug(f"  Dump URL: {url}")
-        logger.debug(f"  Curl equivalent: curl -u '{DEVICE_USER}:{password}' '{url}' -o config.dmp")
+
+        logger.debug(f"  Curl equivalent: curl -u '{DEVICE_USER}:***' '{url}' -o config.dmp")
 
         for attempt in range(NUM_RETRY):
             try:
@@ -257,12 +277,14 @@ class TasmotaAdapter(FirmwareAdapter):
         url = self._build_url(device.ip, _CMD_CMND, data)
         password = get_config('DEVICE_PASS', 'p4ssW0rD')
 
+        # Mask sensitive data for logging
+        configs_masked = self._mask_sensitive_data(configs)
+
         for attempt in range(NUM_RETRY + 1):
             logger.debug(f"Sending commands to {device.mac} @ {device.ip}")
-            logger.debug(f"  Commands: {configs}")
-            logger.debug(f"  URL: {url}")
-            logger.debug(f"  Curl equivalent: curl -u '{DEVICE_USER}:{password}' '{url}'")
-            
+            logger.debug(f"  Commands: {configs_masked}")
+            logger.debug(f"  Curl equivalent: curl -u '{DEVICE_USER}:***' '{url}'")
+
             try:
                 response = requests.get(
                     url,
@@ -437,10 +459,10 @@ class TasmotaAdapter(FirmwareAdapter):
         # Apply rules
         logger.debug(f"  Setting {RULE_MANUAL}: {rule_manual}")
         self._send_commands(device, {RULE_MANUAL: rule_manual}, use_backlog=False)
-        
+
         logger.debug(f"  Setting {RULE_AUTO}: {rule_auto}")
         self._send_commands(device, {RULE_AUTO: rule_auto}, use_backlog=False)
-        
+
         logger.debug(f"  Setting {RULE_SYSTEM}: {rule_manual}")
         self._send_commands(device, {RULE_SYSTEM: rule_manual}, use_backlog=False)
 

@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
+
 class Sanitizer:
 
     def data_sanity(data):
@@ -127,5 +128,9 @@ def update_runtime_configs(settings: dict) -> None:
 
 
 def get_config(key: str, default=None):
-    logger.debug(f"Get config for key: {key} with default: {default}")
+    # Mask sensitive values in logs
+    if any(sensitive in key.upper() for sensitive in ['PASS', 'PASSWORD', 'KEY']):
+        logger.debug(f"Get config for key: {key} with default: ***")
+    else:
+        logger.debug(f"Get config for key: {key} with default: {default}")
     return CONFIGS.get(key, os.getenv(key, default))
