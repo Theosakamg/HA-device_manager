@@ -41,6 +41,18 @@ def _validate_string_lengths(
     return None
 
 
+def _validate_slug(data: dict[str, Any]) -> str | None:
+    """Check that slug field is non-empty if present.
+
+    Returns an error message if validation fails, None otherwise.
+    """
+    if "slug" in data:
+        slug = data.get("slug", "")
+        if not slug or (isinstance(slug, str) and slug.strip() == ""):
+            return "Field 'slug' cannot be empty"
+    return None
+
+
 # ------------------------------------------------------------------
 # Helper utilities
 # ------------------------------------------------------------------
@@ -169,6 +181,10 @@ class CrudListView(BaseView):
         length_err = _validate_string_lengths(snake_data)
         if length_err:
             return self.json({"error": length_err}, status_code=400)
+        # Validate slug is non-empty
+        slug_err = _validate_slug(snake_data)
+        if slug_err:
+            return self.json({"error": slug_err}, status_code=400)
         if self.normalize_data:
             snake_data = self.normalize_data(snake_data)
         new_id = await repos[self.repo_key].create(snake_data)
@@ -236,6 +252,10 @@ class CrudDetailView(BaseView):
         length_err = _validate_string_lengths(snake_data)
         if length_err:
             return self.json({"error": length_err}, status_code=400)
+        # Validate slug is non-empty
+        slug_err = _validate_slug(snake_data)
+        if slug_err:
+            return self.json({"error": slug_err}, status_code=400)
         if self.normalize_data:
             snake_data = self.normalize_data(snake_data)
         await repos[self.repo_key].update(eid, snake_data)

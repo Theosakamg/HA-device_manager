@@ -13,7 +13,7 @@ _BUILDINGS_DDL = """
     CREATE TABLE IF NOT EXISTS dm_buildings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL DEFAULT '',
-        slug TEXT NOT NULL DEFAULT '',
+        slug TEXT NOT NULL DEFAULT '' CHECK(length(slug) > 0),
         description TEXT DEFAULT '',
         image TEXT DEFAULT '',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -25,7 +25,7 @@ _FLOORS_DDL = """
     CREATE TABLE IF NOT EXISTS dm_floors (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL DEFAULT '',
-        slug TEXT NOT NULL DEFAULT '',
+        slug TEXT NOT NULL DEFAULT '' CHECK(length(slug) > 0),
         description TEXT DEFAULT '',
         image TEXT DEFAULT '',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -40,7 +40,7 @@ _ROOMS_DDL = """
     CREATE TABLE IF NOT EXISTS dm_rooms (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL DEFAULT '',
-        slug TEXT NOT NULL DEFAULT '',
+        slug TEXT NOT NULL DEFAULT '' CHECK(length(slug) > 0),
         description TEXT DEFAULT '',
         image TEXT DEFAULT '',
         login TEXT DEFAULT '',
