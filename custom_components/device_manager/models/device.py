@@ -14,6 +14,39 @@ from .base import SerializableMixin
 
 
 # ---------------------------------------------------------------------------
+# Hostname shortening mappings
+# ---------------------------------------------------------------------------
+
+# Function name mappings for hostname generation (target: < 21 chars total)
+_FUNCTION_SHORT_MAP = {
+    "button": "btn",
+    "door": "dr",
+    "doorbell": "db",
+    "energy": "eng",
+    "heater": "ht",
+    "ir": "ir",
+    "infra": "inf",
+    "light": "lgt",
+    "motion": "mot",
+    "presence": "prs",
+    "sensor": "sns",
+    "shutter": "sht",
+    "tv": "tv",
+    "thermal": "thm",
+    "water": "wtr",
+    "window": "win",
+}
+
+# Common word replacements for all hostname parts
+_COMMON_WORD_MAP = {
+    "home": "h",
+    "switch": "sw",
+    "level": "l",
+    "floor": "fl"
+}
+
+
+# ---------------------------------------------------------------------------
 # Transient reference sub-objects — populated by JOIN queries, never stored.
 # ---------------------------------------------------------------------------
 
@@ -234,7 +267,11 @@ class DmDevice(SerializableMixin):
     def hostname(self) -> Optional[str]:
         """Return the hostname for this device.
 
-        Format: ``{building_slug}_{floor_slug}_{room_slug}_{function_slug}_{position_slug}``
+        Format: ``{building_slug}_{floor_slug}_{room_slug}_{function_short}_{position_slug}``
+
+        Function names are mapped to short forms (e.g., button→btn, light→lgt).
+        Common words are also shortened (e.g., home→h, switch→sw).
+        Result is truncated to 31 chars max (DNS hostname limit is 63, but targeting < 32).
 
         Returns:
             The hostname string or ``None`` when required transient data is missing.
@@ -247,14 +284,28 @@ class DmDevice(SerializableMixin):
         ):
             return None
 
-        function_slug = self._refs.function_name.lower().replace(" ", "_")
-        return (
+        # Map function name to short form
+        function_lower = self._refs.function_name.lower().replace(" ", "_")
+        function_short = _FUNCTION_SHORT_MAP.get(function_lower, function_lower)
+
+        # Build hostname with short function name
+        result = (
             f"{self._building.slug}"
             f"_{self._floor.slug}"
             f"_{self._room.slug}"
-            f"_{function_slug}"
+            f"_{function_short}"
             f"_{self.position_slug}"
         ).lower()
+
+        # Apply common word replacements to all parts
+        for long_word, short_word in _COMMON_WORD_MAP.items():
+            result = result.replace(long_word, short_word)
+
+        # Truncate if still too long (DNS limit is 63, aiming for < 32)
+        if len(result) > 31:
+            result = result[:31]
+
+        return result
 
     def fqdn(self, dns_suffix: str = "domo.local") -> Optional[str]:
         """Return the fully-qualified domain name for this device.
