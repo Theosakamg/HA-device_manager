@@ -11,10 +11,15 @@ The network scanner probes the subnet defined by the **IP Prefix** in Configurat
 3. Matching devices in the database have their `ip` field updated
 4. The result summary reports how many addresses were resolved
 
+## Network optimization
+
+The network scan uses a **local IP cache** to avoid unnecessarily rescanning already discovered devices. The cache is stored in `cache_ip.yaml` and can be reset from the Danger Zone if needed.
+
 ## When to use it
 
 - After a DHCP lease renewal moves devices to new IPs
 - After adding new devices to the network
 - Periodically to keep IP addresses accurate for deploy operations
+- Before a mass deployment to ensure IP addresses are correct
 
 > **Prerequisites:** the **IP Prefix** must be configured in the Configuration section before scanning. The scanner only covers the `/24` subnet of that prefix.

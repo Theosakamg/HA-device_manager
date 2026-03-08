@@ -12,7 +12,7 @@ Supprime définitivement **toutes les données** dans chaque table — équipeme
 
 ## Vider le Cache IP
 
-Réinitialise le champ `ip` de **tous les équipements** à `NULL`. Les enregistrements des équipements sont conservés ; seules les adresses IP sont effacées.
+Réinitialise le champ `ip` de **tous les équipements** à `NULL` et purge le fichier `cache_ip.yaml` utilisé par le scanner réseau. Les enregistrements des équipements sont conservés ; seules les adresses IP sont effacées.
 
 **Cas d'usage :** après un changement de réseau majeur (nouveau sous-réseau, nouvelle plage DHCP) où toutes les IP stockées sont invalides. Enchaînez avec un **Scanner le Réseau** pour les repeupler.
 
