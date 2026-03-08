@@ -9,6 +9,7 @@ import { getDoc } from "../../utils/doc-registry";
 import { DeviceModelClient } from "../../api/device-model-client";
 import { DeviceFirmwareClient } from "../../api/device-firmware-client";
 import { DeviceFunctionClient } from "../../api/device-function-client";
+import { StatsClient } from "../../api/stats-client";
 import type { CrudConfig } from "../shared/crud-table";
 import "./crud-tab";
 import "../shared/doc-block";
@@ -30,6 +31,7 @@ type SettingsTab = "models" | "firmwares" | "functions";
 const _modelClient = new DeviceModelClient();
 const _firmwareClient = new DeviceFirmwareClient();
 const _functionClient = new DeviceFunctionClient();
+const _statsClient = new StatsClient();
 
 @localized
 @customElement("dm-settings-view")
@@ -77,14 +79,10 @@ export class DmSettingsView extends LitElement {
 
   private async _loadCounts() {
     try {
-      const [models, firmwares, functions] = await Promise.all([
-        _modelClient.getAll(),
-        _firmwareClient.getAll(),
-        _functionClient.getAll(),
-      ]);
-      this._modelCount = models.length;
-      this._firmwareCount = firmwares.length;
-      this._functionCount = functions.length;
+      const stats = await _statsClient.getStats();
+      this._modelCount = stats.settingsCounts.models;
+      this._firmwareCount = stats.settingsCounts.firmwares;
+      this._functionCount = stats.settingsCounts.functions;
     } catch {
       // Counts stay at 0 on error
     }

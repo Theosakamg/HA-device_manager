@@ -116,7 +116,11 @@ export function getSettings(): AppSettings {
   );
 }
 
-/** Force-refresh the cache after a save. */
-export async function refreshSettings(): Promise<AppSettings> {
+/** Force-refresh the cache. If data is provided, use it directly; otherwise fetch from API. */
+export async function refreshSettings(data?: AppSettings): Promise<AppSettings> {
+  if (data) {
+    _cached = data;
+    return data;
+  }
   return loadSettings();
 }

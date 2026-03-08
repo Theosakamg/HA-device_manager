@@ -985,7 +985,7 @@ export class DmSystemView extends LitElement {
     try {
       const result = await this._settingsClient.save(this._settingsForm);
       this._settingsForm = { ...result };
-      await refreshSettings();
+      await refreshSettings(result);
       this._settingsToast = { msg: i18n.t("config_saved"), ok: true };
     } catch (err) {
       this._settingsToast = {

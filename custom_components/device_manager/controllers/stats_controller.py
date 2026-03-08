@@ -25,7 +25,12 @@ class StatsAPIView(BaseView):
             "rooms": 18,
             "devices": 42,
             "byFirmware": [{"name": "Tasmota", "count": 30}, ...],
-            "byModel":    [{"name": "Shelly 1",  "count": 15}, ...]
+            "byModel":    [{"name": "Shelly 1",  "count": 15}, ...],
+            "settingsCounts": {
+                "models": 5,
+                "firmwares": 3,
+                "functions": 8
+            }
         }
 
     All counts are computed with SQL aggregation on the server side;
@@ -92,6 +97,19 @@ class StatsAPIView(BaseView):
                 for row in await cursor.fetchall()
             ]
 
+            # ── Settings counts (models, firmwares, functions) ───────────────
+            cursor = await conn.execute("SELECT COUNT(*) AS n FROM dm_device_models")
+            row = await cursor.fetchone()
+            models_count = int(row["n"]) if row else 0
+
+            cursor = await conn.execute("SELECT COUNT(*) AS n FROM dm_device_firmwares")
+            row = await cursor.fetchone()
+            firmwares_count = int(row["n"]) if row else 0
+
+            cursor = await conn.execute("SELECT COUNT(*) AS n FROM dm_device_functions")
+            row = await cursor.fetchone()
+            functions_count = int(row["n"]) if row else 0
+
             return self.json({
                 "buildings": total_buildings,
                 "floors": total_floors,
@@ -99,6 +117,11 @@ class StatsAPIView(BaseView):
                 "devices": total_devices,
                 "byFirmware": by_firmware,
                 "byModel": by_model,
+                "settingsCounts": {
+                    "models": models_count,
+                    "firmwares": firmwares_count,
+                    "functions": functions_count,
+                },
             })
 
         except Exception as err:

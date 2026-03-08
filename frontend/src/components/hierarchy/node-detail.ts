@@ -587,15 +587,29 @@ export class DmNodeDetail extends LitElement {
         description: this._editDescription,
         image: this._editImage,
       };
-      if (this.node.type === "building")
-        await this._buildingClient.update(this.node.id, data);
-      else if (this.node.type === "floor")
-        await this._floorClient.update(this.node.id, data);
-      else if (this.node.type === "room") {
+      if (this.node.type === "building") {
+        const updated = await this._buildingClient.update(this.node.id, data);
+        // Update node in-place with returned data
+        this.node.name = updated.name;
+        this.node.slug = updated.slug;
+        this.node.description = updated.description ?? "";
+        this.node.image = updated.image ?? "";
+      } else if (this.node.type === "floor") {
+        const updated = await this._floorClient.update(this.node.id, data);
+        this.node.name = updated.name;
+        this.node.slug = updated.slug;
+        this.node.description = updated.description ?? "";
+        this.node.image = updated.image ?? "";
+      } else if (this.node.type === "room") {
         data.login = this._editLogin;
         data.password = this._editPassword;
-        await this._roomClient.update(this.node.id, data);
-        await this._loadRoomDetails();
+        const updated = await this._roomClient.update(this.node.id, data);
+        this.node.name = updated.name;
+        this.node.slug = updated.slug;
+        this.node.description = updated.description ?? "";
+        this.node.image = updated.image ?? "";
+        // Update room details with returned data (avoids extra GET)
+        this._roomDetails = updated;
       }
       this._editing = false;
       showToast(i18n.t("success_updated"), "success");

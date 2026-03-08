@@ -922,7 +922,7 @@ export class DmMaintenanceView extends LitElement {
       const result = await this._settingsClient.save(this._settingsForm);
       this._settingsForm = { ...result };
       // Refresh the global settings cache used by computed-fields etc.
-      await refreshSettings();
+      await refreshSettings(result);
       this._settingsToast = { msg: i18n.t("config_saved"), ok: true };
     } catch (err) {
       this._settingsToast = {

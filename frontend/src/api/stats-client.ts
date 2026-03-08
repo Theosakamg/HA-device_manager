@@ -11,6 +11,12 @@ export interface StatEntry {
   count: number;
 }
 
+export interface SettingsCounts {
+  models: number;
+  firmwares: number;
+  functions: number;
+}
+
 export interface DashboardStats {
   buildings: number;
   floors: number;
@@ -18,6 +24,7 @@ export interface DashboardStats {
   devices: number;
   byFirmware: StatEntry[];
   byModel: StatEntry[];
+  settingsCounts: SettingsCounts;
 }
 
 export class StatsClient extends BaseClient {
