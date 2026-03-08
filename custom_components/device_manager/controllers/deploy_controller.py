@@ -62,5 +62,8 @@ class DevicesScanAPIView(BaseView):
         settings = await get_repos(request)["settings"].get_all()
         update_runtime_configs(settings)
         db_path = get_db_path(request)
-        await hass.async_add_executor_job(scan, db_path)
-        return self.json({"result": "Scan triggered"}, status_code=200)
+        stats = await hass.async_add_executor_job(scan, db_path)
+        return self.json({
+            "result": "Scan completed",
+            "stats": stats if isinstance(stats, dict) else {},
+        }, status_code=200)

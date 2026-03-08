@@ -120,10 +120,26 @@ def deploy(db_path, firmware_types, mac_filter=None):
     )
 
 
-def scan(db_path):
+def scan(db_path) -> dict:
     Initializer()
     logger = logging.getLogger(__name__)
     logger.info('Initialize Scan...')
 
     gm = GlobalManager(db_path)
-    gm.update_devices_ip()
+    stats = gm.update_devices_ip()
+
+    logger.info("=" * 50)
+    logger.info("SCAN REPORT")
+    logger.info("=" * 50)
+    logger.info(f"  Total devices  : {stats['total']}")
+    logger.info(f"  Mapped (IP OK) : {stats['mapped']}")
+    logger.info(f"  Not found      : {stats['not_found']}")
+    logger.info(f"  Errors         : {stats['errors']}")
+    if stats.get("error_details"):
+        logger.info("  Error details:")
+        for detail in stats["error_details"]:
+            logger.error(f"    - {detail}")
+    logger.info("=" * 50)
+
+    return stats
+

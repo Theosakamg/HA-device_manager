@@ -202,14 +202,17 @@ class GlobalManager:
     def get_macs(self):
         return self.__cache.get_macs()
 
-    def update_devices_ip(self):
+    def update_devices_ip(self) -> dict:
+        """Update device IPs from the cache and return scan statistics."""
         macs = self.get_macs()
+        stats = {"total": 0, "mapped": 0, "not_found": 0, "errors": 0, "error_details": []}
 
         async def update_all():
             db = DatabaseManager(self.__db_path)
             repo = DeviceRepository(db)
             try:
                 devices = await repo.find_all()
+                stats["total"] = len(devices)
                 for device in devices:
                     mac = device.mac.lower()
                     if mac in macs:
@@ -217,8 +220,14 @@ class GlobalManager:
                         try:
                             await repo.update(device.id, {'ip': ip})
                             logger.info(f"Updated IP for {mac}: {ip}")
+                            stats["mapped"] += 1
                         except Exception as e:
                             logger.error(f"Failed to update IP {ip} for {mac}: {e}")
+                            stats["errors"] += 1
+                            stats["error_details"].append(f"{mac}: {e}")
+                    else:
+                        logger.debug(f"No IP found in cache for {mac}")
+                        stats["not_found"] += 1
             finally:
                 await db.close()
 
@@ -226,3 +235,17 @@ class GlobalManager:
             asyncio.run(update_all())
         except Exception as e:
             logger.error(f"Failed to update device IPs: {e}")
+            stats["errors"] += 1
+            stats["error_details"].append(str(e))
+
+        logger.info(
+            f"Scan report — Total: {stats['total']} | "
+            f"Mapped: {stats['mapped']} | "
+            f"Not found: {stats['not_found']} | "
+            f"Errors: {stats['errors']}"
+        )
+        if stats["error_details"]:
+            for detail in stats["error_details"]:
+                logger.error(f"  Error detail: {detail}")
+
+        return stats

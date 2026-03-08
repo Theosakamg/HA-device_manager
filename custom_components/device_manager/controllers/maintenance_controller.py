@@ -106,7 +106,7 @@ class MaintenanceClearIPCacheAPIView(BaseView):
             conn = await db_mgr.get_connection()
 
             cursor = await conn.execute(
-                "UPDATE dm_devices SET ip = NULL"
+                "UPDATE dm_devices SET ip = NULL WHERE ip IS NOT NULL"
             )
             updated = cursor.rowcount
             await conn.commit()

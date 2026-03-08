@@ -13,8 +13,17 @@ export interface ClearIPCacheResult {
   updated: number;
 }
 
+export interface ScanStats {
+  total: number;
+  mapped: number;
+  not_found: number;
+  errors: number;
+  error_details: string[];
+}
+
 export interface ScanResult {
   result: string;
+  stats: ScanStats;
 }
 
 export type ExportFormat = "csv" | "json" | "yaml";

@@ -456,9 +456,20 @@ export class DmMaintenanceView extends LitElement {
         ${this._scanResult
           ? html`<div class="result-panel" style="margin-top:16px">
               <h4>✅ ${i18n.t("maint_scan_triggered")}</h4>
-              <p style="margin:0;font-size:13px;font-family:monospace">
-                ${this._scanResult.result}
-              </p>
+              ${this._scanResult.stats
+                ? html`<table style="margin-top:8px;border-collapse:collapse;font-size:13px;font-family:monospace;width:100%">
+                    <tr><td style="padding:2px 8px 2px 0">${i18n.t("maint_scan_stat_total")}</td><td><strong>${this._scanResult.stats.total}</strong></td></tr>
+                    <tr style="color:var(--success-color,#4caf50)"><td style="padding:2px 8px 2px 0">${i18n.t("maint_scan_stat_mapped")}</td><td><strong>${this._scanResult.stats.mapped}</strong></td></tr>
+                    <tr style="color:var(--warning-color,#ff9800)"><td style="padding:2px 8px 2px 0">${i18n.t("maint_scan_stat_not_found")}</td><td><strong>${this._scanResult.stats.not_found}</strong></td></tr>
+                    <tr style="color:${this._scanResult.stats.errors > 0 ? 'var(--error-color,#f44336)' : 'inherit'}"><td style="padding:2px 8px 2px 0">${i18n.t("maint_scan_stat_errors")}</td><td><strong>${this._scanResult.stats.errors}</strong></td></tr>
+                  </table>
+                  ${this._scanResult.stats.error_details?.length
+                    ? html`<details style="margin-top:8px;font-size:12px">
+                        <summary style="cursor:pointer;color:var(--error-color,#f44336)">${i18n.t("maint_scan_stat_error_details")} (${this._scanResult.stats.error_details.length})</summary>
+                        <ul style="margin:4px 0;padding-left:16px">${this._scanResult.stats.error_details.map(e => html`<li>${e}</li>`)}</ul>
+                      </details>`
+                    : nothing}`
+                : html`<p style="margin:0;font-size:13px;font-family:monospace">${this._scanResult.result}</p>`}
             </div>`
           : nothing}
         ${this._scanError

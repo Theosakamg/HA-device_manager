@@ -246,8 +246,13 @@ const translations: { [lang: string]: Translations } = {
     maint_scan_network: "Scan Network",
     maint_scan_network_desc:
       "Scan the network to discover connected devices and update IP addresses.",
-    maint_scan_triggered: "Scan launched successfully",
+    maint_scan_triggered: "Scan completed",
     maint_scan_running: "Scanning...",
+    maint_scan_stat_total: "Total devices",
+    maint_scan_stat_mapped: "Mapped (IP found)",
+    maint_scan_stat_not_found: "Not found",
+    maint_scan_stat_errors: "Errors",
+    maint_scan_stat_error_details: "Error details",
     maint_clear_ip_cache: "Clear IP Cache",
     maint_clear_ip_cache_desc:
       "Reset the IP address of all devices to NULL. Useful after a network change.",
@@ -542,8 +547,13 @@ const translations: { [lang: string]: Translations } = {
     maint_scan_network: "Scanner le Réseau",
     maint_scan_network_desc:
       "Scanne le réseau pour découvrir les équipements connectés et mettre à jour les adresses IP.",
-    maint_scan_triggered: "Scan lancé avec succès",
+    maint_scan_triggered: "Scan terminé",
     maint_scan_running: "Scan en cours...",
+    maint_scan_stat_total: "Total équipements",
+    maint_scan_stat_mapped: "Mappés (IP trouvée)",
+    maint_scan_stat_not_found: "Non trouvés",
+    maint_scan_stat_errors: "Erreurs",
+    maint_scan_stat_error_details: "Détails des erreurs",
     maint_clear_ip_cache: "Vider le Cache IP",
     maint_clear_ip_cache_desc:
       "Réinitialise l'adresse IP de tous les équipements à NULL. Utile après un changement de réseau.",
