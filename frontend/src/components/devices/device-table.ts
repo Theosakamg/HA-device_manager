@@ -447,6 +447,7 @@ export class DmDeviceTable extends LitElement {
   private get _columns(): DeviceColumn[] {
     return [
       { key: "enabled", label: i18n.t("device_enabled") },
+      { key: "state", label: i18n.t("device_state") },
       { key: "mac", label: "MAC" },
       { key: "displayName", label: i18n.t("device_location") },
       { key: "floor.name", label: i18n.t("device_level") },
@@ -1094,6 +1095,19 @@ export class DmDeviceTable extends LitElement {
                             ? "status-enabled"
                             : "status-disabled"}"
                         ></span>
+                      </td>
+                      <td class="state-badge">
+                        <span class="state-badge-${device.state}">
+                          ${device.state === "deployed"
+                            ? "🟢 " + i18n.t("state_deployed")
+                            : device.state === "parking"
+                              ? "🔵 " + i18n.t("state_parking")
+                              : device.state === "out_of_order"
+                                ? "🔴 " + i18n.t("state_out_of_order")
+                                : device.state === "deployed_hot"
+                                  ? "🟠 " + i18n.t("state_deployed_hot")
+                                  : device.state ?? "—"}
+                        </span>
                       </td>
                       <td class="mac">${device.mac}</td>
                       <td>${deviceLabel(device)}</td>

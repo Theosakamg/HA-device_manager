@@ -65,7 +65,14 @@ def _device_to_row(device: DmDevice) -> dict[str, str]:
     else:
         level_num = floor_slug
 
-    state = "Enable" if device.enabled else "Disable"
+    # Map device.state to CSV State column format (backward compatible)
+    state_mapping = {
+        "deployed": "Enable",
+        "deployed_hot": "Enable-Hot",
+        "parking": "Disable",
+        "out_of_order": "KO",
+    }
+    state = state_mapping.get(device.state, "Disable")
 
     return {
         "Check": "",

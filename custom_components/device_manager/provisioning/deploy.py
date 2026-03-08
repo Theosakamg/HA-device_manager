@@ -96,7 +96,23 @@ def deploy(
         if mac_filter_normalized:
             logger.info(f'Filtering devices to MACs: {mac_filter_normalized}')
 
-        devices = manager.load_devices_sync(mac_filter=mac_filter_normalized, enabled_only=True)
+        # Determine state filter based on deployment mode:
+        # - Deploy all (no mac_filter): only 'deployed' devices
+        # - Batch selection (with mac_filter): 'deployed' + 'deployed_hot'
+        if mac_filter_normalized:
+            # Batch mode: include deployed_hot devices
+            states_filter = ['deployed', 'deployed_hot']
+            logger.info('Batch deployment mode: including deployed and deployed_hot devices')
+        else:
+            # Deploy all mode: exclude deployed_hot devices
+            states_filter = ['deployed']
+            logger.info('Deploy all mode: only deployed devices (excluding deployed_hot)')
+
+        devices = manager.load_devices_sync(
+            mac_filter=mac_filter_normalized,
+            enabled_only=True,
+            states_filter=states_filter
+        )
 
         if not devices:
             logger.warning('No devices found to deploy')
@@ -135,6 +151,7 @@ def deploy(
         count = 0
         success = 0
         error = 0
+        skipped = 0
         deploy_results: Dict[int, str] = {}
 
         for device in devices:
@@ -150,11 +167,17 @@ def deploy(
                         f"No adapter found for device {device.mac} "
                         f"(firmware: {device._refs.firmware_name})"
                     )
+                    skipped += 1
+                    if device.id is not None:
+                        deploy_results[device.id] = _DEPLOY_FAIL
                     continue
 
                 # Check if device can be deployed
                 if not adapter.can_deploy(device):
                     logger.warning(f"Device {device.mac} cannot be deployed (no IP or not reachable)")
+                    skipped += 1
+                    if device.id is not None:
+                        deploy_results[device.id] = _DEPLOY_FAIL
                     continue
 
                 # Deploy device
@@ -166,7 +189,7 @@ def deploy(
                     deploy_results[device.id] = _DEPLOY_DONE
 
             except Exception as e:
-                logger.error(f"Failed to deploy device {device.mac}: {e}")
+                logger.error(f"Failed to deploy device {device.mac}: {e}", exc_info=True)
                 error += 1
                 if device.id is not None:
                     deploy_results[device.id] = _DEPLOY_FAIL
@@ -185,7 +208,8 @@ def deploy(
             _persist_deploy_results(db, deploy_results)
 
         logger.info(
-            f"Deployment completed! Total: {count}, Success: {success}, Error: {error}"
+            f"Deployment completed! Total: {count}, Success: {success}, "
+            f"Skipped: {skipped}, Error: {error}"
         )
 
     finally:

@@ -35,13 +35,16 @@ class ProvisioningManager:
     async def load_devices(
         self,
         mac_filter: Optional[List[str]] = None,
-        enabled_only: bool = True
+        enabled_only: bool = True,
+        states_filter: Optional[List[str]] = None
     ) -> List[DmDevice]:
         """Load devices from the database.
 
         Args:
             mac_filter: Optional list of MAC addresses to filter by.
             enabled_only: If True, only load enabled devices.
+            states_filter: Optional list of states to include
+                          (e.g. ['deployed', 'deployed_hot']).
 
         Returns:
             List of DmDevice instances with populated transient fields.
@@ -55,6 +58,9 @@ class ProvisioningManager:
             # Apply filters
             if enabled_only:
                 devices = [d for d in devices if d.enabled]
+
+            if states_filter:
+                devices = [d for d in devices if d.state in states_filter]
 
             if mac_filter:
                 mac_filter_lower = [m.lower().strip() for m in mac_filter]
@@ -72,7 +78,8 @@ class ProvisioningManager:
     def load_devices_sync(
         self,
         mac_filter: Optional[List[str]] = None,
-        enabled_only: bool = True
+        enabled_only: bool = True,
+        states_filter: Optional[List[str]] = None
     ) -> List[DmDevice]:
         """Synchronous wrapper for load_devices.
 
@@ -81,12 +88,14 @@ class ProvisioningManager:
         Args:
             mac_filter: Optional list of MAC addresses to filter by.
             enabled_only: If True, only load enabled devices.
+            states_filter: Optional list of states to include
+                          (e.g. ['deployed', 'deployed_hot']).
 
         Returns:
             List of DmDevice instances.
         """
         import asyncio
-        return asyncio.run(self.load_devices(mac_filter, enabled_only))
+        return asyncio.run(self.load_devices(mac_filter, enabled_only, states_filter))
 
     def get_devices(self) -> List[DmDevice]:
         """Get previously loaded devices.

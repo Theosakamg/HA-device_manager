@@ -43,6 +43,7 @@ export interface DmDevice {
   mac: string;
   ip: string;
   enabled: boolean;
+  state: "deployed" | "parking" | "out_of_order" | "deployed_hot";
   positionName: string;
   positionSlug: string;
   mode: string;

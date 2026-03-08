@@ -20,7 +20,7 @@ class DeviceRepository(BaseRepository[DmDevice]):
     table_name = "dm_devices"
     model_class = DmDevice
     allowed_columns = {
-        "mac", "ip", "enabled", "position_name", "position_slug",
+        "mac", "ip", "enabled", "state", "position_name", "position_slug",
         "mode", "interlock", "ha_device_class", "extra",
         "room_id", "model_id", "firmware_id", "function_id", "target_id",
     }

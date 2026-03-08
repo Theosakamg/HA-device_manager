@@ -91,6 +91,7 @@ _DEVICES_DDL = """
         mac TEXT UNIQUE DEFAULT '',
         ip TEXT UNIQUE DEFAULT NULL,
         enabled BOOLEAN NOT NULL DEFAULT 1,
+        state TEXT NOT NULL DEFAULT 'deployed' CHECK(state IN ('deployed', 'parking', 'out_of_order', 'deployed_hot')),
         position_name TEXT DEFAULT '',
         position_slug TEXT DEFAULT '',
         mode TEXT DEFAULT '',

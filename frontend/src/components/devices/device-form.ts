@@ -99,6 +99,7 @@ export class DmDeviceForm extends LitElement {
         haDeviceClass: this.device.haDeviceClass ?? "",
         extra: this.device.extra ?? "",
         enabled: this.device.enabled ?? true,
+        state: this.device.state ?? "deployed",
         roomId: this.device.roomId ?? "",
         modelId: this.device.modelId ?? "",
         firmwareId: this.device.firmwareId ?? "",
@@ -116,6 +117,7 @@ export class DmDeviceForm extends LitElement {
         haDeviceClass: "",
         extra: "",
         enabled: true,
+        state: "deployed",
         roomId: this.presetRoomId != null ? String(this.presetRoomId) : "",
         modelId: "",
         firmwareId: "",
@@ -244,6 +246,29 @@ export class DmDeviceForm extends LitElement {
                 </option>
                 <option value="false" ?selected=${!this._form.enabled}>
                   ${i18n.t("disabled")}
+                </option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>${i18n.t("device_state")}</label>
+              <select
+                @change=${(e: Event) =>
+                  this._updateField(
+                    "state",
+                    (e.target as HTMLSelectElement).value
+                  )}
+              >
+                <option value="deployed" ?selected=${this._form.state === "deployed"}>
+                  ${i18n.t("state_deployed")}
+                </option>
+                <option value="parking" ?selected=${this._form.state === "parking"}>
+                  ${i18n.t("state_parking")}
+                </option>
+                <option value="out_of_order" ?selected=${this._form.state === "out_of_order"}>
+                  ${i18n.t("state_out_of_order")}
+                </option>
+                <option value="deployed_hot" ?selected=${this._form.state === "deployed_hot"}>
+                  ${i18n.t("state_deployed_hot")}
                 </option>
               </select>
             </div>

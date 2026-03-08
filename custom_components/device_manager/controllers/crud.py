@@ -53,6 +53,19 @@ def _validate_slug(data: dict[str, Any]) -> str | None:
     return None
 
 
+def _validate_state(data: dict[str, Any]) -> str | None:
+    """Check that state field has a valid value if present.
+
+    Returns an error message if validation fails, None otherwise.
+    """
+    if "state" in data:
+        state = data.get("state", "")
+        valid_states = ("deployed", "parking", "out_of_order", "deployed_hot")
+        if state not in valid_states:
+            return f"Field 'state' must be one of {valid_states}, got '{state}'"
+    return None
+
+
 # ------------------------------------------------------------------
 # Helper utilities
 # ------------------------------------------------------------------
@@ -185,6 +198,10 @@ class CrudListView(BaseView):
         slug_err = _validate_slug(snake_data)
         if slug_err:
             return self.json({"error": slug_err}, status_code=400)
+        # Validate state has valid value
+        state_err = _validate_state(snake_data)
+        if state_err:
+            return self.json({"error": state_err}, status_code=400)
         if self.normalize_data:
             snake_data = self.normalize_data(snake_data)
         new_id = await repos[self.repo_key].create(snake_data)
@@ -256,6 +273,10 @@ class CrudDetailView(BaseView):
         slug_err = _validate_slug(snake_data)
         if slug_err:
             return self.json({"error": slug_err}, status_code=400)
+        # Validate state has valid value
+        state_err = _validate_state(snake_data)
+        if state_err:
+            return self.json({"error": state_err}, status_code=400)
         if self.normalize_data:
             snake_data = self.normalize_data(snake_data)
         await repos[self.repo_key].update(eid, snake_data)

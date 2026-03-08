@@ -292,7 +292,29 @@ class TasmotaAdapter(FirmwareAdapter):
                     timeout=10.0,
                     auth=HTTPBasicAuth(DEVICE_USER, password)
                 )
-                logger.debug(f"  Response: {response.status_code} - {response.text}")
+
+                # Verify HTTP status code
+                if response.status_code != 200:
+                    raise RuntimeError(
+                        f"HTTP {response.status_code}: {response.text[:200]}"
+                    )
+
+                # Parse and verify Tasmota response
+                try:
+                    result = response.json()
+                    # Check for Tasmota error indicators
+                    if isinstance(result, dict):
+                        # Check for explicit error messages
+                        if "ERROR" in str(result).upper():
+                            raise RuntimeError(f"Tasmota error in response: {result}")
+                        # Check for WARNING in response (still log but don't fail)
+                        if "WARNING" in str(result).upper():
+                            logger.warning(f"Tasmota warning: {result}")
+                    logger.debug(f"  Response: {response.status_code} - {result}")
+                except ValueError:
+                    # Non-JSON response, just log it (some commands return plain text)
+                    logger.debug(f"  Response: {response.status_code} - {response.text[:200]}")
+
                 break
 
             except requests.exceptions.RequestException as e:

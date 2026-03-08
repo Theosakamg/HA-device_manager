@@ -57,6 +57,7 @@ class DmDevice(SerializableMixin):
         mac: Unique MAC address of the device.
         ip: Optional unique IP address of the device (NULL allowed).
         enabled: Whether the device is active.
+        state: Deployment state (deployed, parking, out_of_order, deployed_hot).
         position_name: Human-readable position name.
         position_slug: URL-friendly position identifier.
         mode: Operating mode of the device.
@@ -75,6 +76,7 @@ class DmDevice(SerializableMixin):
     mac: str = ""
     ip: Optional[str] = None
     enabled: bool = True
+    state: str = "deployed"
     position_name: str = ""
     position_slug: str = ""
     mode: str = ""
@@ -300,6 +302,7 @@ class DmDevice(SerializableMixin):
             mac=normalized.get("mac", ""),
             ip=ip_value,
             enabled=normalized.get("enabled", True),
+            state=normalized.get("state", "deployed"),
             position_name=normalized.get("position_name", ""),
             position_slug=normalized.get("position_slug", ""),
             mode=normalized.get("mode", ""),

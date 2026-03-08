@@ -202,9 +202,9 @@ class CSVImportService:
                     )
                     function_cache[function_name] = function_id
 
-                # 7. Determine enabled status from state
+                # 7. Parse state and enabled from State CSV column
                 state_raw = parsed.get("state", "")
-                enabled = self._parse_enabled(state_raw)
+                state, enabled = self._parse_state_and_enabled(state_raw)
 
                 # 8. Build IP: if the CSV value is a plain number,
                 #    treat it as the last octet of {ip_prefix}.X
@@ -223,6 +223,7 @@ class CSVImportService:
                     "mac": parsed.get("mac", ""),
                     "ip": ip_value,
                     "enabled": enabled,
+                    "state": state,
                     "position_name": parsed.get("position_fr", ""),
                     "position_slug": _sanitize_slug(
                         parsed.get("position_slug", "")
@@ -317,25 +318,41 @@ class CSVImportService:
                 result[field_name] = val
         return result
 
-    def _parse_enabled(self, state: str) -> bool:
-        """Convert a state string to a boolean enabled flag.
+    def _parse_state_and_enabled(self, state_str: str) -> tuple[str, bool]:
+        """Convert a State CSV value to (state, enabled) tuple.
 
         Args:
-            state: The raw state string from CSV
-                   (e.g. 'Enable', 'Disable', etc.)
+            state_str: The raw State string from CSV
+                       (e.g. 'Enable', 'Disable', 'Enable-Hot', 'KO', 'NA').
 
         Returns:
-            True if the state indicates the device is enabled.
+            Tuple of (state, enabled) with proper mapping:
+            - "Enable" → ("deployed", True)
+            - "Disable" → ("parking", False)
+            - "NA" → ("parking", False)
+            - "Enable-Hot" → ("deployed_hot", True)
+            - "KO" → ("out_of_order", False)
+            - default → ("parking", False)
         """
-        if not state:
-            return False
+        if not state_str:
+            return ("parking", False)
+
         key = (
-            state.strip()
+            state_str.strip()
             .lower()
             .replace(" ", "-")
             .replace("_", "-")
         )
-        return key in ("enable", "enable-hot")
+
+        mapping = {
+            "enable": ("deployed", True),
+            "disable": ("parking", False),
+            "na": ("parking", False),
+            "enable-hot": ("deployed_hot", True),
+            "ko": ("out_of_order", False),
+        }
+
+        return mapping.get(key, ("parking", False))
 
     async def _find_or_create_hierarchy(
         self,
