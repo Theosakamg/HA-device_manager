@@ -160,12 +160,13 @@ class StatsAPIView(BaseView):
                     COALESCE(dm.name, 'Unknown') AS name,
                     COUNT(*) AS total,
                     SUM(CASE WHEN d.last_deploy_status = 'done' THEN 1 ELSE 0 END) AS success,
-                    SUM(CASE WHEN d.last_deploy_status = 'fail' THEN 1 ELSE 0 END) AS fail
+                    SUM(CASE WHEN d.last_deploy_status = 'fail' THEN 1 ELSE 0 END) AS fail,
+                    CAST(SUM(CASE WHEN d.last_deploy_status = 'done' THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS success_rate
                 FROM dm_devices d
                 LEFT JOIN dm_device_models dm ON d.model_id = dm.id
                 WHERE d.last_deploy_status IS NOT NULL
                 GROUP BY dm.id
-                ORDER BY total DESC
+                ORDER BY success_rate ASC, total DESC
                 """
             )
             deploy_by_model = [
