@@ -2,18 +2,22 @@
 description: "Scanne le réseau local pour **découvrir les équipements connectés** et rafraîchir leurs adresses IP."
 ---
 
-Le scanner réseau sonde le sous-réseau défini par le **Préfixe IP** dans la Configuration et tente de faire correspondre les hôtes découverts aux adresses MAC des équipements connus. Lorsqu'une correspondance est trouvée, l'IP de l'équipement est mise à jour automatiquement.
+Le scanner réseau exécute un **script bash configurable** (configuré dans Système → Commun) pour découvrir les correspondances MAC-IP sur votre réseau. Le script peut interroger des serveurs DHCP, des routeurs, ou effectuer des scans ARP. Lorsqu'une adresse MAC correspond à un équipement connu, l'IP est mise à jour directement dans la base de données.
 
 ## Fonctionnement
 
-1. Le backend itère sur la plage IP configurée
-2. Chaque hôte joignable est interrogé pour son adresse MAC (ARP / mDNS)
-3. Les équipements correspondants dans la base voient leur champ `ip` mis à jour
-4. Le résumé indique combien d'adresses ont été résolues
+1. Le backend exécute le script de scan configuré (stocké dans les paramètres DB)
+2. Le script retourne du YAML au format : paires `ip: mac`
+3. Chaque adresse MAC est comparée aux équipements de la base
+4. Les équipements correspondants voient leur champ `ip` mis à jour
+5. Le résumé indique combien d'adresses ont été résolues
 
-## Optimisation réseau
+## Configuration du script
 
-Le scan réseau utilise un **cache IP local** pour éviter de rescanner inutilement les équipements déjà découverts. Le cache est stocké dans `cache_ip.yaml` et peut être réinitialisé depuis la Zone de Danger si nécessaire.
+Le contenu du script de scan est configuré dans **Système → Commun → Script de scan réseau**. Variables d'environnement disponibles :
+- `$SCAN_SCRIPT_SSH_USER` - Nom d'utilisateur SSH pour les requêtes distantes
+- `$SCAN_SCRIPT_SSH_HOST` - Hôte SSH (routeur/serveur DHCP)
+- `$SCAN_SCRIPT_PRIVATE_KEY_FILE` - Chemin du fichier de clé SSH
 
 ## Quand l'utiliser
 
@@ -22,4 +26,4 @@ Le scan réseau utilise un **cache IP local** pour éviter de rescanner inutilem
 - Périodiquement pour maintenir les IP à jour pour les opérations de déploiement
 - Avant un déploiement massif pour s'assurer que les adresses IP sont correctes
 
-> **Prérequis :** le **Préfixe IP** doit être configuré dans la section Configuration avant de scanner. Le scanner couvre uniquement le sous-réseau `/24` de ce préfixe.
+> **Prérequis :** Configurez le **Script de scan réseau** dans Système → Commun et assurez-vous que les identifiants SSH sont valides si votre script nécessite un accès distant à un serveur DHCP ou routeur.

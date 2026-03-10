@@ -12,7 +12,7 @@ Permanently deletes **all data** across every table — devices, rooms, floors, 
 
 ## Clear IP Cache
 
-Resets the `ip` field of **all devices** to `NULL` and purges the `cache_ip.yaml` file used by the network scanner. The device records are preserved; only the IP addresses are wiped.
+Resets the `ip` field of **all devices** to `NULL` in the database. The device records are preserved; only the IP addresses are wiped.
 
 **Use case:** after a major network change (new subnet, new DHCP scope) where all previously stored IPs are invalid. Follow up with a **Scan Network** to repopulate them.
 

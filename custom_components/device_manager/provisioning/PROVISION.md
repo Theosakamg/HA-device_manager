@@ -241,16 +241,51 @@ print(f"Errors: {stats['errors']}")
 ```
 
 **Configuration (via .env or database settings):**
-- `SCAN_SCRIPT` - Path to network scan script
-- `SCAN_SCRIPT_PRIVATE_KEY_FILE` - SSH key for remote scan
-- `SCAN_SCRIPT_SSH_USER` - SSH username
-- `SCAN_SCRIPT_SSH_HOST` - SSH host
+- `SCAN_SCRIPT_CONTENT` - (Database setting) Bash script content for network scanning
+- `SCAN_SCRIPT_PRIVATE_KEY_FILE` - SSH key file path (passed as env var to script)
+- `SCAN_SCRIPT_SSH_USER` - SSH username (passed as env var to script)
+- `SCAN_SCRIPT_SSH_HOST` - SSH host (passed as env var to script)
 
 **Script Output Format:**
 The scan script must output YAML in the format:
 ```yaml
 192.168.1.100: aa:bb:cc:dd:ee:ff
 192.168.1.101: 11:22:33:44:55:66
+```
+
+**Script Examples:**
+
+*Example 1: Kea DHCP Query with Validation*
+```bash
+SSH_USER=$SCAN_SCRIPT_SSH_USER
+SSH_HOST=$SCAN_SCRIPT_SSH_HOST
+
+# SCAN_SCRIPT_PRIVATE_KEY_FILE is now the absolute path to the key file
+# (uploaded via the Device Manager UI and stored in /config/dm/keys/).
+PRIVATE_KEY_FILE=$SCAN_SCRIPT_PRIVATE_KEY_FILE
+
+if [ -z "$PRIVATE_KEY_FILE" ]; then
+    echo "ERROR: SCAN_SCRIPT_PRIVATE_KEY_FILE is not set" >&2
+    exit 1
+fi
+
+if [ ! -f "$PRIVATE_KEY_FILE" ]; then
+    echo "ERROR: SSH key file not found: $PRIVATE_KEY_FILE" >&2
+    exit 1
+fi
+
+# Retrieve MAC addresses from Kea DHCP server and output in "ip: mac" format
+ssh -T -i "$PRIVATE_KEY_FILE" -o BatchMode=yes -o LogLevel=ERROR -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" | jq -r '.arguments.leases[] | "\(."ip-address"): \(."hw-address")"' 2>/dev/null
+```
+
+*Example 2: ARP Scan via SSH*
+```bash
+PRIVATE_KEY_FILE=$SCAN_SCRIPT_PRIVATE_KEY_FILE
+SSH_USER=$SCAN_SCRIPT_SSH_USER
+SSH_HOST=$SCAN_SCRIPT_SSH_HOST
+
+# Retrieve MAC addresses from remote router and output in "ip: mac" format
+ssh -T -i "$PRIVATE_KEY_FILE" -o BatchMode=yes -o LogLevel=ERROR -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" 'arp -n' 2>/dev/null | awk '/ether/ {print $1": "$3}'
 ```
 
 ---
@@ -510,7 +545,8 @@ The provisioning system uses environment variables or database settings for conf
 
 **Network Scanning:**
 ```bash
-SCAN_SCRIPT=/path/to/scan-script.sh
+# Note: The scan script content itself is stored in database settings (scan_script_content)
+# These variables are passed to the script at runtime:
 SCAN_SCRIPT_PRIVATE_KEY_FILE=/path/to/ssh-key
 SCAN_SCRIPT_SSH_USER=root
 SCAN_SCRIPT_SSH_HOST=router.local
@@ -672,9 +708,9 @@ ployable Firmwares from DB
 - Ensure firmware type matches adapter
 
 **2. Scan finds no devices**
-- Verify `SCAN_SCRIPT` is configured and executable
-- Check SSH credentials if scanning remote network
-- Ensure script outputs correct YAML format
+- Verify `scan_script_content` database setting is configured (System → Common tab)
+- Check SSH credentials if scanning remote network (SCAN_SCRIPT_SSH_* env vars)
+- Ensure script outputs correct YAML format (see examples in NetworkScanner section)
 
 **3. Import errors**
 - Clear Python cache: `find . -name "*.pyc" -delete`
@@ -743,6 +779,19 @@ If migrating from legacy code:
 ---
 
 ## Changelog
+
+**2026-03-10 - Database-stored Network Scan Scripts**
+- ✅ Migrated network scan script from filesystem to database storage
+- ✅ Added `scan_script_content` setting (stored in dm_settings table)
+- ✅ Created migration 0007_add_scan_script_content.py with default Kea DHCP script
+- ✅ Removed filesystem-based script loading from scanner.py
+- ✅ Deleted obsolete script files (macs_kea.sh, arp_scan_remote.sh, scripts/ directory)
+- ✅ Updated scanner.py to execute script content via `bash -c` directly
+- ✅ Added script validation (10000 char limit, accepts all characters)
+- ✅ Added frontend textarea UI in System and Maintenance views
+- ✅ Updated documentation with script examples from deleted files
+- ✅ Updated .env.sample to remove SCAN_SCRIPT variable
+- ✅ Added EN/FR translations for scan_script_content setting
 
 **2026-03-08 - Major Refactoring**
 - ✅ Replaced dict-based devices with DmDevice model objects

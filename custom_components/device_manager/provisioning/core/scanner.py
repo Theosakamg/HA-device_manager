@@ -1,7 +1,5 @@
 """Network scanner for discovering device IP addresses.
 
-Replaces the legacy CacheManager. Scans the network and updates device IPs
-directly in the database, eliminating the need for cache_ip.yaml files.
 """
 
 import logging
