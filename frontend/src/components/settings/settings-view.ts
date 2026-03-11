@@ -3,8 +3,8 @@
  */
 import { LitElement, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import sharedStyles from "../../styles/shared-styles.css?lit";
-import settingsViewStyles from "./settings-view-styles.css?lit";
+import sharedStyles from "../../styles/shared.css?lit";
+import settingsViewStyles from "./settings-view.css?lit";
 import { i18n, localized } from "../../i18n";
 import { getDoc } from "../../utils/doc-registry";
 import { DeviceModelClient } from "../../api/device-model-client";

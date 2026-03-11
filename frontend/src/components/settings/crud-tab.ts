@@ -6,7 +6,7 @@
  */
 import { LitElement, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import sharedStyles from "../../styles/shared-styles.css?lit";
+import sharedStyles from "../../styles/shared.css?lit";
 import type { CrudClient } from "../../api/crud-client";
 import type { CrudConfig } from "../shared/crud-table";
 import "../shared/crud-table";

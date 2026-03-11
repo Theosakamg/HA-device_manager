@@ -3,8 +3,8 @@
  */
 import { LitElement, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import sharedStyles from "../../styles/shared-styles.css?lit";
-import hierarchyTreeStyles from "./hierarchy-tree-styles.css?lit";
+import sharedStyles from "../../styles/shared.css?lit";
+import hierarchyTreeStyles from "./hierarchy-tree.css?lit";
 import { i18n, localized } from "../../i18n";
 import type { HierarchyTree, HierarchyNode } from "../../types/device";
 import { BuildingClient } from "../../api/building-client";

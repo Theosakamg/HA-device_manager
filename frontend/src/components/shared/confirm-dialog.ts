@@ -3,8 +3,8 @@
  */
 import { LitElement, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import sharedStyles from "../../styles/shared-styles.css?lit";
-import confirmDialogStyles from "./confirm-dialog-styles.css?lit";
+import sharedStyles from "../../styles/shared.css?lit";
+import confirmDialogStyles from "./confirm-dialog.css?lit";
 import { i18n, localized } from "../../i18n";
 
 @localized

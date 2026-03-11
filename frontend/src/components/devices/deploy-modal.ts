@@ -7,8 +7,8 @@
  */
 import { LitElement, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import sharedStyles from "../../styles/shared-styles.css?lit";
-import deployModalStyles from "./deploy-modal-styles.css?lit";
+import sharedStyles from "../../styles/shared.css?lit";
+import deployModalStyles from "./deploy-modal.css?lit";
 import { i18n, localized } from "../../i18n";
 import { DeviceFirmwareClient } from "../../api/device-firmware-client";
 import type {

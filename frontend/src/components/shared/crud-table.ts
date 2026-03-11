@@ -7,9 +7,9 @@ import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import { type DocContent } from "../../utils/frontmatter";
-import sharedStyles from "../../styles/shared-styles.css?lit";
-import tabDescriptionStyles from "../../styles/tab-description-styles.css?lit";
-import crudTableStyles from "./crud-table-styles.css?lit";
+import sharedStyles from "../../styles/shared.css?lit";
+import tabDescriptionStyles from "../../styles/tab-description.css?lit";
+import crudTableStyles from "./crud-table.css?lit";
 import { i18n, localized } from "../../i18n";
 import {
   SortState,

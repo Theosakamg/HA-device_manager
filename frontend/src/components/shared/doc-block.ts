@@ -13,8 +13,8 @@ import { customElement, property, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
-import sharedStyles from "../../styles/shared-styles.css?lit";
-import docBlockStyles from "./doc-block-styles.css?lit";
+import sharedStyles from "../../styles/shared.css?lit";
+import docBlockStyles from "./doc-block.css?lit";
 import type { DocContent } from "../../utils/frontmatter";
 
 @customElement("dm-doc-block")

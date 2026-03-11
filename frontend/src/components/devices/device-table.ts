@@ -3,8 +3,8 @@
  */
 import { LitElement, html, nothing } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import sharedStyles from "../../styles/shared-styles.css?lit";
-import deviceTableStyles from "./device-table-styles.css?lit";
+import sharedStyles from "../../styles/shared.css?lit";
+import deviceTableStyles from "./device-table.css?lit";
 import { i18n, localized } from "../../i18n";
 import { DeviceClient } from "../../api/device-client";
 import type { DmDevice } from "../../types/device";

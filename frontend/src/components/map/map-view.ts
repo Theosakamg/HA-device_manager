@@ -7,7 +7,7 @@
  */
 import { LitElement, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import sharedStyles from "../../styles/shared-styles.css?lit";
+import sharedStyles from "../../styles/shared.css?lit";
 import { i18n, localized } from "../../i18n";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
@@ -27,7 +27,7 @@ import {
   COLORS,
   REF_EDGE_COLORS,
 } from "./map-constants";
-import mapStyles from "./map-styles.css?lit";
+import mapStyles from "./map.css?lit";
 import { buildGraphData, renderGraphToScene, addStarField } from "./map-graph";
 
 /* ------------------------------------------------------------------ */

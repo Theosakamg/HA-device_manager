@@ -3,8 +3,8 @@
  */
 import { LitElement, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import sharedStyles from "../../styles/shared-styles.css?lit";
-import dashboardStyles from "./dashboard-styles.css?lit";
+import sharedStyles from "../../styles/shared.css?lit";
+import dashboardStyles from "./dashboard.css?lit";
 import { i18n, localized } from "../../i18n";
 import { StatsClient } from "../../api/stats-client";
 import type { StatEntry, DeploymentByGroup } from "../../api/stats-client";

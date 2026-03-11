@@ -3,8 +3,8 @@
  */
 import { LitElement, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import sharedStyles from "../styles/shared-styles.css?lit";
-import appShellStyles from "./app-shell-styles.css?lit";
+import sharedStyles from "../styles/shared.css?lit";
+import appShellStyles from "./app-shell.css?lit";
 import { i18n, localized } from "../i18n";
 import { loadSettings } from "../api/settings-client";
 import "./dashboard/dashboard-view";

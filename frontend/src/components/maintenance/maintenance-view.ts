@@ -3,9 +3,9 @@
  */
 import { LitElement, html, nothing } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import sharedStyles from "../../styles/shared-styles.css?lit";
-import systemStyles from "../../styles/system-styles.css?lit";
-import maintenanceViewStyles from "./maintenance-view-styles.css?lit";
+import sharedStyles from "../../styles/shared.css?lit";
+import systemStyles from "../../styles/system.css?lit";
+import maintenanceViewStyles from "./maintenance-view.css?lit";
 import { i18n, localized } from "../../i18n";
 import { MaintenanceClient } from "../../api/maintenance-client";
 import type {

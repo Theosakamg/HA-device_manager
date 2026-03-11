@@ -3,8 +3,8 @@
  */
 import { LitElement, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import sharedStyles from "../../styles/shared-styles.css?lit";
-import toastNotificationStyles from "./toast-notification-styles.css?lit";
+import sharedStyles from "../../styles/shared.css?lit";
+import toastNotificationStyles from "./toast-notification.css?lit";
 
 @customElement("dm-toast")
 export class DmToast extends LitElement {
