@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 
 from aiohttp import web
+from aiohttp.multipart import BodyPartReader
 
 from .base import BaseView, get_repos, rate_limit, csrf_protect
 from ..const import SETTING_SCAN_SSH_KEY_FILE
@@ -45,7 +46,7 @@ class SSHKeyUploadAPIView(BaseView):
             return self.json({"error": "Expected multipart/form-data"}, status_code=400)
 
         field = await reader.next()
-        if field is None or field.name != "file":
+        if field is None or not isinstance(field, BodyPartReader) or field.name != "file":
             return self.json({"error": "Missing 'file' field"}, status_code=400)
 
         # Sanitise filename — never trust the client-supplied name directly

@@ -66,7 +66,7 @@ def rate_limit(requests: int = 60, window: int = 60):
                 )
 
             _rate_limit_store[key].append(now)
-            return await func(self, request, *args, **kwargs)
+            return await func(self, request, *args, **kwargs)  # type: ignore[no-any-return]
 
         return wrapper
     return decorator
@@ -96,7 +96,7 @@ def csrf_protect(func):
                 headers={"Content-Type": "application/json"},
                 text='{"error": "Forbidden"}',
             )
-        return await func(self, request, *args, **kwargs)
+        return await func(self, request, *args, **kwargs)  # type: ignore[no-any-return]
 
     # Preserve method name so aiohttp routing works correctly
     wrapper.__name__ = func.__name__
@@ -150,9 +150,9 @@ class BaseView(HomeAssistantView):
         ),
     }
 
-    def json(self, result, status_code: int = 200):
+    def json(self, result: Any, status_code: int = 200) -> web.Response:  # type: ignore[override]
         """Return a JSON response with security headers."""
-        response = super().json(result, status_code=status_code)
+        response: web.Response = super().json(result, status_code=status_code)  # type: ignore[assignment]
         response.headers.update(self._SECURITY_HEADERS)
         return response
 

@@ -17,14 +17,15 @@ base_dir = Path(__file__).resolve().parents[1]
 # Load case_convert utility
 case_convert_path = base_dir / 'utils' / 'case_convert.py'
 spec = importlib.util.spec_from_file_location('case_convert', str(case_convert_path))
+assert spec is not None and spec.loader is not None, "Cannot load case_convert"
 case_convert = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(case_convert)
+spec.loader.exec_module(case_convert)  # type: ignore[union-attr]
 
 # Create mock parent package modules for relative imports
 custom_components_module = types.ModuleType('custom_components')
 device_manager_module = types.ModuleType('device_manager')
 utils_module = types.ModuleType('utils')
-utils_module.case_convert = case_convert
+utils_module.case_convert = case_convert  # type: ignore[attr-defined]
 
 sys.modules['custom_components'] = custom_components_module
 sys.modules['custom_components.device_manager'] = device_manager_module
@@ -34,17 +35,19 @@ sys.modules['custom_components.device_manager.utils.case_convert'] = case_conver
 # Load base module
 base_path = base_dir / 'models' / 'base.py'
 spec = importlib.util.spec_from_file_location('base_module', str(base_path))
+assert spec is not None and spec.loader is not None, "Cannot load base model"
 base_module = importlib.util.module_from_spec(spec)
 base_module.__package__ = 'custom_components.device_manager.models'
-spec.loader.exec_module(base_module)
+spec.loader.exec_module(base_module)  # type: ignore[union-attr]
 
 # Load device module
 device_path = base_dir / 'models' / 'device.py'
 spec = importlib.util.spec_from_file_location('device_module', str(device_path))
+assert spec is not None and spec.loader is not None, "Cannot load device model"
 device_module = importlib.util.module_from_spec(spec)
 device_module.__package__ = 'custom_components.device_manager.models'
 sys.modules['custom_components.device_manager.models.base'] = base_module
-spec.loader.exec_module(device_module)
+spec.loader.exec_module(device_module)  # type: ignore[union-attr]
 
 DmDevice = device_module.DmDevice
 DeviceRoomRef = device_module.DeviceRoomRef

@@ -12,7 +12,7 @@ from datetime import datetime
 from time import sleep
 from typing import Optional
 
-import requests
+import requests  # type: ignore[import-untyped]
 
 from ..core.firmware_base import FirmwareAdapter
 from ..utility import get_config
@@ -91,7 +91,7 @@ class WLEDAdapter(FirmwareAdapter):
 
         # Check if device responds to ping
         try:
-            cmd = ['ping', '-c1', '-W1', device.ip]
+            cmd: list[str] = ['ping', '-c1', '-W1', str(device.ip)]
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if result.returncode != 0:
                 logger.warning(f"Device {device.mac} @ {device.ip} not responding to ping")

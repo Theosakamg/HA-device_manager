@@ -10,9 +10,9 @@ from datetime import datetime
 from time import sleep
 from typing import Optional, Dict
 
-import requests
-from requests.auth import HTTPBasicAuth
-from requests.utils import requote_uri
+import requests  # type: ignore[import-untyped]
+from requests.auth import HTTPBasicAuth  # type: ignore[import-untyped]
+from requests.utils import requote_uri  # type: ignore[import-untyped]
 
 from ..core.firmware_base import FirmwareAdapter
 from ..utility import get_config
@@ -202,7 +202,7 @@ class TasmotaAdapter(FirmwareAdapter):
         else:
             url_full = url_base
 
-        return requote_uri(url_full)
+        return str(requote_uri(url_full))
 
     def _dump_config(self, device: DmDevice) -> None:
         """Dump device configuration to backup file.

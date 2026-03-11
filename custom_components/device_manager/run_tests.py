@@ -16,8 +16,10 @@ def load_test_module(module_name: str):
     """Load a test module by file path to avoid package imports."""
     test_path = Path(__file__).resolve().parent / 'tests' / f'{module_name}.py'
     spec = importlib.util.spec_from_file_location(module_name, str(test_path))
+    assert spec is not None, f"Cannot find spec for {module_name}"
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    assert spec.loader is not None, f"Spec has no loader for {module_name}"
+    spec.loader.exec_module(module)  # type: ignore[union-attr]
     return module
 
 

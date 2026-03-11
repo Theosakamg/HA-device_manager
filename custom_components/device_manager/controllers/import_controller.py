@@ -3,6 +3,7 @@
 import logging
 
 from aiohttp import web
+from aiohttp.web_request import FileField
 
 from .base import BaseView, get_repos, rate_limit, csrf_protect
 from ..services.csv_import_service import CSVImportService
@@ -36,7 +37,7 @@ class CSVImportAPIView(BaseView):
             post = await request.post()
             file_field = post.get("file")
 
-            if not file_field:
+            if not file_field or not isinstance(file_field, FileField):
                 return self.json({"error": "No file provided"}, status_code=400)
 
             raw = file_field.file.read(_MAX_CSV_SIZE + 1)

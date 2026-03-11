@@ -7,7 +7,7 @@ import os
 import subprocess
 from typing import Dict, Any
 
-import yaml
+import yaml  # type: ignore[import-untyped]
 
 from ...services.database_manager import DatabaseManager
 from ...repositories import DeviceRepository
@@ -126,19 +126,14 @@ class NetworkScanner:
                 "error_details": ["No scan results available"]
             }
 
-        stats = {
-            "total": 0,
-            "mapped": 0,
-            "not_found": 0,
-            "errors": 0,
-            "error_details": []
-        }
+        counts: dict[str, int] = {"total": 0, "mapped": 0, "not_found": 0, "errors": 0}
+        error_details: list[str] = []
 
         repo = DeviceRepository(self.db)
 
         try:
             devices = await repo.find_all()
-            stats["total"] = len(devices)
+            counts["total"] = len(devices)
 
             for device in devices:
                 mac = device.mac.lower().strip()
@@ -149,21 +144,21 @@ class NetworkScanner:
                         if device.id is not None:
                             await repo.update(device.id, {'ip': ip})
                         logger.info(f"Updated IP for {mac}: {ip}")
-                        stats["mapped"] += 1
+                        counts["mapped"] += 1
                     except Exception as e:
                         logger.error(f"Failed to update IP {ip} for {mac}: {e}")
-                        stats["errors"] += 1
-                        stats["error_details"].append(f"{mac}: {e}")
+                        counts["errors"] += 1
+                        error_details.append(f"{mac}: {e}")
                 else:
                     logger.debug(f"No IP found in scan results for {mac}")
-                    stats["not_found"] += 1
+                    counts["not_found"] += 1
 
         except Exception as e:
             logger.error(f"Failed to update device IPs: {e}")
-            stats["errors"] += 1
-            stats["error_details"].append(str(e))
+            counts["errors"] += 1
+            error_details.append(str(e))
 
-        return stats
+        return {**counts, "error_details": error_details}
 
     def scan_and_update(self) -> Dict[str, Any]:
         """Run network scan and update device IPs in database (synchronous wrapper).

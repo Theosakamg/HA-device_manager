@@ -11,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Optional, Any
 
-import yaml
+import yaml  # type: ignore[import-untyped]
 from paho.mqtt.publish import single as mqtt_single
 from paho.mqtt.subscribe import simple as mqtt_simple
 
@@ -143,7 +143,7 @@ class ZigbeeAdapter(FirmwareAdapter):
         """
         mqtt_prefix = self.manager.get_setting('mqtt_topic_prefix', 'home')
         state = self._mqtt_get(f"{mqtt_prefix}/bridge/state")
-        return state == "online"
+        return bool(state == "online")
 
     def _get_zigbee_devices(self) -> Dict[str, Dict]:
         """Get devices from Zigbee2MQTT bridge.
@@ -234,10 +234,11 @@ class ZigbeeAdapter(FirmwareAdapter):
         zigbee_config = self._build_devices_config()
 
         # Merge with existing configuration
-        existing_config = {}
+        existing_config: dict[str, object] = {}
         if os.path.exists(ZIGBEE_CONFIG_FILE):
             with open(ZIGBEE_CONFIG_FILE, 'r') as f:
-                existing_config = yaml.safe_load(f) or {}
+                raw_config = yaml.safe_load(f)
+                existing_config = raw_config if isinstance(raw_config, dict) else {}
 
         merged_config = {**existing_config, **zigbee_config}
 

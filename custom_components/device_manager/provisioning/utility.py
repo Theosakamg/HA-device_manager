@@ -12,7 +12,7 @@ class Initializer:
 
 
 def load_configs() -> dict:
-    configs = {}
+    configs: dict[str, str] = {}
     dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
     if not os.path.exists(dotenv_path):
         logger.debug("No .env file found, skipping config file loading")

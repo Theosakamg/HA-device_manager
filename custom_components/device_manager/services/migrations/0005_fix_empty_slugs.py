@@ -34,7 +34,7 @@ async def run(db: aiosqlite.Connection) -> None:
             f"SELECT {id_col}, {name_col}, {slug_col} FROM {table} "
             f"WHERE {slug_col} = '' OR {slug_col} IS NULL"
         )
-        empty_slugs = await cursor.fetchall()
+        empty_slugs = list(await cursor.fetchall())
 
         if not empty_slugs:
             continue
@@ -54,7 +54,8 @@ async def run(db: aiosqlite.Connection) -> None:
                     f"SELECT COUNT(*) FROM {table} WHERE {slug_col} = ? AND {id_col} != ?",
                     (new_slug, entity_id)
                 )
-                count = (await check_cursor.fetchone())[0]
+                count_row = await check_cursor.fetchone()
+                count = count_row[0] if count_row is not None else 0
                 if count == 0:
                     break
                 new_slug = f"{base_slug}-{counter}"
