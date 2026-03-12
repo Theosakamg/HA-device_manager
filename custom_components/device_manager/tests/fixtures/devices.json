@@ -1,0 +1,54 @@
+[
+  {
+    "mac": "7C:2C:67:D7:DF:E8",
+    "state": "Enable",
+    "level": 0,
+    "room_fr": "Bureau",
+    "position_fr": "",
+    "function": "button",
+    "room_slug": "office",
+    "position_slug": "lunch",
+    "firmware": "Tasmota",
+    "model": "Athom Mini Relay V2",
+    "ip": 77,
+    "interlock": "0",
+    "mode": "standard",
+    "target": "light/ceiling",
+    "ha_device_class": null,
+    "extra": null,
+    "expected": {
+      "hostname": "l0_office_btn_lunch",
+      "mqtt_topic": "home/l0/office/button/lunch",
+      "link": "http://192.168.0.77",
+      "dns": "l0_office_btn_lunch.domo.local",
+      "count_topic": 22,
+      "enabled": true
+    }
+  },
+  {
+    "mac": "0x00124b0025156aca",
+    "state": "Enable",
+    "level": 0,
+    "room_fr": "Bureau",
+    "position_fr": "",
+    "function": "door",
+    "room_slug": "office",
+    "position_slug": "lake",
+    "firmware": "Zigbee",
+    "model": "SNZB-04",
+    "ip": null,
+    "interlock": null,
+    "mode": null,
+    "target": null,
+    "ha_device_class": null,
+    "extra": null,
+    "expected": {
+      "hostname": "l0_office_dr_lake",
+      "mqtt_topic": "home/l0/office/door/lake",
+      "link": null,
+      "dns": "l0_office_dr_lake.domo.local",
+      "count_topic": 19,
+      "enabled": true
+    }
+  }
+]

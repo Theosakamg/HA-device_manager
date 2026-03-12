@@ -1,0 +1,121 @@
+[
+  {
+    "mac": "7C:2C:67:D7:DF:E8",
+    "enabled": true,
+    "ip": "77",
+    "positionSlug": "lunch",
+    "floor": { "slug": "l0" },
+    "room": { "slug": "office" },
+    "building": { "slug": "main" },
+    "refs": { "functionName": "button" },
+    "expected": {
+      "hostname": "main_l0_office_button_lunch",
+      "mqttTopic": "main/l0/office/button/lunch",
+      "link": "http://192.168.0.77",
+      "fqdn": "main_l0_office_button_lunch.domo.local",
+      "countTopic": 27
+    }
+  },
+  {
+    "mac": "zigbee",
+    "enabled": false,
+    "ip": "",
+    "positionSlug": "lunch",
+    "floor": { "slug": "l0" },
+    "room": { "slug": "office" },
+    "building": { "slug": "main" },
+    "refs": { "functionName": "door" },
+    "expected": {
+      "hostname": "main_l0_office_door_lunch",
+      "mqttTopic": "main/l0/office/door/lunch",
+      "link": null,
+      "fqdn": "main_l0_office_door_lunch.domo.local",
+      "countTopic": 25
+    }
+  },
+  {
+    "mac": "0x00124b0025156aca",
+    "enabled": true,
+    "ip": "",
+    "positionSlug": "lake",
+    "floor": { "slug": "l0" },
+    "room": { "slug": "office" },
+    "building": { "slug": "main" },
+    "refs": { "functionName": "door" },
+    "expected": {
+      "hostname": "main_l0_office_door_lake",
+      "mqttTopic": "main/l0/office/door/lake",
+      "link": null,
+      "fqdn": "main_l0_office_door_lake.domo.local",
+      "countTopic": 24
+    }
+  },
+  {
+    "mac": "24:EC:4A:B0:CE:BC",
+    "enabled": true,
+    "ip": "192.168.0.189",
+    "positionSlug": "desk",
+    "floor": { "slug": "l0" },
+    "room": { "slug": "office" },
+    "building": { "slug": "main" },
+    "refs": { "functionName": "energy" },
+    "expected": {
+      "hostname": "main_l0_office_energy_desk",
+      "mqttTopic": "main/l0/office/energy/desk",
+      "link": "http://192.168.0.189",
+      "fqdn": "main_l0_office_energy_desk.domo.local",
+      "countTopic": 26
+    }
+  },
+  {
+    "mac": "B0:A7:32:F8:46:90",
+    "enabled": true,
+    "ip": "",
+    "positionSlug": "bed",
+    "floor": { "slug": "l0" },
+    "room": { "slug": "office" },
+    "building": { "slug": "main" },
+    "refs": { "functionName": "heater" },
+    "expected": {
+      "hostname": "main_l0_office_heater_bed",
+      "mqttTopic": "main/l0/office/heater/bed",
+      "link": null,
+      "fqdn": "main_l0_office_heater_bed.domo.local",
+      "countTopic": 25
+    }
+  },
+  {
+    "mac": "AA:BB:CC:DD:EE:FF",
+    "enabled": false,
+    "ip": "",
+    "positionSlug": "ceiling",
+    "floor": { "slug": "l0" },
+    "room": { "slug": "cellar" },
+    "building": { "slug": "main" },
+    "refs": { "functionName": "light" },
+    "expected": {
+      "hostname": "main_l0_cellar_light_ceiling",
+      "mqttTopic": "main/l0/cellar/light/ceiling",
+      "link": null,
+      "fqdn": "main_l0_cellar_light_ceiling.domo.local",
+      "countTopic": 28
+    }
+  },
+  {
+    "mac": "00:11:22:33:44:55",
+    "enabled": false,
+    "ip": "",
+    "positionSlug": "door",
+    "floor": { "slug": "l0" },
+    "room": { "slug": "bed" },
+    "building": { "slug": "main" },
+    "refs": { "functionName": "motion" },
+    "expected": {
+      "hostname": "main_l0_bed_motion_door",
+      "mqttTopic": "main/l0/bed/motion/door",
+      "link": null,
+      "fqdn": "main_l0_bed_motion_door.domo.local",
+      "countTopic": 23
+    }
+  }
+]

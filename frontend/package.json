@@ -6,18 +6,26 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:deploy": "npm run build && cp dist/device-manager.js ../custom_components/device_manager/frontend/dist/device-manager.js || true",
     "preview": "vite preview",
     "lint": "eslint src --ext .ts --max-warnings 0",
     "lint:fix": "eslint src --ext .ts --fix",
     "format": "prettier --write \"src/**/*.{ts,css}\"",
     "format:check": "prettier --check \"src/**/*.{ts,css}\"",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
-    "lit": "^3.2.1"
+    "dompurify": "^3.3.1",
+    "lit": "^3.2.1",
+    "marked": "^17.0.3",
+    "three": "^0.183.2"
   },
   "devDependencies": {
+    "@types/dompurify": "^3.0.5",
+    "@types/marked": "^5.0.2",
     "@types/node": "^22.10.2",
+    "@types/three": "^0.183.1",
     "@typescript-eslint/eslint-plugin": "^8.18.2",
     "@typescript-eslint/parser": "^8.18.2",
     "eslint": "^9.18.0",
@@ -25,6 +33,7 @@
     "globals": "^17.3.0",
     "prettier": "^3.4.2",
     "typescript": "^5.7.3",
-    "vite": "^6.0.7"
+    "vite": "^6.0.7",
+    "vitest": "^1.0.0"
   }
 }

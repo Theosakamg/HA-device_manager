@@ -1,0 +1,460 @@
+/**
+ * Device form component - modal form with FK select dropdowns.
+ */
+import { LitElement, html } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
+import sharedStyles from "../../styles/shared.css?lit";
+import deviceFormStyles from "./device-form.css?lit";
+import { i18n, localized } from "../../i18n";
+import { getSettings } from "../../api/settings-client";
+import type { DmDevice } from "../../types/device";
+import { isValidSlug } from "../../utils/validators";
+import { deviceLabel } from "../../utils/computed-fields";
+import type { DmRoom } from "../../types/room";
+import type { DmDeviceModel } from "../../types/device-model";
+import type { DmDeviceFirmware } from "../../types/device-firmware";
+import type { DmDeviceFunction } from "../../types/device-function";
+import { RoomClient } from "../../api/room-client";
+
+import { DeviceModelClient } from "../../api/device-model-client";
+import { DeviceFirmwareClient } from "../../api/device-firmware-client";
+import { DeviceFunctionClient } from "../../api/device-function-client";
+import { DeviceClient } from "../../api/device-client";
+
+@localized
+@customElement("dm-device-form")
+export class DmDeviceForm extends LitElement {
+  static styles = [sharedStyles, deviceFormStyles];
+
+  @property({ type: Object }) device: DmDevice | null = null;
+  @property({ type: Number }) presetRoomId: number | null = null;
+
+  @state() private _rooms: DmRoom[] = [];
+  @state() private _models: DmDeviceModel[] = [];
+  @state() private _firmwares: DmDeviceFirmware[] = [];
+  @state() private _functions: DmDeviceFunction[] = [];
+  @state() private _allDevices: DmDevice[] = [];
+  @state() private _loading = true;
+  @state() private _form: Record<string, unknown> = {};
+  @state() private _validationError = "";
+
+  private _roomClient = new RoomClient();
+  private _modelClient = new DeviceModelClient();
+  private _firmwareClient = new DeviceFirmwareClient();
+  private _functionClient = new DeviceFunctionClient();
+  private _deviceClient = new DeviceClient();
+
+  async connectedCallback() {
+    super.connectedCallback();
+    await this._loadRefs();
+    this._initForm();
+  }
+
+  private async _loadRefs() {
+    this._loading = true;
+    try {
+      const [rooms, models, firmwares, functions, devices] = await Promise.all([
+        this._roomClient.getAll(),
+        this._modelClient.getAll(),
+        this._firmwareClient.getAll(),
+        this._functionClient.getAll(),
+        this._deviceClient.getAll(),
+      ]);
+      this._rooms = rooms;
+      this._models = models;
+      this._firmwares = firmwares;
+      this._functions = functions;
+      this._allDevices = devices;
+    } catch (err) {
+      console.error("Failed to load refs:", err);
+    }
+    this._loading = false;
+  }
+
+  private _initForm() {
+    if (this.device) {
+      this._form = {
+        mac: this.device.mac ?? "",
+        ip: this.device.ip ?? "",
+        positionName: this.device.positionName ?? "",
+        positionSlug: this.device.positionSlug ?? "",
+        mode: this.device.mode ?? "",
+        interlock: this.device.interlock ?? "",
+        haDeviceClass: this.device.haDeviceClass ?? "",
+        extra: this.device.extra ?? "",
+        enabled: this.device.enabled ?? true,
+        state: this.device.state ?? "deployed",
+        roomId: this.device.roomId ?? "",
+        modelId: this.device.modelId ?? "",
+        firmwareId: this.device.firmwareId ?? "",
+        functionId: this.device.functionId ?? "",
+        targetId: this.device.targetId ?? "",
+      };
+    } else {
+      this._form = {
+        mac: "",
+        ip: "",
+        positionName: "",
+        positionSlug: "",
+        mode: "",
+        interlock: "",
+        haDeviceClass: "",
+        extra: "",
+        enabled: true,
+        state: "deployed",
+        roomId: this.presetRoomId != null ? String(this.presetRoomId) : "",
+        modelId: "",
+        firmwareId: "",
+        functionId: "",
+        targetId: "",
+      };
+    }
+  }
+
+  private _updateField(key: string, value: unknown) {
+    this._form = { ...this._form, [key]: value };
+  }
+
+  render() {
+    if (this._loading)
+      return html`<div class="loading">${i18n.t("loading")}</div>`;
+
+    const isEdit = this.device !== null;
+    return html`
+      <div class="modal-overlay" @click=${this._cancel}>
+        <div class="modal" @click=${(e: Event) => e.stopPropagation()}>
+          <div class="modal-header">
+            <h2>${isEdit ? i18n.t("edit_device") : i18n.t("add_device")}</h2>
+            <button class="btn-icon" @click=${this._cancel}>✕</button>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label>${i18n.t("device_mac")}</label>
+              <input
+                type="text"
+                .value=${String(this._form.mac ?? "")}
+                placeholder="AA:BB:CC:DD:EE:FF"
+                @input=${(e: Event) =>
+                  this._updateField(
+                    "mac",
+                    (e.target as HTMLInputElement).value
+                  )}
+              />
+            </div>
+            <div class="form-group">
+              <label>${i18n.t("device_ip")}</label>
+              <input
+                type="text"
+                .value=${String(this._form.ip ?? "")}
+                placeholder="${getSettings().ip_prefix}.x"
+                @input=${(e: Event) =>
+                  this._updateField("ip", (e.target as HTMLInputElement).value)}
+              />
+            </div>
+            <div class="form-group">
+              <label>${i18n.t("device_position_name")}</label>
+              <input
+                type="text"
+                .value=${String(this._form.positionName ?? "")}
+                @input=${(e: Event) =>
+                  this._updateField(
+                    "positionName",
+                    (e.target as HTMLInputElement).value
+                  )}
+              />
+            </div>
+            <div class="form-group">
+              <label>${i18n.t("device_position_slug")}</label>
+              <input
+                type="text"
+                .value=${String(this._form.positionSlug ?? "")}
+                @input=${(e: Event) =>
+                  this._updateField(
+                    "positionSlug",
+                    (e.target as HTMLInputElement).value
+                  )}
+              />
+            </div>
+            <div class="form-group">
+              <label>${i18n.t("device_mode")}</label>
+              <input
+                type="text"
+                .value=${String(this._form.mode ?? "")}
+                @input=${(e: Event) =>
+                  this._updateField(
+                    "mode",
+                    (e.target as HTMLInputElement).value
+                  )}
+              />
+            </div>
+            <div class="form-group">
+              <label>${i18n.t("device_interlock")}</label>
+              <input
+                type="text"
+                .value=${String(this._form.interlock ?? "")}
+                @input=${(e: Event) =>
+                  this._updateField(
+                    "interlock",
+                    (e.target as HTMLInputElement).value
+                  )}
+              />
+            </div>
+            <div class="form-group">
+              <label>${i18n.t("device_ha_class")}</label>
+              <input
+                type="text"
+                .value=${String(this._form.haDeviceClass ?? "")}
+                @input=${(e: Event) =>
+                  this._updateField(
+                    "haDeviceClass",
+                    (e.target as HTMLInputElement).value
+                  )}
+              />
+            </div>
+            <div class="form-group">
+              <label>${i18n.t("device_enabled")}</label>
+              <select
+                @change=${(e: Event) =>
+                  this._updateField(
+                    "enabled",
+                    (e.target as HTMLSelectElement).value === "true"
+                  )}
+              >
+                <option value="true" ?selected=${Boolean(this._form.enabled)}>
+                  ${i18n.t("enabled")}
+                </option>
+                <option value="false" ?selected=${!this._form.enabled}>
+                  ${i18n.t("disabled")}
+                </option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>${i18n.t("device_state")}</label>
+              <select
+                @change=${(e: Event) =>
+                  this._updateField(
+                    "state",
+                    (e.target as HTMLSelectElement).value
+                  )}
+              >
+                <option
+                  value="deployed"
+                  ?selected=${this._form.state === "deployed"}
+                >
+                  ${i18n.t("state_deployed")}
+                </option>
+                <option
+                  value="parking"
+                  ?selected=${this._form.state === "parking"}
+                >
+                  ${i18n.t("state_parking")}
+                </option>
+                <option
+                  value="out_of_order"
+                  ?selected=${this._form.state === "out_of_order"}
+                >
+                  ${i18n.t("state_out_of_order")}
+                </option>
+                <option
+                  value="deployed_hot"
+                  ?selected=${this._form.state === "deployed_hot"}
+                >
+                  ${i18n.t("state_deployed_hot")}
+                </option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>${i18n.t("device_room")}</label>
+              <select
+                @change=${(e: Event) =>
+                  this._updateField(
+                    "roomId",
+                    parseInt((e.target as HTMLSelectElement).value) || null
+                  )}
+              >
+                <option value="">${i18n.t("select_room")}</option>
+                ${this._rooms.map(
+                  (r) =>
+                    html`<option
+                      value=${r.id}
+                      ?selected=${Number(this._form.roomId) === r.id}
+                    >
+                      ${r.name}
+                    </option>`
+                )}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>${i18n.t("device_model")}</label>
+              <select
+                @change=${(e: Event) =>
+                  this._updateField(
+                    "modelId",
+                    parseInt((e.target as HTMLSelectElement).value) || null
+                  )}
+              >
+                <option value="">${i18n.t("select_model")}</option>
+                ${this._models.map(
+                  (m) =>
+                    html`<option
+                      value=${m.id}
+                      ?selected=${Number(this._form.modelId) === m.id}
+                    >
+                      ${m.name}
+                    </option>`
+                )}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>${i18n.t("device_firmware")}</label>
+              <select
+                @change=${(e: Event) =>
+                  this._updateField(
+                    "firmwareId",
+                    parseInt((e.target as HTMLSelectElement).value) || null
+                  )}
+              >
+                <option value="">${i18n.t("select_firmware")}</option>
+                ${this._firmwares.map(
+                  (f) =>
+                    html`<option
+                      value=${f.id}
+                      ?selected=${Number(this._form.firmwareId) === f.id}
+                    >
+                      ${f.name}
+                    </option>`
+                )}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>${i18n.t("device_function")}</label>
+              <select
+                @change=${(e: Event) =>
+                  this._updateField(
+                    "functionId",
+                    parseInt((e.target as HTMLSelectElement).value) || null
+                  )}
+              >
+                <option value="">${i18n.t("select_function")}</option>
+                ${this._functions.map(
+                  (fn) =>
+                    html`<option
+                      value=${fn.id}
+                      ?selected=${Number(this._form.functionId) === fn.id}
+                    >
+                      ${fn.name}
+                    </option>`
+                )}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>${i18n.t("device_target")}</label>
+              <select
+                @change=${(e: Event) =>
+                  this._updateField(
+                    "targetId",
+                    parseInt((e.target as HTMLSelectElement).value) || null
+                  )}
+              >
+                <option value="">${i18n.t("select_target")}</option>
+                ${this._allDevices
+                  .filter(
+                    (d) =>
+                      d.id !== this.device?.id &&
+                      d.roomId === (Number(this._form.roomId) || null)
+                  )
+                  .map(
+                    (d) =>
+                      html`<option
+                        value=${d.id}
+                        ?selected=${Number(this._form.targetId) === d.id}
+                      >
+                        ${deviceLabel(d)} — ${d.mac}
+                      </option>`
+                  )}
+              </select>
+            </div>
+            <div class="form-group form-full">
+              <label>${i18n.t("device_extra")}</label>
+              <textarea
+                rows="3"
+                .value=${String(this._form.extra ?? "")}
+                @input=${(e: Event) =>
+                  this._updateField(
+                    "extra",
+                    (e.target as HTMLTextAreaElement).value
+                  )}
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            ${this._validationError
+              ? html`<div class="validation-error">
+                  ${this._validationError}
+                </div>`
+              : ""}
+            <button class="btn btn-secondary" @click=${this._cancel}>
+              ${i18n.t("cancel")}
+            </button>
+            <button class="btn btn-primary" @click=${this._save}>
+              ${i18n.t("save")}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private _cancel() {
+    this.dispatchEvent(
+      new CustomEvent("form-cancel", { bubbles: true, composed: true })
+    );
+  }
+
+  /** Normalize empty strings to null for nullable DB columns. */
+  private _normalizeNullables(
+    data: Record<string, unknown>
+  ): Record<string, unknown> {
+    const nullableFields = [
+      "ip",
+      "targetId",
+      "interlock",
+      "haDeviceClass",
+      "extra",
+      "mode",
+    ];
+    const result = { ...data };
+    for (const key of nullableFields) {
+      if (
+        typeof result[key] === "string" &&
+        (result[key] as string).trim() === ""
+      ) {
+        result[key] = null;
+      }
+    }
+    return result;
+  }
+
+  private _save() {
+    this._validationError = "";
+    const posSlug = String(this._form.positionSlug ?? "").trim();
+    if (!posSlug) {
+      this._validationError = i18n.t("validation_slug_required");
+      return;
+    }
+    if (!isValidSlug(posSlug)) {
+      this._validationError = i18n.t("validation_slug_format");
+      return;
+    }
+    const detail = {
+      isEdit: this.device !== null,
+      id: this.device?.id,
+      data: this._normalizeNullables(this._form),
+    };
+    this.dispatchEvent(
+      new CustomEvent("form-save", { detail, bubbles: true, composed: true })
+    );
+  }
+}

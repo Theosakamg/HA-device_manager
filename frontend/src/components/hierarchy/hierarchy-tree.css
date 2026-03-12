@@ -1,0 +1,64 @@
+:host {
+  display: block;
+}
+.tree-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.tree-header h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.tree-node {
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  transition: background 0.15s;
+}
+.tree-node:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+.tree-node.selected {
+  background: rgba(3, 169, 244, 0.1);
+  color: var(--dm-primary);
+  font-weight: 500;
+}
+.tree-children {
+  padding-left: 20px;
+}
+.toggle {
+  width: 16px;
+  text-align: center;
+  font-size: 10px;
+  color: var(--dm-text-secondary);
+}
+.node-name {
+  flex: 1;
+}
+.node-actions {
+  display: flex;
+  gap: 2px;
+}
+.node-actions button {
+  padding: 2px 4px;
+  font-size: 11px;
+}
+.inline-form {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+  align-items: center;
+}
+.inline-form input {
+  padding: 4px 8px;
+  font-size: 13px;
+  border: 1px solid var(--dm-border);
+  border-radius: 4px;
+  flex: 1;
+}

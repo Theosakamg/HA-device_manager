@@ -1,0 +1,130 @@
+:host {
+  display: block;
+}
+.info-grid {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.info-label {
+  font-weight: 500;
+  color: var(--dm-text-secondary);
+  font-size: 13px;
+}
+.info-value {
+  font-size: 14px;
+}
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 16px 0 8px;
+}
+.section-header h3 {
+  margin: 0;
+}
+.children-list {
+  display: grid;
+  gap: 8px;
+}
+.child-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border: 1px solid var(--dm-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.child-card:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+.child-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.device-row {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--dm-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.edit-form {
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid var(--dm-border);
+  border-radius: 6px;
+}
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--dm-text-secondary);
+  margin-bottom: 4px;
+}
+.breadcrumb-sep {
+  opacity: 0.5;
+}
+.breadcrumb-item {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--dm-text-secondary);
+  font-size: 13px;
+  text-decoration: underline;
+}
+.breadcrumb-item:hover {
+  color: var(--dm-primary);
+}
+.breadcrumb-current {
+  font-weight: 600;
+  color: var(--dm-text);
+}
+.validation-error {
+  color: var(--dm-error);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.info-value-flex {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.device-name-label {
+  display: block;
+  font-size: 13px;
+}
+.inline-add-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 8px 0;
+  padding: 8px 12px;
+  border: 1px solid var(--dm-border);
+  border-radius: 6px;
+}
+.inline-text-input {
+  padding: 4px 8px;
+  font-size: 13px;
+  border: 1px solid var(--dm-border);
+  border-radius: 4px;
+  flex: 1;
+}
+.row-clickable {
+  cursor: pointer;
+}
+.form-row--mt {
+  margin-top: 8px;
+}
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}

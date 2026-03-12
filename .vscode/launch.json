@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug HA Device Manager Frontend",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:8123/device_manager",
+      "webRoot": "${workspaceFolder}/frontend/src",
+      "sourceMaps": true
+    }
+  ]
+}

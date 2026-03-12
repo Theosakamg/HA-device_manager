@@ -1,0 +1,204 @@
+#!/usr/bin/env python3
+"""Run all tests without requiring Home Assistant installation.
+
+This loads test modules directly via importlib to avoid importing
+the package __init__.py which requires homeassistant.
+
+Usage:
+    python3 custom_components/device_manager/run_tests.py
+"""
+import sys
+from pathlib import Path
+import importlib.util
+
+
+def load_test_module(module_name: str):
+    """Load a test module by file path to avoid package imports."""
+    test_path = Path(__file__).resolve().parent / 'tests' / f'{module_name}.py'
+    spec = importlib.util.spec_from_file_location(module_name, str(test_path))
+    assert spec is not None, f"Cannot find spec for {module_name}"
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None, f"Spec has no loader for {module_name}"
+    spec.loader.exec_module(module)  # type: ignore[union-attr]
+    return module
+
+
+# Load test modules
+test_device = load_test_module('test_device')
+test_import = load_test_module('test_import')
+test_dm_device_computed = load_test_module('test_dm_device_computed')
+test_identifier_validation = load_test_module('test_identifier_validation')
+
+# Import test functions from test_device
+test_compute_derived_fields_from_fixtures = (
+    test_device.test_compute_derived_fields_from_fixtures
+)
+
+# Import test functions from test_import
+test_csv_import_to_db = test_import.test_csv_import_to_db
+
+# Import test functions from test_dm_device_computed
+test_mqtt_topic_format = (
+    test_dm_device_computed.test_mqtt_topic_format
+)
+test_mqtt_topic_returns_none_when_missing_building = (
+    test_dm_device_computed.test_mqtt_topic_returns_none_when_missing_building
+)
+test_mqtt_topic_structure = (
+    test_dm_device_computed.test_mqtt_topic_structure
+)
+test_hostname_format = test_dm_device_computed.test_hostname_format
+test_hostname_returns_none_when_missing_building = (
+    test_dm_device_computed.test_hostname_returns_none_when_missing_building
+)
+test_fqdn_format = test_dm_device_computed.test_fqdn_format
+test_fqdn_custom_suffix = test_dm_device_computed.test_fqdn_custom_suffix
+test_display_name_full = test_dm_device_computed.test_display_name_full
+test_display_name_fallback_to_mac = (
+    test_dm_device_computed.test_display_name_fallback_to_mac
+)
+test_link_with_full_ip = test_dm_device_computed.test_link_with_full_ip
+test_link_with_numeric_ip = test_dm_device_computed.test_link_with_numeric_ip
+test_to_camel_dict_full_includes_computed = (
+    test_dm_device_computed.test_to_camel_dict_full_includes_computed
+)
+
+# Import test functions from test_identifier_validation
+test_mac_colon_uppercase = test_identifier_validation.test_mac_colon_uppercase
+test_mac_colon_lowercase = test_identifier_validation.test_mac_colon_lowercase
+test_mac_hyphen = test_identifier_validation.test_mac_hyphen
+test_mac_compact = test_identifier_validation.test_mac_compact
+test_eui64_colon = test_identifier_validation.test_eui64_colon
+test_zigbee_eui64_hex_prefix = test_identifier_validation.test_zigbee_eui64_hex_prefix
+test_empty_string_rejected = test_identifier_validation.test_empty_string_rejected
+test_plain_text_rejected = test_identifier_validation.test_plain_text_rejected
+test_non_hex_chars_rejected = test_identifier_validation.test_non_hex_chars_rejected
+test_ip_address_rejected = test_identifier_validation.test_ip_address_rejected
+test_short_mac_rejected = test_identifier_validation.test_short_mac_rejected
+test_short_eui64_rejected = test_identifier_validation.test_short_eui64_rejected
+test_eui64_wrong_prefix_rejected = test_identifier_validation.test_eui64_wrong_prefix_rejected
+
+
+def run():
+    """Run all tests and display results."""
+    failures = 0
+    total_tests = 0
+
+    print("=" * 70)
+    print(" HA Device Manager - Test Suite")
+    print("=" * 70)
+
+    # Legacy DmDevice tests with fixtures
+    print("\n📦 Device Model Tests (Legacy Fixtures)")
+    device_tests = [
+        ("compute derived fields from fixtures", test_compute_derived_fields_from_fixtures),
+    ]
+
+    for test_name, test_func in device_tests:
+        total_tests += 1
+        try:
+            test_func()
+            print(f'  ✓ {test_name}')
+        except AssertionError as e:
+            failures += 1
+            print(f'  ✗ {test_name}')
+            print(f'    {e}')
+        except Exception as e:
+            failures += 1
+            print(f'  ✗ {test_name} (ERROR)')
+            print(f'    {type(e).__name__}: {e}')
+
+    # CSV Import tests
+    print("\n📥 CSV Import Tests")
+    import_tests = [
+        ("csv import to database", test_csv_import_to_db),
+    ]
+
+    for test_name, test_func in import_tests:
+        total_tests += 1
+        try:
+            test_func()
+            print(f'  ✓ {test_name}')
+        except AssertionError as e:
+            failures += 1
+            print(f'  ✗ {test_name}')
+            print(f'    {e}')
+        except Exception as e:
+            failures += 1
+            print(f'  ✗ {test_name} (ERROR)')
+            print(f'    {type(e).__name__}: {e}')
+
+    # DmDevice computed methods tests
+    print("\n🔧 DmDevice Computed Methods Tests")
+    computed_tests = [
+        ("mqtt_topic format & lowercase", test_mqtt_topic_format),
+        ("mqtt_topic None when missing building", test_mqtt_topic_returns_none_when_missing_building),
+        ("mqtt_topic structure (5 segments)", test_mqtt_topic_structure),
+        ("hostname format & lowercase", test_hostname_format),
+        ("hostname None when missing building", test_hostname_returns_none_when_missing_building),
+        ("fqdn format & lowercase", test_fqdn_format),
+        ("fqdn custom suffix", test_fqdn_custom_suffix),
+        ("display_name full hierarchy", test_display_name_full),
+        ("display_name fallback to MAC", test_display_name_fallback_to_mac),
+        ("link with full IP", test_link_with_full_ip),
+        ("link with numeric IP", test_link_with_numeric_ip),
+        ("to_camel_dict_full includes computed fields", test_to_camel_dict_full_includes_computed),
+    ]
+
+    for test_name, test_func in computed_tests:
+        total_tests += 1
+        try:
+            test_func()
+            print(f'  ✓ {test_name}')
+        except AssertionError as e:
+            failures += 1
+            print(f'  ✗ {test_name}')
+            print(f'    {e}')
+        except Exception as e:
+            failures += 1
+            print(f'  ✗ {test_name} (ERROR)')
+            print(f'    {type(e).__name__}: {e}')
+
+    # Identifier validation tests
+    print("\n🔒 Identifier Validation Tests")
+    identifier_tests = [
+        ("MAC colon uppercase", test_mac_colon_uppercase),
+        ("MAC colon lowercase", test_mac_colon_lowercase),
+        ("MAC hyphen", test_mac_hyphen),
+        ("MAC compact", test_mac_compact),
+        ("EUI-64 colon", test_eui64_colon),
+        ("Zigbee EUI-64 (0x...)", test_zigbee_eui64_hex_prefix),
+        ("empty string rejected", test_empty_string_rejected),
+        ("plain text rejected", test_plain_text_rejected),
+        ("non-hex chars rejected", test_non_hex_chars_rejected),
+        ("IP address rejected", test_ip_address_rejected),
+        ("short MAC rejected", test_short_mac_rejected),
+        ("short EUI-64 rejected", test_short_eui64_rejected),
+        ("EUI-64 without 0x rejected", test_eui64_wrong_prefix_rejected),
+    ]
+
+    for test_name, test_func in identifier_tests:
+        total_tests += 1
+        try:
+            test_func()
+            print(f'  ✓ {test_name}')
+        except AssertionError as e:
+            failures += 1
+            print(f'  ✗ {test_name}')
+            print(f'    {e}')
+        except Exception as e:
+            failures += 1
+            print(f'  ✗ {test_name} (ERROR)')
+            print(f'    {type(e).__name__}: {e}')
+
+    # Summary
+    print("\n" + "=" * 70)
+    if failures:
+        print(f"❌ {failures}/{total_tests} test(s) failed")
+        sys.exit(1)
+    print(f'✅ All {total_tests} tests passed')
+    print("=" * 70 + "\n")
+
+
+if __name__ == '__main__':
+    run()

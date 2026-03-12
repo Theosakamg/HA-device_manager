@@ -1,0 +1,10 @@
+:host {
+  display: block;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.export-info {
+  font-size: 13px;
+  color: var(--dm-text-secondary);
+  margin-top: 8px;
+}
