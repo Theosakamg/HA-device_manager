@@ -1,7 +1,7 @@
 # 🏠 HA Device Manager
 
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Compatible-brightgreen.svg)](https://www.home-assistant.io/)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/Version-0.1.0-orange.svg)](manifest.json)
 [![HACS](https://img.shields.io/badge/HACS-Compatible-brightgreen.svg)](https://github.com/hacs)
 
@@ -134,7 +134,7 @@ See [DEV_GUIDE.md](DEV_GUIDE.md) for deeper technical guidance and [SECURITY.md]
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+Apache-2.0 — see [LICENSE](LICENSE).
 
 ## Author
 
