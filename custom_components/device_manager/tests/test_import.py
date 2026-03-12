@@ -85,11 +85,14 @@ def test_csv_import_to_db():
 
             # Verify database was initialized with tables
             conn = await db.get_connection()
-            cursor = await conn.execute(
-                "SELECT name FROM sqlite_master "
-                "WHERE type='table' AND name LIKE 'dm_%'"
-            )
-            tables = await cursor.fetchall()
+            try:
+                cursor = await conn.execute(
+                    "SELECT name FROM sqlite_master "
+                    "WHERE type='table' AND name LIKE 'dm_%'"
+                )
+                tables = await cursor.fetchall()
+            finally:
+                await conn.close()
 
             # Should have created at least these core tables
             table_names = {t[0] for t in tables}

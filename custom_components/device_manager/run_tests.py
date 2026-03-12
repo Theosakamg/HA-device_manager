@@ -27,6 +27,7 @@ def load_test_module(module_name: str):
 test_device = load_test_module('test_device')
 test_import = load_test_module('test_import')
 test_dm_device_computed = load_test_module('test_dm_device_computed')
+test_identifier_validation = load_test_module('test_identifier_validation')
 
 # Import test functions from test_device
 test_compute_derived_fields_from_fixtures = (
@@ -61,6 +62,21 @@ test_link_with_numeric_ip = test_dm_device_computed.test_link_with_numeric_ip
 test_to_camel_dict_full_includes_computed = (
     test_dm_device_computed.test_to_camel_dict_full_includes_computed
 )
+
+# Import test functions from test_identifier_validation
+test_mac_colon_uppercase = test_identifier_validation.test_mac_colon_uppercase
+test_mac_colon_lowercase = test_identifier_validation.test_mac_colon_lowercase
+test_mac_hyphen = test_identifier_validation.test_mac_hyphen
+test_mac_compact = test_identifier_validation.test_mac_compact
+test_eui64_colon = test_identifier_validation.test_eui64_colon
+test_zigbee_eui64_hex_prefix = test_identifier_validation.test_zigbee_eui64_hex_prefix
+test_empty_string_rejected = test_identifier_validation.test_empty_string_rejected
+test_plain_text_rejected = test_identifier_validation.test_plain_text_rejected
+test_non_hex_chars_rejected = test_identifier_validation.test_non_hex_chars_rejected
+test_ip_address_rejected = test_identifier_validation.test_ip_address_rejected
+test_short_mac_rejected = test_identifier_validation.test_short_mac_rejected
+test_short_eui64_rejected = test_identifier_validation.test_short_eui64_rejected
+test_eui64_wrong_prefix_rejected = test_identifier_validation.test_eui64_wrong_prefix_rejected
 
 
 def run():
@@ -130,6 +146,38 @@ def run():
     ]
 
     for test_name, test_func in computed_tests:
+        total_tests += 1
+        try:
+            test_func()
+            print(f'  ✓ {test_name}')
+        except AssertionError as e:
+            failures += 1
+            print(f'  ✗ {test_name}')
+            print(f'    {e}')
+        except Exception as e:
+            failures += 1
+            print(f'  ✗ {test_name} (ERROR)')
+            print(f'    {type(e).__name__}: {e}')
+
+    # Identifier validation tests
+    print("\n🔒 Identifier Validation Tests")
+    identifier_tests = [
+        ("MAC colon uppercase", test_mac_colon_uppercase),
+        ("MAC colon lowercase", test_mac_colon_lowercase),
+        ("MAC hyphen", test_mac_hyphen),
+        ("MAC compact", test_mac_compact),
+        ("EUI-64 colon", test_eui64_colon),
+        ("Zigbee EUI-64 (0x...)", test_zigbee_eui64_hex_prefix),
+        ("empty string rejected", test_empty_string_rejected),
+        ("plain text rejected", test_plain_text_rejected),
+        ("non-hex chars rejected", test_non_hex_chars_rejected),
+        ("IP address rejected", test_ip_address_rejected),
+        ("short MAC rejected", test_short_mac_rejected),
+        ("short EUI-64 rejected", test_short_eui64_rejected),
+        ("EUI-64 without 0x rejected", test_eui64_wrong_prefix_rejected),
+    ]
+
+    for test_name, test_func in identifier_tests:
         total_tests += 1
         try:
             test_func()

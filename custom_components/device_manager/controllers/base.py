@@ -52,20 +52,26 @@ def rate_limit(requests: int = 60, window: int = 60):
             # Evict expired timestamps and check limit (no async lock needed — GIL
             # guarantees list mutation atomicity for CPython; acceptable for HA)
             timestamps = _rate_limit_store[key]
-            _rate_limit_store[key] = [t for t in timestamps if t > cutoff]
+            fresh = [t for t in timestamps if t > cutoff]
 
-            if len(_rate_limit_store[key]) >= requests:
+            if len(fresh) >= requests:
                 _LOGGER.warning(
                     "Rate limit exceeded: endpoint=%s client=%s (%d/%d req in %ds)",
-                    func.__qualname__, client_id, len(_rate_limit_store[key]), requests, window,
+                    func.__qualname__, client_id, len(fresh), requests, window,
                 )
+                # Persist pruned list without the new timestamp
+                if fresh:
+                    _rate_limit_store[key] = fresh
+                else:
+                    _rate_limit_store.pop(key, None)
                 return web.Response(
                     status=429,
                     headers={"Retry-After": str(window), "Content-Type": "application/json"},
                     text='{"error": "Too many requests. Please try again later."}',
                 )
 
-            _rate_limit_store[key].append(now)
+            fresh.append(now)
+            _rate_limit_store[key] = fresh
             return await func(self, request, *args, **kwargs)  # type: ignore[no-any-return]
 
         return wrapper
@@ -155,4 +161,3 @@ class BaseView(HomeAssistantView):
         response: web.Response = super().json(result, status_code=status_code)  # type: ignore[assignment]
         response.headers.update(self._SECURITY_HEADERS)
         return response
-

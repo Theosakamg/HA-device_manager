@@ -51,7 +51,7 @@ class DevicesScanAPIView(BaseView):
 
     url = "/api/device_manager/scan"
     name = "api:device_manager:scan"
-    requires_auth = False  # Set to True in production
+    # requires_auth = False  # Set to True in production
 
     async def post(self, request):
         """Trigger device scan."""

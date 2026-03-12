@@ -12,7 +12,10 @@
   --dm-accent: var(--accent-color, #ff9800);
   --dm-error: var(--error-color, #f44336);
   --dm-success: var(--success-color, #4caf50);
-  --dm-bg: var(--secondary-background-color, #f5f5f5);
+  --dm-bg: var(
+    --view-background,
+    var(--lovelace-background, var(--primary-background-color, #f5f5f5))
+  );
   --dm-card-bg: var(--card-background-color, #ffffff);
   --dm-border: var(--divider-color, #e0e0e0);
   --dm-text: var(--primary-text-color, #212121);

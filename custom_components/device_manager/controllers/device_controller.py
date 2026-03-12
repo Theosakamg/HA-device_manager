@@ -14,8 +14,25 @@ from ..utils.case_convert import to_snake_case_dict
 
 _LOGGER = logging.getLogger(__name__)
 
-# MAC address validation: XX:XX:XX:XX:XX:XX
-_MAC_RE = re.compile(r"^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$")
+# Device identifier patterns (order: most common first)
+# - Ethernet MAC colon-separated:    AA:BB:CC:DD:EE:FF
+# - Ethernet MAC hyphen-separated:   AA-BB-CC-DD-EE-FF
+# - Ethernet MAC compact (no sep):   AABBCCDDEEFF
+# - EUI-64 colon-separated:          AA:BB:CC:DD:EE:FF:00:11
+# - Zigbee EUI-64 with 0x prefix:    0x00124b0025156aca
+_IDENTIFIER_PATTERNS = (
+    re.compile(r"^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$"),
+    re.compile(r"^([0-9A-Fa-f]{2}-){5}[0-9A-Fa-f]{2}$"),
+    re.compile(r"^[0-9A-Fa-f]{12}$"),
+    re.compile(r"^([0-9A-Fa-f]{2}:){7}[0-9A-Fa-f]{2}$"),
+    re.compile(r"^0x[0-9A-Fa-f]{16}$"),
+)
+
+
+def _is_valid_identifier(value: str) -> bool:
+    """Return True if *value* matches any recognised device identifier format."""
+    return any(p.match(value) for p in _IDENTIFIER_PATTERNS)
+
 
 # IP address validation: basic dotted-quad or numeric last octet
 _IP_RE = re.compile(r"^(\d{1,3}\.){3}\d{1,3}$|^\d{1,3}$")
@@ -71,11 +88,20 @@ class DevicesAPIView(CrudListView):
                     {"error": f"{field} is required"}, status_code=400
                 )
 
-        # Validate MAC format
+        # Validate identifier format (MAC / EUI-64 / Zigbee EUI-64)
         mac = str(snake_data.get("mac", ""))
-        if not _MAC_RE.match(mac):
+        if not _is_valid_identifier(mac):
             return self.json(
-                {"error": "Invalid MAC format (expected XX:XX:XX:XX:XX:XX)"},
+                {
+                    "error": (
+                        "Invalid identifier format. Accepted formats: "
+                        "AA:BB:CC:DD:EE:FF (MAC colon), "
+                        "AA-BB-CC-DD-EE-FF (MAC hyphen), "
+                        "AABBCCDDEEFF (MAC compact), "
+                        "AA:BB:CC:DD:EE:FF:00:11 (EUI-64), "
+                        "0x00124b0025156aca (Zigbee EUI-64)"
+                    )
+                },
                 status_code=400,
             )
 

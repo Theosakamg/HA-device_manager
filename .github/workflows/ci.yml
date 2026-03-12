@@ -33,7 +33,10 @@ jobs:
         run: ruff check custom_components/
 
       - name: Run MyPy
-        run: mypy custom_components/ --ignore-missing-imports
+        run: python3 -m mypy custom_components/ --ignore-missing-imports
+
+      - name: Run Tests
+        run: python3 custom_components/device_manager/run_tests.py
 
   quality-frontend:
     name: Frontend Quality Check
