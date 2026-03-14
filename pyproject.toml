@@ -1,6 +1,6 @@
 [project]
 name = "device_manager"
-version = "0.1.x-dev"
+version = "0.1.0-dev"
 description = "Home Assistant custom component for device management with independent SQLite database"
 readme = "README.md"
 requires-python = ">=3.11"
