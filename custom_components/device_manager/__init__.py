@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 
 from homeassistant.components import frontend
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, SOURCE_IMPORT
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType
 
@@ -42,7 +42,21 @@ def _load_or_create_key(key_path: Path) -> str:
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Set up the Device Manager component.
+    """Auto-create the config entry if none exists (system integration, no user input needed)."""
+    hass.data.setdefault(DOMAIN, {})
+
+    if not hass.config_entries.async_entries(DOMAIN):
+        hass.async_create_task(
+            hass.config_entries.flow.async_init(
+                DOMAIN, context={"source": SOURCE_IMPORT}
+            )
+        )
+
+    return True
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Set up Device Manager from a config entry.
 
     Initializes the database, creates repository instances, and registers
     all API views and the sidebar panel.
@@ -99,12 +113,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     return True
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up Device Manager from a config entry."""
-    _LOGGER.info("Setting up Device Manager config entry")
-    return True
-
-
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     _LOGGER.info("Unloading Device Manager config entry")
@@ -112,4 +120,5 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     db_manager = hass.data.get(DOMAIN, {}).get("db")
     if db_manager:
         await db_manager.close()
+    hass.data.pop(DOMAIN, None)
     return True
