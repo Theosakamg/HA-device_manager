@@ -1,7 +1,7 @@
 /**
  * API client for hierarchy tree operations.
  */
-import type { HierarchyTree } from "../types/device";
+import type { HierarchyTree, HaGroupsResult } from "../types/device";
 import { BaseClient } from "./base-client";
 
 export class HierarchyClient extends BaseClient {
@@ -13,5 +13,10 @@ export class HierarchyClient extends BaseClient {
   /** Get a subtree for a specific building. */
   async getBuildingTree(buildingId: number): Promise<HierarchyTree> {
     return this.get<HierarchyTree>(`/buildings/${buildingId}/tree`);
+  }
+
+  /** Generate HA groups for ALL buildings (full room → floor → building stack). */
+  async generateHaGroups(): Promise<HaGroupsResult> {
+    return this.post<HaGroupsResult>("/ha_groups/generate", {});
   }
 }

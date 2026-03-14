@@ -16,6 +16,7 @@ import { DeviceClient } from "../../api/device-client";
 import { BuildingClient } from "../../api/building-client";
 import { FloorClient } from "../../api/floor-client";
 import { RoomClient } from "../../api/room-client";
+import { HierarchyClient } from "../../api/hierarchy-client";
 import { showToast } from "../../utils/toast";
 import { isValidSlug, isValidUrl } from "../../utils/validators";
 import { getDoc } from "../../utils/doc-registry";
@@ -45,11 +46,13 @@ export class DmNodeDetail extends LitElement {
   @state() private _validationError = "";
   @state() private _addingChild = false;
   @state() private _newChildName = "";
+  @state() private _generatingGroups = false;
 
   private _deviceClient = new DeviceClient();
   private _buildingClient = new BuildingClient();
   private _floorClient = new FloorClient();
   private _roomClient = new RoomClient();
+  private _hierarchyClient = new HierarchyClient();
 
   updated(changedProperties: Map<string, unknown>) {
     if (changedProperties.has("node") && this.node) {
@@ -142,6 +145,16 @@ export class DmNodeDetail extends LitElement {
             @click=${this._editing ? this._resetEdit : this._startEdit}
           >
             ${this._editing ? `↩ ${i18n.t("reset")}` : `✏️ ${i18n.t("edit")}`}
+          </button>
+          <button
+            class="btn btn-secondary"
+            ?disabled=${this._generatingGroups}
+            @click=${this._generateHaGroups}
+            title=${i18n.t("ha_groups_generate")}
+          >
+            ${this._generatingGroups
+              ? `⏳ ${i18n.t("ha_groups_generating")}`
+              : `🏠 ${i18n.t("ha_groups_generate")}`}
           </button>
         </div>
       </div>
@@ -599,5 +612,26 @@ export class DmNodeDetail extends LitElement {
     if (type === "floor") return "🏢";
     if (type === "room") return "🚪";
     return "📦";
+  }
+
+  private async _generateHaGroups() {
+    if (!this.node || this._generatingGroups) return;
+    this._generatingGroups = true;
+    try {
+      const result = await this._hierarchyClient.generateHaGroups();
+      if (result.total === 0) {
+        showToast(i18n.t("ha_groups_success_none"), "info");
+      } else {
+        showToast(
+          i18n.t("ha_groups_success").replace("{count}", String(result.total)),
+          "success"
+        );
+      }
+    } catch (err) {
+      console.error("Failed to generate HA groups:", err);
+      showToast(i18n.t("ha_groups_error"), "error");
+    } finally {
+      this._generatingGroups = false;
+    }
   }
 }

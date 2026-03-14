@@ -346,6 +346,14 @@ const translations: { [lang: string]: Translations } = {
     validation_slug_format:
       "Slug must contain only letters, numbers, hyphens and underscores",
     validation_url_format: "Image must be a valid http/https URL",
+
+    // HA Groups
+    ha_groups_generate: "Generate HA Groups",
+    ha_groups_generating: "Generating groups…",
+    ha_groups_success: "{count} group(s) created/updated in Home Assistant",
+    ha_groups_success_none:
+      "No groups generated (no devices with function assigned)",
+    ha_groups_error: "Failed to generate HA groups",
   },
   fr: {
     // Navigation
@@ -690,6 +698,15 @@ const translations: { [lang: string]: Translations } = {
     validation_slug_format:
       "Le slug doit contenir uniquement des lettres, chiffres, tirets et underscores",
     validation_url_format: "L'image doit être une URL http/https valide",
+
+    // HA Groups
+    ha_groups_generate: "Générer les groupes HA",
+    ha_groups_generating: "Génération des groupes…",
+    ha_groups_success:
+      "{count} groupe(s) créé(s)/mis à jour dans Home Assistant",
+    ha_groups_success_none:
+      "Aucun groupe généré (aucun appareil avec une fonction assignée)",
+    ha_groups_error: "Impossible de générer les groupes HA",
   },
 };
 
