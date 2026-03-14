@@ -78,4 +78,37 @@ export class MaintenanceClient extends BaseClient {
     document.body.removeChild(link);
     URL.revokeObjectURL(link.href);
   }
+
+  /** Export the SQLite database as a binary file download. */
+  async exportDatabase(): Promise<void> {
+    const url = `${this.baseUrl}/export/db`;
+    const headers = this.buildHeaders();
+    const response = await fetch(url, {
+      method: "GET",
+      headers,
+      credentials: "same-origin",
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || `DB export failed: ${response.statusText}`);
+    }
+
+    const disposition = response.headers.get("Content-Disposition") || "";
+    const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
+    const filename = filenameMatch?.[1] || "device_manager.db";
+
+    const blob = await response.blob();
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+  }
+
+  /** Replace the database with an uploaded SQLite file. */
+  async importDatabase(file: File): Promise<{ success: boolean; backup: string }> {
+    return this.upload<{ success: boolean; backup: string }>("/import/db", file);
+  }
 }

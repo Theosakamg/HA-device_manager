@@ -62,6 +62,13 @@ export class DmSystemView extends LitElement {
   @state() private _exporting = false;
   @state() private _exportError: string | null = null;
 
+  // ── DB backup state ──
+  @state() private _dbExporting = false;
+  @state() private _dbExportError: string | null = null;
+  @state() private _dbImporting = false;
+  @state() private _dbImportResult: { success: boolean; backup: string } | null = null;
+  @state() private _dbImportError: string | null = null;
+
   // ── Settings state ──
   @state() private _settingsForm: AppSettings | null = null;
   @state() private _settingsSaving = false;
@@ -170,7 +177,7 @@ export class DmSystemView extends LitElement {
           : nothing}
       </div>
 
-      <!-- Import -->
+      <!-- Import CSV -->
       <div class="card">
         <div class="card-header">
           <span class="card-icon">📥</span>
@@ -181,6 +188,72 @@ export class DmSystemView extends LitElement {
           storageKey="system-import"
         ></dm-doc-block>
         <dm-import-view></dm-import-view>
+      </div>
+
+      <!-- DB Backup -->
+      ${this._renderDBBackup()}
+    `;
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // DB Backup card
+  // ──────────────────────────────────────────────────────────────────
+
+  private _renderDBBackup() {
+    return html`
+      <div class="card">
+        <div class="card-header">
+          <span class="card-icon">🗄️</span>
+          <h3>${i18n.t("db_backup_title")}</h3>
+        </div>
+        <p class="hint">${i18n.t("db_backup_desc")}</p>
+
+        <div class="export-actions">
+          <!-- Export button -->
+          <button
+            class="btn-export"
+            ?disabled=${this._dbExporting}
+            @click=${this._exportDatabase}
+          >
+            ${this._dbExporting ? i18n.t("db_exporting") : i18n.t("db_export_btn")}
+          </button>
+
+          <!-- Import button (triggers hidden file input) -->
+          <button
+            class="btn-export"
+            ?disabled=${this._dbImporting}
+            @click=${this._openDBFilePicker}
+          >
+            ${this._dbImporting ? i18n.t("db_importing") : i18n.t("db_import_btn")}
+          </button>
+
+          <input
+            id="db-file-input"
+            type="file"
+            accept=".db,.sqlite,.sqlite3"
+            style="display:none"
+            @change=${this._onDBFileSelected}
+          />
+        </div>
+
+        ${this._dbExportError
+          ? html`<div class="result-panel error" style="margin-top:12px">
+              <p>❌ ${this._dbExportError}</p>
+            </div>`
+          : nothing}
+
+        ${this._dbImportResult
+          ? html`<div class="result-panel success" style="margin-top:12px">
+              <p>✅ ${i18n.t("db_import_success")}</p>
+              <code>${this._dbImportResult.backup}</code>
+            </div>`
+          : nothing}
+
+        ${this._dbImportError
+          ? html`<div class="result-panel error" style="margin-top:12px">
+              <p>❌ ${i18n.t("db_import_error")} ${this._dbImportError}</p>
+            </div>`
+          : nothing}
       </div>
     `;
   }
@@ -820,8 +893,51 @@ export class DmSystemView extends LitElement {
   }
 
   // ──────────────────────────────────────────────────────────────────
-  // Settings helpers
+  // DB Backup handlers
   // ──────────────────────────────────────────────────────────────────
+
+  private async _exportDatabase() {
+    this._dbExporting = true;
+    this._dbExportError = null;
+    try {
+      await this._maintenanceClient.exportDatabase();
+    } catch (err) {
+      this._dbExportError = String(err);
+    }
+    this._dbExporting = false;
+  }
+
+  private _openDBFilePicker() {
+    const input = this.shadowRoot?.getElementById(
+      "db-file-input"
+    ) as HTMLInputElement | null;
+    input?.click();
+  }
+
+  private async _onDBFileSelected(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    if (!confirm(i18n.t("db_import_confirm"))) {
+      input.value = "";
+      return;
+    }
+
+    this._dbImporting = true;
+    this._dbImportResult = null;
+    this._dbImportError = null;
+    try {
+      const result = await this._maintenanceClient.importDatabase(file);
+      this._dbImportResult = result;
+    } catch (err) {
+      this._dbImportError = String(err);
+    }
+    this._dbImporting = false;
+    input.value = "";
+  }
+
+
 
   private async _loadSettings() {
     try {

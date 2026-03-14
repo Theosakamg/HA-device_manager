@@ -181,6 +181,17 @@ const translations: { [lang: string]: Translations } = {
     export_title: "Export Data",
     export_desc: "Download all devices in your preferred format.",
 
+    // SQLite DB Backup
+    db_backup_title: "Database Backup",
+    db_backup_desc: "Export or restore the full SQLite database. The WAL buffer is flushed before export to guarantee a consistent snapshot.",
+    db_export_btn: "Export DB (.sqlite)",
+    db_import_btn: "Restore DB from file",
+    db_import_confirm: "WARNING: Restoring the database will replace ALL current data. A backup will be created automatically. Continue?",
+    db_import_success: "Database restored successfully. Backup saved at:",
+    db_import_error: "Database restore failed.",
+    db_exporting: "Exporting…",
+    db_importing: "Restoring…",
+
     // Configuration (user-configurable parameters)
     config_title: "Configuration",
     config_desc:
@@ -505,6 +516,17 @@ const translations: { [lang: string]: Translations } = {
     // Export
     export_title: "Exporter les Données",
     export_desc: "Télécharger tous les équipements dans le format souhaité.",
+
+    // SQLite DB Backup
+    db_backup_title: "Sauvegarde de la Base de Données",
+    db_backup_desc: "Exportez ou restaurez la base SQLite complète. Le buffer WAL est vidé avant l'export pour garantir un snapshot cohérent.",
+    db_export_btn: "Exporter la DB (.sqlite)",
+    db_import_btn: "Restaurer la DB depuis un fichier",
+    db_import_confirm: "ATTENTION : La restauration remplacera TOUTES les données actuelles. Une sauvegarde sera créée automatiquement. Continuer ?",
+    db_import_success: "Base de données restaurée avec succès. Sauvegarde enregistrée :",
+    db_import_error: "La restauration a échoué.",
+    db_exporting: "Export en cours…",
+    db_importing: "Restauration en cours…",
 
     // Configuration (user-configurable parameters)
     config_title: "Configuration",

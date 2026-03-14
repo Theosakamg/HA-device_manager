@@ -16,6 +16,7 @@ from .settings_controller import SettingsAPIView
 from .deploy_controller import DeployAPIView, DevicesScanAPIView
 from .ssh_key_controller import SSHKeyUploadAPIView
 from .stats_controller import StatsAPIView
+from .db_backup_controller import SQLiteExportAPIView, SQLiteImportAPIView
 
 ALL_VIEWS = [
     StaticView,
@@ -36,6 +37,8 @@ ALL_VIEWS = [
     HierarchyAPIView,
     CSVImportAPIView,
     ExportAPIView,
+    SQLiteExportAPIView,
+    SQLiteImportAPIView,
     MaintenanceCleanDBAPIView,
     MaintenanceClearIPCacheAPIView,
     SettingsAPIView,
