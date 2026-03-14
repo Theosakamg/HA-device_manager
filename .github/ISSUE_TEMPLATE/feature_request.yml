@@ -1,0 +1,66 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for HA Device Manager.
+title: "[Feature]: "
+labels: ["enhancement"]
+assignees:
+  - Theosakamg
+type: feature
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement to HA Device Manager!
+        Please describe your idea in as much detail as possible.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of the feature you'd like to see.
+      placeholder: What feature would you like?
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation / Use Case
+      description: Why is this feature needed? What problem does it solve?
+      placeholder: Describe the use case or pain point.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed Solution
+      description: How do you envision this feature working?
+      placeholder: Describe your proposed solution or approach.
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative approaches or workarounds?
+      placeholder: Describe any alternatives you've considered.
+    validations:
+      required: false
+
+  - type: upload
+    id: screenshots
+    attributes:
+      label: Mockups / Screenshots
+      description: If applicable, add mockups or screenshots to illustrate the feature.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/Theosakamg/HA-device_manager/blob/master/SECURITY.md).
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
