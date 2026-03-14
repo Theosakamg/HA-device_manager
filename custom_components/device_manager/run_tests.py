@@ -28,6 +28,7 @@ test_device = load_test_module('test_device')
 test_import = load_test_module('test_import')
 test_dm_device_computed = load_test_module('test_dm_device_computed')
 test_identifier_validation = load_test_module('test_identifier_validation')
+test_ha_groups = load_test_module('test_ha_groups')
 
 # Import test functions from test_device
 test_compute_derived_fields_from_fixtures = (
@@ -178,6 +179,50 @@ def run():
     ]
 
     for test_name, test_func in identifier_tests:
+        total_tests += 1
+        try:
+            test_func()
+            print(f'  ✓ {test_name}')
+        except AssertionError as e:
+            failures += 1
+            print(f'  ✗ {test_name}')
+            print(f'    {e}')
+        except Exception as e:
+            failures += 1
+            print(f'  ✗ {test_name} (ERROR)')
+            print(f'    {type(e).__name__}: {e}')
+
+    # HA Groups tests
+    print("\n🏠 HA Groups Controller Tests")
+    ha_groups_tests = [
+        ("slugify basic", test_ha_groups.test_slugify_basic),
+        ("slugify spaces", test_ha_groups.test_slugify_spaces),
+        ("slugify special chars", test_ha_groups.test_slugify_special_chars),
+        ("slugify multiple separators", test_ha_groups.test_slugify_multiple_separators),
+        ("ha_domain light", test_ha_groups.test_ha_domain_light),
+        ("ha_domain shutter → cover", test_ha_groups.test_ha_domain_shutter),
+        ("ha_domain heater → climate", test_ha_groups.test_ha_domain_heater),
+        ("ha_domain tv → media_player", test_ha_groups.test_ha_domain_tv),
+        ("ha_domain button → binary_sensor", test_ha_groups.test_ha_domain_button),
+        ("ha_domain energy → sensor", test_ha_groups.test_ha_domain_energy),
+        ("ha_domain unknown → switch", test_ha_groups.test_ha_domain_unknown_defaults_to_switch),
+        ("ha_domain case insensitive", test_ha_groups.test_ha_domain_case_insensitive),
+        ("plural light", test_ha_groups.test_plural_light),
+        ("plural shutter", test_ha_groups.test_plural_shutter),
+        ("plural unknown appends s", test_ha_groups.test_plural_unknown_appends_s),
+        ("device entity_id standard", test_ha_groups.test_device_entity_id_standard),
+        ("device entity_id matches hostname pattern", test_ha_groups.test_device_entity_id_matches_hostname_pattern),
+        ("device entity_id uppercase building", test_ha_groups.test_device_entity_id_uppercase_building),
+        ("device entity_id empty position omitted", test_ha_groups.test_device_entity_id_empty_position_omitted),
+        ("room group entity_id", test_ha_groups.test_room_group_entity_id),
+        ("floor group entity_id", test_ha_groups.test_floor_group_entity_id),
+        ("building group entity_id", test_ha_groups.test_building_group_entity_id),
+        ("room group special chars", test_ha_groups.test_room_group_special_chars),
+        ("floor group has building prefix", test_ha_groups.test_floor_group_has_building_prefix),
+        ("building group has building prefix", test_ha_groups.test_building_group_has_building_prefix),
+    ]
+
+    for test_name, test_func in ha_groups_tests:
         total_tests += 1
         try:
             test_func()

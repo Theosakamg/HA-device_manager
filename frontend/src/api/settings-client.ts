@@ -32,6 +32,8 @@ export interface AppSettings {
   // Provisioning: Zigbee bridge
   bridge_host: string;
   bridge_devices_config_path: string;
+  // HA Groups
+  ha_groups_empty_groups: string;
 }
 
 export class SettingsClient extends BaseClient {
@@ -116,6 +118,7 @@ export function getSettings(): AppSettings {
       bus_password: "",
       bridge_host: "",
       bridge_devices_config_path: "/home/pi/zigbee2mqtt/data/devices.yaml",
+      ha_groups_empty_groups: "false",
     }
   );
 }

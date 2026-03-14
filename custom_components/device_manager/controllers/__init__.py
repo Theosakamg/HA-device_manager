@@ -17,6 +17,7 @@ from .deploy_controller import DeployAPIView, DevicesScanAPIView
 from .ssh_key_controller import SSHKeyUploadAPIView
 from .stats_controller import StatsAPIView
 from .db_backup_controller import SQLiteExportAPIView, SQLiteImportAPIView
+from .ha_groups_controller import HaGroupsGenerateAPIView
 
 ALL_VIEWS = [
     StaticView,
@@ -46,4 +47,5 @@ ALL_VIEWS = [
     DevicesScanAPIView,
     SSHKeyUploadAPIView,
     StatsAPIView,
+    HaGroupsGenerateAPIView,
 ]

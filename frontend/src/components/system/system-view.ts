@@ -401,6 +401,27 @@ export class DmSystemView extends LitElement {
           </div>
         </div>
 
+        <p class="section-title">${i18n.t("config_ha_groups_section")}</p>
+        <div class="settings-grid">
+          <div class="settings-field">
+            <label>${i18n.t("config_ha_groups_empty_groups")}</label>
+            <input
+              type="checkbox"
+              .checked=${f.ha_groups_empty_groups === "true"}
+              @change=${(e: Event) => {
+                if (!this._settingsForm) return;
+                this._settingsForm = {
+                  ...this._settingsForm,
+                  ha_groups_empty_groups: (e.target as HTMLInputElement).checked
+                    ? "true"
+                    : "false",
+                };
+              }}
+            />
+            <div class="hint">${i18n.t("config_ha_groups_empty_groups_hint")}</div>
+          </div>
+        </div>
+
         ${this._renderSettingsActions()}
       </div>
     `;

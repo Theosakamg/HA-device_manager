@@ -70,6 +70,8 @@ SETTING_BUS_PASSWORD = "bus_password"
 # Provisioning: Zigbee bridge
 SETTING_BRIDGE_HOST = "bridge_host"
 SETTING_BRIDGE_DEVICES_CONFIG_PATH = "bridge_devices_config_path"
+# HA Groups generation
+SETTING_HA_GROUPS_EMPTY_GROUPS = "ha_groups_empty_groups"
 
 DEFAULT_SETTINGS: dict[str, str] = {
     SETTING_DNS_SUFFIX: "domo.local",
@@ -118,6 +120,8 @@ ssh -T -i "$PRIVATE_KEY_FILE" """
     # Zigbee bridge
     SETTING_BRIDGE_HOST: "",
     SETTING_BRIDGE_DEVICES_CONFIG_PATH: "/home/pi/zigbee2mqtt/data/devices.yaml",
+    # HA Groups
+    SETTING_HA_GROUPS_EMPTY_GROUPS: "false",
 }
 
 # Legacy aliases (for backward compat in code that imported these directly)

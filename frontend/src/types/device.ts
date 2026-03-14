@@ -174,6 +174,24 @@ export interface HierarchyTree {
 }
 
 /**
+ * A single HA group created/updated by the generate endpoint.
+ */
+export interface HaGroup {
+  entityId: string;
+  name: string;
+  memberCount: number;
+  scope: "room" | "floor" | "building";
+}
+
+/**
+ * Response from POST /api/device_manager/ha_groups/generate.
+ */
+export interface HaGroupsResult {
+  groups: HaGroup[];
+  total: number;
+}
+
+/**
  * Import result from CSV import.
  */
 export interface ImportResult {

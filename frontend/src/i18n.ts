@@ -346,6 +346,18 @@ const translations: { [lang: string]: Translations } = {
     validation_slug_format:
       "Slug must contain only letters, numbers, hyphens and underscores",
     validation_url_format: "Image must be a valid http/https URL",
+
+    // HA Groups
+    ha_groups_generate: "Generate HA Groups",
+    ha_groups_generating: "Generating groups…",
+    ha_groups_success: "{count} group(s) created/updated in Home Assistant",
+    ha_groups_success_none:
+      "No groups generated (no devices with function assigned)",
+    ha_groups_error: "Failed to generate HA groups",
+    config_ha_groups_section: "HA Groups Generation",
+    config_ha_groups_empty_groups: "Create empty groups",
+    config_ha_groups_empty_groups_hint:
+      "When enabled, groups are created even if no matching HA entities are registered for the devices in that room.",
   },
   fr: {
     // Navigation
@@ -690,6 +702,19 @@ const translations: { [lang: string]: Translations } = {
     validation_slug_format:
       "Le slug doit contenir uniquement des lettres, chiffres, tirets et underscores",
     validation_url_format: "L'image doit être une URL http/https valide",
+
+    // HA Groups
+    ha_groups_generate: "Générer les groupes HA",
+    ha_groups_generating: "Génération des groupes…",
+    ha_groups_success:
+      "{count} groupe(s) créé(s)/mis à jour dans Home Assistant",
+    ha_groups_success_none:
+      "Aucun groupe généré (aucun appareil avec une fonction assignée)",
+    ha_groups_error: "Impossible de générer les groupes HA",
+    config_ha_groups_section: "Génération des groupes HA",
+    config_ha_groups_empty_groups: "Créer des groupes vides",
+    config_ha_groups_empty_groups_hint:
+      "Si activé, les groupes sont créés même si aucune entité HA correspondante n’est enregistrée pour les appareils de la pièce.",
   },
 };
 
