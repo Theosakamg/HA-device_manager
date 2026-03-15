@@ -461,7 +461,6 @@ export class DmNodeDetail extends LitElement {
                 <div class="form-group">
                   <label>${i18n.t("parent_floor")}</label>
                   <select
-                    .value=${String(this._editFloorId ?? "")}
                     @change=${(e: Event) => {
                       const v = (e.target as HTMLSelectElement).value;
                       this._editFloorId = v ? Number(v) : null;
@@ -526,7 +525,6 @@ export class DmNodeDetail extends LitElement {
                 <div class="form-group">
                   <label>${i18n.t("parent_building")}</label>
                   <select
-                    .value=${String(this._editBuildingId ?? "")}
                     @change=${(e: Event) => {
                       const v = (e.target as HTMLSelectElement).value;
                       this._editBuildingId = v ? Number(v) : null;
@@ -604,7 +602,9 @@ export class DmNodeDetail extends LitElement {
   /** Collect all floor nodes from the tree. */
   private _getAllFloors(): HierarchyNode[] {
     if (!this.tree) return [];
-    return this.tree.buildings.flatMap((b) => b.children);
+    return this.tree.buildings.flatMap((b) =>
+      b.children.filter((n) => n.type === "floor")
+    );
   }
 
   /** Find the parent floor id of the current room node by scanning the tree. */
