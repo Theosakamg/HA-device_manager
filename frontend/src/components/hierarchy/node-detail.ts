@@ -47,6 +47,7 @@ export class DmNodeDetail extends LitElement {
   @state() private _addingChild = false;
   @state() private _newChildName = "";
   @state() private _generatingGroups = false;
+  @state() private _syncingFloors = false;
 
   private _deviceClient = new DeviceClient();
   private _buildingClient = new BuildingClient();
@@ -155,6 +156,16 @@ export class DmNodeDetail extends LitElement {
             ${this._generatingGroups
               ? `⏳ ${i18n.t("ha_groups_generating")}`
               : `🏠 ${i18n.t("ha_groups_generate")}`}
+          </button>
+          <button
+            class="btn btn-secondary"
+            ?disabled=${this._syncingFloors}
+            @click=${this._syncHaFloors}
+            title=${i18n.t("ha_floors_sync")}
+          >
+            ${this._syncingFloors
+              ? `⏳ ${i18n.t("ha_floors_syncing")}`
+              : `🏢 ${i18n.t("ha_floors_sync")}`}
           </button>
         </div>
       </div>
@@ -632,6 +643,29 @@ export class DmNodeDetail extends LitElement {
       showToast(i18n.t("ha_groups_error"), "error");
     } finally {
       this._generatingGroups = false;
+    }
+  }
+
+  private async _syncHaFloors() {
+    if (this._syncingFloors) return;
+    this._syncingFloors = true;
+    try {
+      const result = await this._hierarchyClient.syncHaFloors();
+      if (result.total === 0) {
+        showToast(i18n.t("ha_floors_sync_none"), "info");
+      } else {
+        showToast(
+          i18n
+            .t("ha_floors_sync_success")
+            .replace("{count}", String(result.total)),
+          "success"
+        );
+      }
+    } catch (err) {
+      console.error("Failed to sync HA floors:", err);
+      showToast(i18n.t("ha_floors_sync_error"), "error");
+    } finally {
+      this._syncingFloors = false;
     }
   }
 }

@@ -1,7 +1,11 @@
 /**
  * API client for hierarchy tree operations.
  */
-import type { HierarchyTree, HaGroupsResult } from "../types/device";
+import type {
+  HierarchyTree,
+  HaGroupsResult,
+  HaFloorsResult,
+} from "../types/device";
 import { BaseClient } from "./base-client";
 
 export class HierarchyClient extends BaseClient {
@@ -18,5 +22,10 @@ export class HierarchyClient extends BaseClient {
   /** Generate HA groups for ALL buildings (full room → floor → building stack). */
   async generateHaGroups(): Promise<HaGroupsResult> {
     return this.post<HaGroupsResult>("/ha_groups/generate", {});
+  }
+
+  /** Synchronize all Device Manager floors to the HA native floor registry. */
+  async syncHaFloors(): Promise<HaFloorsResult> {
+    return this.post<HaFloorsResult>("/ha_floors/sync", {});
   }
 }

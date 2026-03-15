@@ -29,6 +29,7 @@ test_import = load_test_module('test_import')
 test_dm_device_computed = load_test_module('test_dm_device_computed')
 test_identifier_validation = load_test_module('test_identifier_validation')
 test_ha_groups = load_test_module('test_ha_groups')
+test_ha_floors = load_test_module('test_ha_floors')
 
 # Import test functions from test_device
 test_compute_derived_fields_from_fixtures = (
@@ -223,6 +224,36 @@ def run():
     ]
 
     for test_name, test_func in ha_groups_tests:
+        total_tests += 1
+        try:
+            test_func()
+            print(f'  ✓ {test_name}')
+        except AssertionError as e:
+            failures += 1
+            print(f'  ✗ {test_name}')
+            print(f'    {e}')
+        except Exception as e:
+            failures += 1
+            print(f'  ✗ {test_name} (ERROR)')
+            print(f'    {type(e).__name__}: {e}')
+
+    # HA Floors tests
+    print("\n🏢 HA Floors Controller Tests")
+    ha_floors_tests = [
+        ("registry create auto-generates floor_id", test_ha_floors.test_registry_create_auto_generates_id),
+        ("registry get_floor_by_name found", test_ha_floors.test_registry_get_floor_by_name_found),
+        ("registry get_floor_by_name missing", test_ha_floors.test_registry_get_floor_by_name_missing),
+        ("rollback deletes created floors", test_ha_floors.test_rollback_deletes_created_floors),
+        ("rollback restores updated floors", test_ha_floors.test_rollback_restores_updated_floors),
+        ("rollback is reversed order", test_ha_floors.test_rollback_is_reversed_order),
+        ("rollback skips update without original", test_ha_floors.test_rollback_skips_update_without_original),
+        ("rollback tolerates registry error", test_ha_floors.test_rollback_tolerates_registry_error),
+        ("create entry floor_id is accessible", test_ha_floors.test_create_entry_floor_id_is_accessible),
+        ("ha name per building is unique", test_ha_floors.test_ha_name_per_building_is_unique),
+        ("level resets per building", test_ha_floors.test_level_resets_per_building),
+    ]
+
+    for test_name, test_func in ha_floors_tests:
         total_tests += 1
         try:
             test_func()

@@ -192,6 +192,24 @@ export interface HaGroupsResult {
 }
 
 /**
+ * A single HA floor created/updated by the sync endpoint.
+ */
+export interface HaFloor {
+  floorId: string;
+  name: string;
+  level: number;
+  slug: string;
+}
+
+/**
+ * Response from POST /api/device_manager/ha_floors/sync.
+ */
+export interface HaFloorsResult {
+  floors: HaFloor[];
+  total: number;
+}
+
+/**
  * Import result from CSV import.
  */
 export interface ImportResult {

@@ -418,7 +418,9 @@ export class DmSystemView extends LitElement {
                 };
               }}
             />
-            <div class="hint">${i18n.t("config_ha_groups_empty_groups_hint")}</div>
+            <div class="hint">
+              ${i18n.t("config_ha_groups_empty_groups_hint")}
+            </div>
           </div>
         </div>
 

@@ -358,6 +358,12 @@ const translations: { [lang: string]: Translations } = {
     config_ha_groups_empty_groups: "Create empty groups",
     config_ha_groups_empty_groups_hint:
       "When enabled, groups are created even if no matching HA entities are registered for the devices in that room.",
+    // HA Floors
+    ha_floors_sync: "Sync HA Floors",
+    ha_floors_syncing: "Syncing floors\u2026",
+    ha_floors_sync_success: "{count} floor(s) synced to Home Assistant",
+    ha_floors_sync_none: "No floors to sync",
+    ha_floors_sync_error: "Failed to sync HA floors",
   },
   fr: {
     // Navigation
@@ -715,6 +721,13 @@ const translations: { [lang: string]: Translations } = {
     config_ha_groups_empty_groups: "Créer des groupes vides",
     config_ha_groups_empty_groups_hint:
       "Si activé, les groupes sont créés même si aucune entité HA correspondante n’est enregistrée pour les appareils de la pièce.",
+    // HA Floors
+    ha_floors_sync: "Synchroniser les étages HA",
+    ha_floors_syncing: "Synchronisation des étages…",
+    ha_floors_sync_success:
+      "{count} étage(s) synchronisé(s) dans Home Assistant",
+    ha_floors_sync_none: "Aucun étage à synchroniser",
+    ha_floors_sync_error: "Impossible de synchroniser les étages HA",
   },
 };
 

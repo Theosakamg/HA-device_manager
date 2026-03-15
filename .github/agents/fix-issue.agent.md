@@ -107,7 +107,34 @@ Report results. Fix all failures before continuing.
 
 ---
 
-### Step 7 — Lint & Format
+### Step 7 — Deploy & Functional Validation
+
+Rebuild the frontend (if needed) and restart the dev environment so the user can validate the implementation in the browser:
+
+```bash
+# If frontend files were modified
+cd frontend && npm run build && cd ..
+cp frontend/dist/device-manager.js custom_components/device_manager/frontend/dist/ 2>/dev/null || true
+
+# Restart dev stack
+docker compose restart
+```
+
+---
+
+### Step 7b — USER CHECKPOINT: Validate Implementation
+
+**STOP HERE.** Tell the user the dev environment is ready and ask:
+
+> "The dev environment has been restarted. Please test the implementation at http://localhost:8123. Does everything work as expected? Reply **ok** to continue to the quality checks, or describe what needs to be fixed."
+
+If the user reports issues, go back to **Step 5** and fix them. Re-run tests (Step 6) and redeploy (Step 7) before coming back to this checkpoint.
+
+---
+
+### Step 8 — Lint & Format
+
+**Quality gate — always run this on the final, validated code.**
 
 Run the same quality commands as the CI workflow:
 
@@ -117,16 +144,16 @@ python3 -m mypy custom_components/ --ignore-missing-imports
 
 # Frontend (if frontend files were modified)
 cd frontend
-npm run lint
-npm run format:check
+npm run lint:fix
+npm run format
 cd ..
 ```
 
-Fix all errors before continuing. For `black` and `ruff --fix`, re-stage the auto-fixed files.
+Fix all errors before continuing.
 
 ---
 
-### Step 8 — Stage Modified Files
+### Step 9 — Stage Modified Files
 
 ```bash
 git status
@@ -138,7 +165,7 @@ Stage only files directly related to the fix. Do not stage unrelated changes.
 
 ---
 
-### Step 9 — USER CHECKPOINT: Review Staging
+### Step 10 — USER CHECKPOINT: Review Staging
 
 **STOP HERE.** Show the user:
 - The list of staged files (`git diff --staged --stat`)
@@ -147,11 +174,13 @@ Stage only files directly related to the fix. Do not stage unrelated changes.
 Ask:
 > "Do the staged changes look correct? Reply **commit** to proceed, or let me know what to adjust."
 
+> **Note:** If you need to make additional changes at this point, those changes will go through lint & format (Step 8) again before being staged.
+
 Wait for explicit user approval.
 
 ---
 
-### Step 10 — Commit
+### Step 11 — Commit
 
 Write a structured commit message:
 
@@ -180,7 +209,7 @@ rm -f "$COMMIT_FILE"
 
 ---
 
-### Step 11 — Push Branch
+### Step 12 — Push Branch
 
 ```bash
 git push origin <branch-name>
@@ -188,7 +217,7 @@ git push origin <branch-name>
 
 ---
 
-### Step 12 — Create Pull Request
+### Step 13 — Create Pull Request
 
 Use `--body-file` with `mktemp` — never `--body` with `\n` (not rendered on GitHub).
 
@@ -229,7 +258,7 @@ rm -f "$PR_FILE"
 
 ---
 
-### Step 13 — USER CHECKPOINT: Review PR
+### Step 14 — USER CHECKPOINT: Review PR
 
 **STOP HERE.** Share the PR URL and ask:
 
@@ -237,7 +266,7 @@ rm -f "$PR_FILE"
 
 ---
 
-### Step 14 — Handle Review Comments (Loop)
+### Step 15 — Handle Review Comments (Loop)
 
 Poll the PR for unresolved review comments:
 
@@ -248,14 +277,14 @@ gh pr view <PR-number> --json reviews,comments
 If there are requested changes:
 - Summarize them to the user
 - Go back to **Step 3** (rebuild the plan for the requested changes)
-- Implement, test, lint, stage, commit, push (Steps 5–11)
-- The PR updates automatically — go back to **Step 13**
+- Implement, test, redeploy, lint, stage, commit, push (Steps 5–12)
+- The PR updates automatically — go back to **Step 14**
 
-If approved and merged, continue to Step 15.
+If approved and merged, continue to Step 16.
 
 ---
 
-### Step 15 — Sync Local Master
+### Step 16 — Sync Local Master
 
 ```bash
 git checkout master
@@ -269,7 +298,9 @@ Confirm to the user: issue #<N> is fully resolved and merged.
 
 ## Rules
 
-- **Never skip a user checkpoint** (Steps 4, 9, 13)
+- **Never skip a user checkpoint** (Steps 4, 7b, 10, 14)
+- **Lint & Format (Step 8) always runs AFTER functional validation (Step 7b)** — never before
+- **If fixes are made after Step 8**, re-run lint & format before staging
 - Always use `--body-file` with `mktemp` for `gh pr create` and `git commit` with long messages
 - Always clean up temp files after use
 - Commit only staged, relevant changes — never untracked noise
