@@ -31,6 +31,7 @@ test_identifier_validation = load_test_module('test_identifier_validation')
 test_ha_groups = load_test_module('test_ha_groups')
 test_ha_floors = load_test_module('test_ha_floors')
 test_ha_rooms = load_test_module('test_ha_rooms')
+test_crud_fk_diff = load_test_module('test_crud_fk_diff')
 
 # Import test functions from test_device
 test_compute_derived_fields_from_fixtures = (
@@ -291,6 +292,41 @@ def run():
     ]
 
     for test_name, test_func in ha_rooms_tests:
+        total_tests += 1
+        try:
+            test_func()
+            print(f'  ✓ {test_name}')
+        except AssertionError as e:
+            failures += 1
+            print(f'  ✗ {test_name}')
+            print(f'    {e}')
+        except Exception as e:
+            failures += 1
+            print(f'  ✗ {test_name} (ERROR)')
+            print(f'    {type(e).__name__}: {e}')
+
+    # CRUD FK diff tests
+    print("\n🔗 CRUD FK Diff Tests")
+    _fk_inst = test_crud_fk_diff.TestResolveFkLabel()
+    _diff_inst = test_crud_fk_diff.TestBuildUpdateDiffFk()
+    crud_fk_tests = [
+        ("resolve FK: None value", _fk_inst.test_none_value_returns_none_marker),
+        ("resolve FK: unknown field", _fk_inst.test_unknown_field_returns_raw),
+        ("resolve FK: repo missing", _fk_inst.test_repo_not_in_repos_returns_raw),
+        ("resolve FK: entity not found", _fk_inst.test_entity_not_found_returns_raw),
+        ("resolve FK: entity found (name)", _fk_inst.test_entity_found_with_name),
+        ("resolve FK: entity found (display_name)", _fk_inst.test_entity_found_with_display_name),
+        ("resolve FK: repo raises", _fk_inst.test_repo_raises_returns_raw),
+        ("diff FK field shows entity names", _diff_inst.test_fk_field_shows_entity_names),
+        ("diff non-FK field shows raw", _diff_inst.test_non_fk_field_shows_raw),
+        ("diff sensitive field masked", _diff_inst.test_sensitive_field_is_masked),
+        ("diff no changes returns header", _diff_inst.test_no_changes_returns_header_only),
+        ("diff skip fields ignored", _diff_inst.test_skip_fields_ignored),
+        ("diff FK None to value", _diff_inst.test_fk_none_to_value),
+        ("diff FK fallback when repos empty", _diff_inst.test_fk_fallback_when_repos_empty),
+    ]
+
+    for test_name, test_func in crud_fk_tests:
         total_tests += 1
         try:
             test_func()

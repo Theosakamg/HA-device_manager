@@ -25,6 +25,47 @@ _LOG_SENSITIVE_FIELDS = frozenset({"password", "login"})
 # Automatic timestamp fields that are never meaningful in diffs.
 _LOG_SKIP_FIELDS = frozenset({"created_at", "updated_at"})
 
+# Map FK field names → repository key used to resolve the referenced entity.
+_FK_REPO_MAP: dict[str, str] = {
+    "room_id": "room",
+    "floor_id": "floor",
+    "building_id": "building",
+    "model_id": "device_model",
+    "firmware_id": "device_firmware",
+    "function_id": "device_function",
+    "target_id": "device",
+}
+
+
+async def _resolve_fk_label(field: str, raw_id: Any, repos: dict) -> str:
+    """Resolve a FK field value to a human-readable label.
+
+    Returns ``"Name" (id)`` when the referenced entity is found, or falls
+    back to the raw value string so the diff is never empty.
+    """
+    if raw_id is None:
+        return "_(none)_"
+    repo_key = _FK_REPO_MAP.get(field)
+    if repo_key is None or repo_key not in repos:
+        return f"`{raw_id}`"
+    try:
+        entity = await repos[repo_key].find_by_id(int(raw_id))
+    except Exception:  # noqa: BLE001
+        return f"`{raw_id}`"
+    if entity is None:
+        return f"`{raw_id}`"
+    # Prefer display_name() → name → slug → str(id)
+    if callable(getattr(entity, "display_name", None)):
+        name = entity.display_name()
+    else:
+        name = (
+            getattr(entity, "name", None)
+            or getattr(entity, "slug", None)
+            or str(raw_id)
+        )
+    return f'"{name}" ({raw_id})'
+
+
 async def _entity_label_for_log(repo_key: str, entity: Any, repos: dict) -> str:
     """Build a standardised 'Type - Display Name [id=N, slug=xxx]' label.
 
@@ -72,16 +113,19 @@ async def _entity_label_for_log(repo_key: str, entity: Any, repos: dict) -> str:
     return fmt_entity_label(label_type, name, eid, slug)
 
 
-def _build_update_diff(
+async def _build_update_diff(
     label: str,
     before: dict[str, Any],
     after: dict[str, Any],
+    repos: dict,
 ) -> str:
     """Build a Markdown diff message showing changed fields with old/new values.
 
     Compares *before* vs *after* (both snake_case dicts) and lists every
     changed field as ``- **field**: `old` → `new```.  Sensitive fields are
-    masked.  Returns the header line alone when nothing changed.
+    masked.  FK fields (ending with ``_id``) are resolved to their entity
+    display name alongside the raw ID.  Returns the header line alone when
+    nothing changed.
     """
     changes: list[str] = []
     all_keys = sorted(set(before) | set(after))
@@ -95,6 +139,9 @@ def _build_update_diff(
         if key in _LOG_SENSITIVE_FIELDS:
             old_display = "`***`"
             new_display = "`***`" if new_val else "_(cleared)_"
+        elif key in _FK_REPO_MAP:
+            old_display = await _resolve_fk_label(key, old_val, repos)
+            new_display = await _resolve_fk_label(key, new_val, repos)
         else:
             old_display = f"`{old_val}`"
             new_display = f"`{new_val}`"
@@ -382,7 +429,7 @@ class CrudDetailView(BaseView):
             request,
             event_type="config_change",
             entity_type=self.repo_key,
-            message=_build_update_diff(label, before_data, after_data),
+            message=await _build_update_diff(label, before_data, after_data, repos),
             entity_id=eid,
         )
         return self.json(self._serialize_entity(updated))
