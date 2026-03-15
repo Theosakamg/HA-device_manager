@@ -4,7 +4,7 @@ import logging
 
 from aiohttp import web
 
-from .base import BaseView, rate_limit, csrf_protect
+from .base import BaseView, rate_limit, csrf_protect, get_repos, emit_activity_log
 from ..const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -76,6 +76,14 @@ class MaintenanceCleanDBAPIView(BaseView):
             _LOGGER.warning(
                 "Database cleaned: %s", counts
             )
+            await emit_activity_log(
+                request,
+                event_type="action",
+                entity_type="maintenance",
+                message="Database cleaned (DELETE ALL DATA confirmed)",
+                result=str(counts),
+                severity="warning",
+            )
             return self.json({
                 "success": True,
                 "deleted": counts,
@@ -114,6 +122,12 @@ class MaintenanceClearIPCacheAPIView(BaseView):
             await conn.commit()
 
             _LOGGER.info("IP cache cleared: %d devices updated", updated)
+            await emit_activity_log(
+                request,
+                event_type="action",
+                entity_type="maintenance",
+                message=f"IP cache cleared: {updated} device(s) updated",
+            )
             return self.json({"success": True, "updated": updated})
         except Exception as err:
             _LOGGER.exception("Clear IP cache failed", exc_info=err)

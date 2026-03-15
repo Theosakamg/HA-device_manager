@@ -2,7 +2,7 @@
 
 import logging
 
-from .base import BaseView, get_repos, get_db_path, rate_limit, csrf_protect
+from .base import BaseView, get_repos, get_db_path, rate_limit, csrf_protect, emit_activity_log, fmt_entity_label
 from ..provisioning.deploy import deploy, scan
 from ..provisioning.utility import update_runtime_configs
 
@@ -43,6 +43,30 @@ class DeployAPIView(BaseView):
         db_path = get_db_path(request)
         await hass.async_add_executor_job(deploy, db_path, firmware_types, mac_filter)
 
+        # Build human-readable entity list when a MAC filter is provided.
+        repos = get_repos(request)
+        if mac_filter:
+            labels = []
+            for mac in mac_filter:
+                device = await repos["device"].find_by_mac(mac)
+                if device:
+                    labels.append(
+                        fmt_entity_label("Device", device.display_name(), device.id, device.position_slug)
+                    )
+                else:
+                    labels.append(f"Device - ??? [mac={mac}]")
+            entity_list = ", ".join(labels)
+            msg = f"Triggered deployment for: {entity_list}"
+        else:
+            fw_part = f" for firmware types: `{', '.join(firmware_types)}`" if firmware_types else ""
+            msg = f"Triggered deployment{fw_part} (all devices)"
+
+        await emit_activity_log(
+            request,
+            event_type="action",
+            entity_type="deploy",
+            message=msg,
+        )
         return self.json({"result": "Deployment triggered"}, status_code=200)
 
 
@@ -60,6 +84,13 @@ class DevicesScanAPIView(BaseView):
         update_runtime_configs(settings)
         db_path = get_db_path(request)
         stats = await hass.async_add_executor_job(scan, db_path)
+        await emit_activity_log(
+            request,
+            event_type="action",
+            entity_type="scan",
+            message="Network scan completed",
+            result=str(stats) if isinstance(stats, dict) else None,
+        )
         return self.json({
             "result": "Scan completed",
             "stats": stats if isinstance(stats, dict) else {},

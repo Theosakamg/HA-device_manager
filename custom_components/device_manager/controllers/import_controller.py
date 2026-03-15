@@ -5,7 +5,7 @@ import logging
 from aiohttp import web
 from aiohttp.web_request import FileField
 
-from .base import BaseView, get_repos, rate_limit, csrf_protect
+from .base import BaseView, get_repos, rate_limit, csrf_protect, emit_activity_log
 from ..services.csv_import_service import CSVImportService
 
 _LOGGER = logging.getLogger(__name__)
@@ -57,6 +57,21 @@ class CSVImportAPIView(BaseView):
             service = CSVImportService(repos, settings=settings)
             result = await service.import_csv(text)
 
+            created = result.get("created", 0)
+            updated = result.get("updated", 0)
+            errors = result.get("errors", [])
+            severity = "error" if errors else "info"
+            await emit_activity_log(
+                request,
+                event_type="action",
+                entity_type="import",
+                message=(
+                    f"CSV import completed: {created} created, {updated} updated"
+                    + (f", {len(errors)} error(s)" if errors else "")
+                ),
+                result="\n".join(str(e) for e in errors) if errors else None,
+                severity=severity,
+            )
             return self.json(result)
         except Exception as err:
             _LOGGER.exception("CSV import failed", exc_info=err)

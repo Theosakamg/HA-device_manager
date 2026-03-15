@@ -16,7 +16,7 @@ from typing import Any
 
 from aiohttp import web
 
-from .base import BaseView, get_repos, csrf_protect
+from .base import BaseView, get_repos, csrf_protect, emit_activity_log
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -145,6 +145,12 @@ class HaFloorsSyncAPIView(BaseView):
 
         _LOGGER.info(
             "=== HA Floors synchronization done: %d floor(s) ===", len(synced)
+        )
+        await emit_activity_log(
+            request,
+            event_type="action",
+            entity_type="ha_sync",
+            message=f"Synchronized {len(synced)} floor(s) to HA floor registry",
         )
         return self.json({"floors": synced, "total": len(synced)})
 

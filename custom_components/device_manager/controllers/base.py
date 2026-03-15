@@ -17,7 +17,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 # Re-export for backward compatibility with existing controller imports.
-__all__ = ["to_camel_case_dict", "to_snake_case_dict", "get_repos", "get_db_path", "rate_limit", "csrf_protect"]
+__all__ = ["to_camel_case_dict", "to_snake_case_dict", "get_repos", "get_db_path", "rate_limit", "csrf_protect", "fmt_entity_label"]
 
 # ---------------------------------------------------------------------------
 # In-memory rate limiter
@@ -131,6 +131,78 @@ def get_db_path(request: web.Request):
     """
     hass = request.app["hass"]
     return hass.data[DOMAIN]["db"].db_path
+
+
+def get_request_user(request: web.Request) -> str:
+    """Extract the HA user display name from the authenticated request.
+
+    Falls back to 'system' when the user cannot be resolved (e.g. during
+    automated calls or tests).
+
+    Args:
+        request: The incoming aiohttp request.
+
+    Returns:
+        The user's display name string.
+    """
+    try:
+        user = request.get("hass_user")
+        if user is not None:
+            return user.name or "system"
+    except Exception:
+        pass
+    return "system"
+
+
+def fmt_entity_label(entity_type: str, name: str, eid: int | None = None, slug: str = "") -> str:
+    """Return a standardised entity reference: 'Type - Name [id=N, slug=xxx]'."""
+    parts = []
+    if eid is not None:
+        parts.append(f"id={eid}")
+    if slug:
+        parts.append(f"slug={slug}")
+    meta = f" [{', '.join(parts)}]" if parts else ""
+    return f"{entity_type} - {name}{meta}"
+
+
+async def emit_activity_log(
+    request: web.Request,
+    event_type: str,
+    entity_type: str,
+    message: str,
+    *,
+    entity_id: Any = None,
+    result: str | None = None,
+    severity: str = "info",
+) -> None:
+    """Fire-and-forget wrapper to append an activity log entry.
+
+    Any exception is caught and logged — a logging failure must never
+    propagate and block the actual operation.
+
+    Args:
+        request:     The current aiohttp request (for repos + user resolution).
+        event_type:  'config_change' or 'action'.
+        entity_type: e.g. 'device', 'room', 'floor', …
+        message:     Human-readable Markdown message.
+        entity_id:   Optional numeric FK to the affected record.
+        result:      Optional raw output / error string.
+        severity:    'info', 'warning', or 'error'.
+    """
+    try:
+        repos = get_repos(request)
+        user = get_request_user(request)
+        await repos["activity_log"].log_entry(
+            user=user,
+            event_type=event_type,
+            entity_type=entity_type,
+            message=message,
+            entity_id=entity_id,
+            result=result,
+            severity=severity,
+        )
+    except Exception as exc:
+        _LOGGER.debug("Activity log emission failed (non-critical): %s", exc)
 
 
 class BaseView(HomeAssistantView):

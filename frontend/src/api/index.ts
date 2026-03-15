@@ -9,3 +9,4 @@ export { DeviceFirmwareClient } from "./device-firmware-client";
 export { DeviceFunctionClient } from "./device-function-client";
 export { HierarchyClient } from "./hierarchy-client";
 export { ImportClient } from "./import-client";
+export { ActivityLogClient } from "./activity-log-client";

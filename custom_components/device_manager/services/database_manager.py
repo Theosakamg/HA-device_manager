@@ -136,6 +136,22 @@ _MIGRATIONS_DDL = """
     )
 """
 
+_ACTIVITY_LOG_DDL = """
+    CREATE TABLE IF NOT EXISTS dm_activity_log (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp  DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+        user       TEXT NOT NULL DEFAULT 'system',
+        event_type TEXT NOT NULL DEFAULT 'action'
+                   CHECK(event_type IN ('config_change', 'action')),
+        entity_type TEXT NOT NULL DEFAULT '',
+        entity_id  INTEGER DEFAULT NULL,
+        message    TEXT NOT NULL DEFAULT '',
+        result     TEXT DEFAULT NULL,
+        severity   TEXT NOT NULL DEFAULT 'info'
+                   CHECK(severity IN ('info', 'warning', 'error'))
+    )
+"""
+
 
 class DatabaseManager:
     """Manage the SQLite database lifecycle for Device Manager.
@@ -199,6 +215,9 @@ class DatabaseManager:
 
             # 8. Settings (key/value pairs for user-configurable constants)
             await db.execute(_SETTINGS_DDL)
+
+            # 9. Activity log
+            await db.execute(_ACTIVITY_LOG_DDL)
 
             await db.commit()
 

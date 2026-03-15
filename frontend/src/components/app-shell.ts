@@ -15,6 +15,7 @@ import "./system/system-view";
 import "./shared/toast-notification";
 import type { DmToast } from "./shared/toast-notification";
 import "./map/map-view";
+import "./activity-log/activity-log-view";
 
 type AppRoute =
   | "dashboard"
@@ -22,7 +23,8 @@ type AppRoute =
   | "devices"
   | "map"
   | "settings"
-  | "system";
+  | "system"
+  | "activity_log";
 
 @localized
 @customElement("dm-app-shell")
@@ -69,6 +71,7 @@ export class DmAppShell extends LitElement {
       "map",
       "settings",
       "system",
+      "activity_log",
     ];
     return validRoutes.includes(route as AppRoute)
       ? (route as AppRoute)
@@ -130,6 +133,12 @@ export class DmAppShell extends LitElement {
           >
             🖥️ ${i18n.t("nav_system")}
           </button>
+          <button
+            class="nav-btn ${this._route === "activity_log" ? "active" : ""}"
+            @click=${() => this._navigate("activity_log")}
+          >
+            📋 ${i18n.t("nav_activity_log")}
+          </button>
         </nav>
         <button class="lang-toggle" @click=${this._toggleLang}>
           ${this._lang === "fr" ? "🇬🇧 EN" : "🇫🇷 FR"}
@@ -152,6 +161,9 @@ export class DmAppShell extends LitElement {
           : ""}
         ${this._route === "system"
           ? html`<dm-system-view></dm-system-view>`
+          : ""}
+        ${this._route === "activity_log"
+          ? html`<dm-activity-log-view></dm-activity-log-view>`
           : ""}
       </main>
 

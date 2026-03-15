@@ -19,6 +19,7 @@ _VALID_TABLE_NAMES = frozenset({
     "dm_device_firmwares",
     "dm_device_functions",
     "dm_settings",
+    "dm_activity_log",
 })
 
 # Regex for safe SQL identifiers (column names)

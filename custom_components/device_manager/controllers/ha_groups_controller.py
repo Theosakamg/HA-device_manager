@@ -23,7 +23,7 @@ from typing import Any
 
 from aiohttp import web
 
-from .base import BaseView, get_repos, csrf_protect
+from .base import BaseView, get_repos, csrf_protect, emit_activity_log
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -85,6 +85,7 @@ _DOMAIN_FLOW_EXTRA: dict[str, dict[str, Any]] = {
     "light": {"all": False},
     "switch": {"all": False},
 }
+
 
 def _slugify(text: str) -> str:
     text = text.lower().strip()
@@ -170,6 +171,7 @@ def _resolve_device_entities(hass: Any, mac: str, domain: str) -> list[str]:
         mac, domain, ha_device.name_by_user or ha_device.name, found,
     )
     return found
+
 
 def _group_object_id(*parts: str) -> str:
     """``{p1}_{p2}_...`` slugified — used as entity_id suffix."""
@@ -337,6 +339,15 @@ class HaGroupsGenerateAPIView(BaseView):
             }
             for g in all_groups
         ]
+        await emit_activity_log(
+            request,
+            event_type="action",
+            entity_type="ha_sync",
+            message=(
+                f"Generated {len(result)} HA group(s): "
+                f"{len(created_typed)} typed, {len(created_fallback)} fallback"
+            ),
+        )
         return self.json({"groups": result, "total": len(result)})
 
     # ------------------------------------------------------------------

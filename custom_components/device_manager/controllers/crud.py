@@ -10,7 +10,7 @@ from typing import Any, Callable, Optional
 
 from aiohttp import web
 
-from .base import BaseView, get_repos, csrf_protect
+from .base import BaseView, get_repos, csrf_protect, emit_activity_log, fmt_entity_label
 from ..models.base import SerializableMixin
 from ..utils.case_convert import to_snake_case_dict
 
@@ -18,6 +18,92 @@ _LOGGER = logging.getLogger(__name__)
 
 # Maximum allowed length for string fields to prevent abuse
 _MAX_FIELD_LENGTH = 5_000
+
+# Field names whose values are masked in activity log messages (credentials).
+_LOG_SENSITIVE_FIELDS = frozenset({"password", "login"})
+
+# Automatic timestamp fields that are never meaningful in diffs.
+_LOG_SKIP_FIELDS = frozenset({"created_at", "updated_at"})
+
+async def _entity_label_for_log(repo_key: str, entity: Any, repos: dict) -> str:
+    """Build a standardised 'Type - Display Name [id=N, slug=xxx]' label.
+
+    Resolves the full hierarchy path for room (→floor→building) and
+    floor (→building) so the log entry is self-contained.
+    """
+    eid = entity.id
+    slug = getattr(entity, "slug", "") or ""
+
+    if repo_key == "device":
+        name = entity.display_name()
+        slug = getattr(entity, "position_slug", "") or ""
+        label_type = "Device"
+    elif repo_key == "room":
+        floor = None
+        building = None
+        if getattr(entity, "floor_id", None):
+            floor = await repos["floor"].find_by_id(entity.floor_id)
+        if floor and getattr(floor, "building_id", None):
+            building = await repos["building"].find_by_id(floor.building_id)
+        parts = [
+            (building.name or building.slug) if building else None,
+            (floor.name or floor.slug) if floor else None,
+            entity.name or entity.slug,
+        ]
+        name = " > ".join(p for p in parts if p)
+        label_type = "Room"
+    elif repo_key == "floor":
+        building = None
+        if getattr(entity, "building_id", None):
+            building = await repos["building"].find_by_id(entity.building_id)
+        parts = [
+            (building.name or building.slug) if building else None,
+            entity.name or entity.slug,
+        ]
+        name = " > ".join(p for p in parts if p)
+        label_type = "Floor"
+    elif repo_key == "building":
+        name = entity.name or entity.slug
+        label_type = "Building"
+    else:
+        name = getattr(entity, "name", None) or slug or str(eid)
+        label_type = repo_key.replace("_", " ").title()
+
+    return fmt_entity_label(label_type, name, eid, slug)
+
+
+def _build_update_diff(
+    label: str,
+    before: dict[str, Any],
+    after: dict[str, Any],
+) -> str:
+    """Build a Markdown diff message showing changed fields with old/new values.
+
+    Compares *before* vs *after* (both snake_case dicts) and lists every
+    changed field as ``- **field**: `old` → `new```.  Sensitive fields are
+    masked.  Returns the header line alone when nothing changed.
+    """
+    changes: list[str] = []
+    all_keys = sorted(set(before) | set(after))
+    for key in all_keys:
+        if key in _LOG_SKIP_FIELDS:
+            continue
+        old_val = before.get(key)
+        new_val = after.get(key)
+        if old_val == new_val:
+            continue
+        if key in _LOG_SENSITIVE_FIELDS:
+            old_display = "`***`"
+            new_display = "`***`" if new_val else "_(cleared)_"
+        else:
+            old_display = f"`{old_val}`"
+            new_display = f"`{new_val}`"
+        changes.append(f"- **{key}**: {old_display} → {new_display}")
+
+    header = f"Updated {label}"
+    if not changes:
+        return header
+    return header + ":\n" + "\n".join(changes)
 
 
 def _safe_int(value: str, field_name: str = "id") -> int | None:
@@ -206,6 +292,14 @@ class CrudListView(BaseView):
             snake_data = self.normalize_data(snake_data)
         new_id = await repos[self.repo_key].create(snake_data)
         entity = await repos[self.repo_key].find_by_id(new_id)
+        label = await _entity_label_for_log(self.repo_key, entity, repos)
+        await emit_activity_log(
+            request,
+            event_type="config_change",
+            entity_type=self.repo_key,
+            message=f"Created {label}",
+            entity_id=new_id,
+        )
         return self.json(self._serialize_entity(entity), status_code=201)
 
 
@@ -263,6 +357,7 @@ class CrudDetailView(BaseView):
         result = await _get_or_404(self, repos, self.repo_key, eid, self.entity_name)
         if isinstance(result, web.Response):
             return result
+        before_data = result.to_dict()
         data = await request.json()
         snake_data = to_snake_case_dict(data)
         # Validate string lengths
@@ -281,6 +376,15 @@ class CrudDetailView(BaseView):
             snake_data = self.normalize_data(snake_data)
         await repos[self.repo_key].update(eid, snake_data)
         updated = await repos[self.repo_key].find_by_id(eid)
+        after_data = updated.to_dict()
+        label = await _entity_label_for_log(self.repo_key, updated, repos)
+        await emit_activity_log(
+            request,
+            event_type="config_change",
+            entity_type=self.repo_key,
+            message=_build_update_diff(label, before_data, after_data),
+            entity_id=eid,
+        )
         return self.json(self._serialize_entity(updated))
 
     @_handle_errors("entity")
@@ -294,5 +398,13 @@ class CrudDetailView(BaseView):
         result = await _get_or_404(self, repos, self.repo_key, eid, self.entity_name)
         if isinstance(result, web.Response):
             return result
+        label = await _entity_label_for_log(self.repo_key, result, repos)
         await repos[self.repo_key].delete(eid)
+        await emit_activity_log(
+            request,
+            event_type="config_change",
+            entity_type=self.repo_key,
+            message=f"Deleted {label}",
+            entity_id=eid,
+        )
         return self.json({"result": "ok"})
