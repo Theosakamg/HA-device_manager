@@ -77,6 +77,8 @@ const translations: { [lang: string]: Translations } = {
     room_password: "Password",
     show_password: "Show password",
     hide_password: "Hide password",
+    parent_floor: "Parent Floor",
+    parent_building: "Parent Building",
 
     // Devices
     devices_list: "Devices",
@@ -468,6 +470,8 @@ const translations: { [lang: string]: Translations } = {
     room_password: "Mot de passe",
     show_password: "Afficher le mot de passe",
     hide_password: "Masquer le mot de passe",
+    parent_floor: "Étage parent",
+    parent_building: "Bâtiment parent",
 
     // Devices
     devices_list: "Équipements",

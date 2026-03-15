@@ -49,6 +49,8 @@ export class DmNodeDetail extends LitElement {
   @state() private _generatingGroups = false;
   @state() private _syncingFloors = false;
   @state() private _syncingRooms = false;
+  @state() private _editFloorId: number | null = null;
+  @state() private _editBuildingId: number | null = null;
 
   private _deviceClient = new DeviceClient();
   private _buildingClient = new BuildingClient();
@@ -457,6 +459,28 @@ export class DmNodeDetail extends LitElement {
           ? html`
               <div class="form-row form-row--mt">
                 <div class="form-group">
+                  <label>${i18n.t("parent_floor")}</label>
+                  <select
+                    @change=${(e: Event) => {
+                      const v = (e.target as HTMLSelectElement).value;
+                      this._editFloorId = v ? Number(v) : null;
+                    }}
+                  >
+                    <option value="">—</option>
+                    ${this._getAllFloors().map(
+                      (f) =>
+                        html`<option
+                          value=${f.id}
+                          ?selected=${f.id === this._editFloorId}
+                        >
+                          ${f.name}
+                        </option>`
+                    )}
+                  </select>
+                </div>
+              </div>
+              <div class="form-row form-row--mt">
+                <div class="form-group">
                   <label>${i18n.t("room_login")}</label>
                   <input
                     type="text"
@@ -495,6 +519,32 @@ export class DmNodeDetail extends LitElement {
               </div>
             `
           : nothing}
+        ${this.node?.type === "floor"
+          ? html`
+              <div class="form-row form-row--mt">
+                <div class="form-group">
+                  <label>${i18n.t("parent_building")}</label>
+                  <select
+                    @change=${(e: Event) => {
+                      const v = (e.target as HTMLSelectElement).value;
+                      this._editBuildingId = v ? Number(v) : null;
+                    }}
+                  >
+                    <option value="">—</option>
+                    ${(this.tree?.buildings ?? []).map(
+                      (b) =>
+                        html`<option
+                          value=${b.id}
+                          ?selected=${b.id === this._editBuildingId}
+                        >
+                          ${b.name}
+                        </option>`
+                    )}
+                  </select>
+                </div>
+              </div>
+            `
+          : nothing}
         ${this._validationError
           ? html`<div class="validation-error">${this._validationError}</div>`
           : nothing}
@@ -526,6 +576,9 @@ export class DmNodeDetail extends LitElement {
       this._editLogin = this._roomDetails?.login || "";
       this._editPassword = this._roomDetails?.password || "";
       this._showPassword = false;
+      this._editFloorId = this._findParentFloorId();
+    } else if (this.node.type === "floor") {
+      this._editBuildingId = this._findParentBuildingId();
     }
     this._editing = true;
   }
@@ -540,7 +593,42 @@ export class DmNodeDetail extends LitElement {
     if (this.node.type === "room") {
       this._editLogin = this._roomDetails?.login || "";
       this._editPassword = this._roomDetails?.password || "";
+      this._editFloorId = this._findParentFloorId();
+    } else if (this.node.type === "floor") {
+      this._editBuildingId = this._findParentBuildingId();
     }
+  }
+
+  /** Collect all floor nodes from the tree. */
+  private _getAllFloors(): HierarchyNode[] {
+    if (!this.tree) return [];
+    return this.tree.buildings.flatMap((b) =>
+      b.children.filter((n) => n.type === "floor")
+    );
+  }
+
+  /** Find the parent floor id of the current room node by scanning the tree. */
+  private _findParentFloorId(): number | null {
+    if (!this.tree || !this.node || this.node.type !== "room") return null;
+    for (const building of this.tree.buildings) {
+      for (const floor of building.children) {
+        for (const room of floor.children) {
+          if (room.id === this.node.id) return floor.id;
+        }
+      }
+    }
+    return null;
+  }
+
+  /** Find the parent building id of the current floor node by scanning the tree. */
+  private _findParentBuildingId(): number | null {
+    if (!this.tree || !this.node || this.node.type !== "floor") return null;
+    for (const building of this.tree.buildings) {
+      for (const floor of building.children) {
+        if (floor.id === this.node.id) return building.id;
+      }
+    }
+    return null;
   }
 
   private async _saveEdit() {
@@ -566,6 +654,8 @@ export class DmNodeDetail extends LitElement {
         this.node.description = updated.description ?? "";
         this.node.image = updated.image ?? "";
       } else if (this.node.type === "floor") {
+        if (this._editBuildingId !== null)
+          data.buildingId = this._editBuildingId;
         const updated = await this._floorClient.update(this.node.id, data);
         this.node.name = updated.name;
         this.node.slug = updated.slug;
@@ -574,6 +664,7 @@ export class DmNodeDetail extends LitElement {
       } else if (this.node.type === "room") {
         data.login = this._editLogin;
         data.password = this._editPassword;
+        if (this._editFloorId !== null) data.floorId = this._editFloorId;
         const updated = await this._roomClient.update(this.node.id, data);
         this.node.name = updated.name;
         this.node.slug = updated.slug;
