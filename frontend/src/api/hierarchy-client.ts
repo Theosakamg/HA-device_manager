@@ -5,6 +5,7 @@ import type {
   HierarchyTree,
   HaGroupsResult,
   HaFloorsResult,
+  HaRoomsResult,
 } from "../types/device";
 import { BaseClient } from "./base-client";
 
@@ -27,5 +28,10 @@ export class HierarchyClient extends BaseClient {
   /** Synchronize all Device Manager floors to the HA native floor registry. */
   async syncHaFloors(): Promise<HaFloorsResult> {
     return this.post<HaFloorsResult>("/ha_floors/sync", {});
+  }
+
+  /** Synchronize all Device Manager rooms to the HA native area registry. */
+  async syncHaRooms(): Promise<HaRoomsResult> {
+    return this.post<HaRoomsResult>("/ha_rooms/sync", {});
   }
 }

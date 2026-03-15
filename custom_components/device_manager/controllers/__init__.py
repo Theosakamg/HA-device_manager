@@ -19,6 +19,7 @@ from .stats_controller import StatsAPIView
 from .db_backup_controller import SQLiteExportAPIView, SQLiteImportAPIView
 from .ha_groups_controller import HaGroupsGenerateAPIView
 from .ha_floors_controller import HaFloorsSyncAPIView
+from .ha_rooms_controller import HaRoomsSyncAPIView
 
 ALL_VIEWS = [
     StaticView,
@@ -50,4 +51,5 @@ ALL_VIEWS = [
     StatsAPIView,
     HaGroupsGenerateAPIView,
     HaFloorsSyncAPIView,
+    HaRoomsSyncAPIView,
 ]

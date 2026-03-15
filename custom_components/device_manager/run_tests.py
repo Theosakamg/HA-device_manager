@@ -30,6 +30,7 @@ test_dm_device_computed = load_test_module('test_dm_device_computed')
 test_identifier_validation = load_test_module('test_identifier_validation')
 test_ha_groups = load_test_module('test_ha_groups')
 test_ha_floors = load_test_module('test_ha_floors')
+test_ha_rooms = load_test_module('test_ha_rooms')
 
 # Import test functions from test_device
 test_compute_derived_fields_from_fixtures = (
@@ -254,6 +255,42 @@ def run():
     ]
 
     for test_name, test_func in ha_floors_tests:
+        total_tests += 1
+        try:
+            test_func()
+            print(f'  ✓ {test_name}')
+        except AssertionError as e:
+            failures += 1
+            print(f'  ✗ {test_name}')
+            print(f'    {e}')
+        except Exception as e:
+            failures += 1
+            print(f'  ✗ {test_name} (ERROR)')
+            print(f'    {type(e).__name__}: {e}')
+
+    # HA Rooms tests
+    print("\n🚪 HA Rooms Controller Tests")
+    ha_rooms_tests = [
+        ("registry create auto-generates area id", test_ha_rooms.test_registry_create_auto_generates_id),
+        ("registry create with floor_id", test_ha_rooms.test_registry_create_with_floor_id),
+        ("registry get_area_by_name missing", test_ha_rooms.test_registry_get_area_by_name_missing),
+        ("rollback deletes created areas", test_ha_rooms.test_rollback_deletes_created_areas),
+        ("rollback restores updated areas", test_ha_rooms.test_rollback_restores_updated_areas),
+        ("rollback is reversed order", test_ha_rooms.test_rollback_is_reversed_order),
+        ("rollback skips update without original", test_ha_rooms.test_rollback_skips_update_without_original),
+        ("rollback multiple rooms reversed", test_ha_rooms.test_rollback_multiple_rooms_reversed),
+        ("compute_area_id basic", test_ha_rooms.test_compute_area_id_basic),
+        ("slugify fallback ascii", test_ha_rooms.test_slugify_fallback_ascii),
+        ("compute_area_id special chars", test_ha_rooms.test_compute_area_id_special_chars),
+        ("registry create then update name keeps id", test_ha_rooms.test_registry_create_then_update_name_keeps_id),
+        ("compute_area_id matches registry create id", test_ha_rooms.test_compute_area_id_matches_registry_create_id),
+        ("registry get_area by id found", test_ha_rooms.test_registry_get_area_by_id_found),
+        ("registry get_area missing", test_ha_rooms.test_registry_get_area_missing),
+        ("duplicate name detection", test_ha_rooms.test_duplicate_name_detection),
+        ("unique name not marked duplicate", test_ha_rooms.test_unique_name_not_marked_duplicate),
+    ]
+
+    for test_name, test_func in ha_rooms_tests:
         total_tests += 1
         try:
             test_func()

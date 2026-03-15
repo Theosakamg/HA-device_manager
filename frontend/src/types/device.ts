@@ -210,6 +210,26 @@ export interface HaFloorsResult {
 }
 
 /**
+ * A single HA area created/updated by the rooms sync endpoint.
+ */
+export interface HaRoom {
+  areaId: string;
+  name: string;
+  floorId: string | null;
+  roomSlug: string;
+  floorSlug: string;
+  buildingName: string;
+}
+
+/**
+ * Response from POST /api/device_manager/ha_rooms/sync.
+ */
+export interface HaRoomsResult {
+  rooms: HaRoom[];
+  total: number;
+}
+
+/**
  * Import result from CSV import.
  */
 export interface ImportResult {

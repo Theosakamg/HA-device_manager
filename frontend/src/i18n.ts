@@ -364,6 +364,12 @@ const translations: { [lang: string]: Translations } = {
     ha_floors_sync_success: "{count} floor(s) synced to Home Assistant",
     ha_floors_sync_none: "No floors to sync",
     ha_floors_sync_error: "Failed to sync HA floors",
+    // HA Rooms
+    ha_rooms_sync: "Sync HA Rooms",
+    ha_rooms_syncing: "Syncing rooms\u2026",
+    ha_rooms_sync_success: "{count} room(s) synced to Home Assistant",
+    ha_rooms_sync_none: "No rooms to sync",
+    ha_rooms_sync_error: "Failed to sync HA rooms",
   },
   fr: {
     // Navigation
@@ -728,6 +734,13 @@ const translations: { [lang: string]: Translations } = {
       "{count} étage(s) synchronisé(s) dans Home Assistant",
     ha_floors_sync_none: "Aucun étage à synchroniser",
     ha_floors_sync_error: "Impossible de synchroniser les étages HA",
+    // HA Rooms
+    ha_rooms_sync: "Synchroniser les pièces HA",
+    ha_rooms_syncing: "Synchronisation des pièces\u2026",
+    ha_rooms_sync_success:
+      "{count} pièce(s) synchronisée(s) dans Home Assistant",
+    ha_rooms_sync_none: "Aucune pièce à synchroniser",
+    ha_rooms_sync_error: "Impossible de synchroniser les pièces HA",
   },
 };
 
