@@ -4,7 +4,7 @@ import logging
 
 from aiohttp import web
 
-from .base import BaseView, get_repos, csrf_protect, rate_limit
+from .base import BaseView, get_repos, csrf_protect, rate_limit  # noqa: F401 get_repos used at runtime
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -137,7 +137,7 @@ class ActivityLogExportAPIView(BaseView):
 
 
 class ActivityLogPurgeAPIView(BaseView):
-    """DELETE /api/device_manager/activity_log — purge old entries."""
+    """POST /api/device_manager/activity_log/purge — purge old entries."""
 
     url = "/api/device_manager/activity_log/purge"
     name = "api:device_manager:activity_log:purge"

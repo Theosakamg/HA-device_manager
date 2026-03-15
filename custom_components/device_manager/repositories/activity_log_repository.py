@@ -4,8 +4,6 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-import aiosqlite
-
 from .base import BaseRepository
 from ..models.activity_log import DmActivityLog
 
@@ -14,14 +12,6 @@ _LOGGER = logging.getLogger(__name__)
 # Maximum rows returned per page
 _DEFAULT_PAGE_SIZE = 50
 _MAX_PAGE_SIZE = 200
-
-# Allowed filter column names (whitelist against injection)
-_ALLOWED_FILTER_COLS = frozenset({
-    "event_type",
-    "entity_type",
-    "user",
-    "severity",
-})
 
 
 class ActivityLogRepository(BaseRepository[DmActivityLog]):
@@ -189,7 +179,7 @@ class ActivityLogRepository(BaseRepository[DmActivityLog]):
         cursor = await conn.execute(
             """
             DELETE FROM dm_activity_log
-            WHERE timestamp < datetime('now', ? || ' days')
+            WHERE datetime(timestamp) < datetime('now', ? || ' days')
             """,
             (f"-{older_than_days}",),
         )

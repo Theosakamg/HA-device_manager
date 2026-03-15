@@ -55,7 +55,10 @@ base_ctrl_stub.BaseView = _BaseView  # type: ignore[attr-defined]
 base_ctrl_stub.get_repos = lambda req: {}  # type: ignore[attr-defined]
 base_ctrl_stub.csrf_protect = lambda f: f  # type: ignore[attr-defined]
 
-async def _noop_emit(*args, **kwargs): pass
+async def _noop_emit(*args, **kwargs):
+    pass
+
+
 base_ctrl_stub.emit_activity_log = _noop_emit  # type: ignore[attr-defined]
 
 sys.modules["custom_components"] = types.ModuleType("custom_components")

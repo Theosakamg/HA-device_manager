@@ -304,7 +304,9 @@ export class DmActivityLogView extends LitElement {
           type="datetime-local"
           .value=${this._dateFrom}
           @change=${(e: Event) => {
-            this._dateFrom = (e.target as HTMLInputElement).value;
+            const v = (e.target as HTMLInputElement).value;
+            // Normalise local datetime-local to UTC ISO string for consistent backend comparison
+            this._dateFrom = v ? new Date(v).toISOString() : "";
           }}
         />
         <span class="date-range-sep">→</span>
@@ -313,7 +315,9 @@ export class DmActivityLogView extends LitElement {
           type="datetime-local"
           .value=${this._dateTo}
           @change=${(e: Event) => {
-            this._dateTo = (e.target as HTMLInputElement).value;
+            const v = (e.target as HTMLInputElement).value;
+            // Add :59 seconds so the selected minute is fully included
+            this._dateTo = v ? new Date(v + ":59").toISOString() : "";
           }}
         />
         <button
@@ -701,12 +705,10 @@ export class DmActivityLogView extends LitElement {
             type="number"
             min="1"
             max="3650"
-            .value=${String(this._purgedays)}
+            .value=${this._purgedays > 0 ? String(this._purgedays) : ""}
             @input=${(e: Event) => {
-              this._purgedays = parseInt(
-                (e.target as HTMLInputElement).value,
-                10
-              );
+              const v = parseInt((e.target as HTMLInputElement).value, 10);
+              this._purgedays = isNaN(v) ? 0 : v;
             }}
           />
           <button
