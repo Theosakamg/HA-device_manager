@@ -21,7 +21,10 @@ import { showToast } from "../../utils/toast";
 import { isValidSlug, isValidUrl } from "../../utils/validators";
 import { getDoc } from "../../utils/doc-registry";
 import { toSlug } from "../../utils/slug";
-import { deviceLabel } from "../../utils/computed-fields";
+import {
+  deviceLabel,
+  computeHierarchyPrefixes,
+} from "../../utils/computed-fields";
 import "../shared/doc-block";
 
 @localized
@@ -210,6 +213,9 @@ export class DmNodeDetail extends LitElement {
               <span class="info-value"
                 >${this._formatDate(this.node.updatedAt)}</span
               >
+            </div>
+            ${this._renderGeneratedFields(breadcrumb)}
+            <div class="info-grid">
               ${this.node.type === "room"
                 ? html`
                     <span class="info-label">${i18n.t("room_login")}</span>
@@ -342,6 +348,26 @@ export class DmNodeDetail extends LitElement {
                   `}
           `
         : nothing}
+    `;
+  }
+
+  private _renderGeneratedFields(breadcrumb: HierarchyNode[]) {
+    const slugs = breadcrumb.map((n) => n.slug);
+    const fullName = breadcrumb.map((n) => n.name).join(" > ");
+    const { mqttTopic, haEntityId } = computeHierarchyPrefixes(slugs);
+    if (!mqttTopic) return nothing;
+    return html`
+      <div class="generated-fields">
+        <h4 class="generated-fields-title">${i18n.t("generated_fields")}</h4>
+        <div class="info-grid">
+          <span class="info-label">${i18n.t("full_name")}</span>
+          <code class="info-value info-value-code">${fullName}</code>
+          <span class="info-label">${i18n.t("mqtt_topic")}</span>
+          <code class="info-value info-value-code">${mqttTopic}</code>
+          <span class="info-label">${i18n.t("ha_entity_id")}</span>
+          <code class="info-value info-value-code">${haEntityId}</code>
+        </div>
+      </div>
     `;
   }
 

@@ -95,6 +95,25 @@ export function computeDerivedFields(
 }
 
 /**
+ * Compute the MQTT topic and HA entity_id for a hierarchy node
+ * (building, floor, or room) based on the ordered list of slugs from root
+ * to the current node.
+ *
+ * @param slugs - Ordered slugs from building down to the current node,
+ *   e.g. ["home", "l1", "kitchen"] for a room.
+ * @returns An object with `mqttTopic` and `haEntityId`.
+ */
+export function computeHierarchyPrefixes(slugs: string[]): {
+  mqttTopic: string;
+  haEntityId: string;
+} {
+  const path = slugs.filter(Boolean);
+  const mqttTopic = path.length > 0 ? `${path.join("/")}/#` : "";
+  const haEntityId = path.length > 0 ? `{domain}.${path.join("_")}` : "";
+  return { mqttTopic, haEntityId };
+}
+
+/**
  * Return a short human-readable label for a device.
  *
  * Uses the server-computed `displayName` when available, otherwise builds the

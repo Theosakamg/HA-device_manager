@@ -1,3 +1,21 @@
+.info-value-code {
+  font-family: var(--dm-font-mono, "Consolas", "Monaco", monospace);
+  font-size: 13px;
+  background: var(--dm-bg-subtle, rgba(0, 0, 0, 0.04));
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+.generated-fields {
+  margin-bottom: 16px;
+}
+.generated-fields-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dm-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
 :host {
   display: block;
 }
