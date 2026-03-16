@@ -79,6 +79,10 @@ const translations: { [lang: string]: Translations } = {
     hide_password: "Hide password",
     parent_floor: "Parent Floor",
     parent_building: "Parent Building",
+    generated_fields: "Generated Fields",
+    mqtt_topic: "MQTT topic",
+    ha_entity_id: "HA entity_id",
+    full_name: "Full name",
 
     // Devices
     devices_list: "Devices",
@@ -472,6 +476,10 @@ const translations: { [lang: string]: Translations } = {
     hide_password: "Masquer le mot de passe",
     parent_floor: "Étage parent",
     parent_building: "Bâtiment parent",
+    generated_fields: "Champs générés",
+    mqtt_topic: "Topic MQTT",
+    ha_entity_id: "entity_id HA",
+    full_name: "Nom complet",
 
     // Devices
     devices_list: "Équipements",
