@@ -95,13 +95,13 @@ export function computeDerivedFields(
 }
 
 /**
- * Compute the MQTT topic prefix and HA entity_id prefix for a hierarchy node
+ * Compute the MQTT topic and HA entity_id for a hierarchy node
  * (building, floor, or room) based on the ordered list of slugs from root
  * to the current node.
  *
  * @param slugs - Ordered slugs from building down to the current node,
  *   e.g. ["home", "l1", "kitchen"] for a room.
- * @returns An object with `mqttTopicPrefix` and `haEntityPrefix`.
+ * @returns An object with `mqttTopic` and `haEntityId`.
  */
 export function computeHierarchyPrefixes(slugs: string[]): {
   mqttTopic: string;
