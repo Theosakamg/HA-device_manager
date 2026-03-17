@@ -146,3 +146,55 @@
   gap: 8px;
   margin-top: 8px;
 }
+
+/* ── Header actions toolbar ──────────────────────────────── */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ha-sync-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border: 1px solid var(--dm-border);
+  border-radius: 6px;
+  background: var(--dm-bg-subtle, rgba(0, 0, 0, 0.03));
+}
+
+/* Icon-only HA sync buttons */
+.ha-sync-btn {
+  font-size: 16px;
+  line-height: 1;
+  padding: 5px;
+  min-width: 32px;
+  min-height: 32px;
+  position: relative;
+}
+
+/* Tooltip via data-tooltip attribute */
+.ha-sync-btn[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: rgba(33, 33, 33, 0.9);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 400;
+  padding: 4px 8px;
+  border-radius: 4px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 10;
+}
+
+.ha-sync-btn[data-tooltip]:hover::after,
+.ha-sync-btn[data-tooltip]:focus-visible::after {
+  opacity: 1;
+}

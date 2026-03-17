@@ -146,43 +146,52 @@ export class DmNodeDetail extends LitElement {
             : nothing}
           <h2>${typeLabel}: ${this.node.name}</h2>
         </div>
-        <div>
+        <div class="header-actions">
           <button
             class="btn btn-secondary"
             @click=${this._editing ? this._resetEdit : this._startEdit}
           >
             ${this._editing ? `↩ ${i18n.t("reset")}` : `✏️ ${i18n.t("edit")}`}
           </button>
-          <button
-            class="btn btn-secondary"
-            ?disabled=${this._generatingGroups}
-            @click=${this._generateHaGroups}
-            title=${i18n.t("ha_groups_generate")}
+          <div
+            class="ha-sync-toolbar"
+            role="toolbar"
+            aria-label="HA sync actions"
           >
-            ${this._generatingGroups
-              ? `⏳ ${i18n.t("ha_groups_generating")}`
-              : `🏠 ${i18n.t("ha_groups_generate")}`}
-          </button>
-          <button
-            class="btn btn-secondary"
-            ?disabled=${this._syncingFloors}
-            @click=${this._syncHaFloors}
-            title=${i18n.t("ha_floors_sync")}
-          >
-            ${this._syncingFloors
-              ? `⏳ ${i18n.t("ha_floors_syncing")}`
-              : `🏢 ${i18n.t("ha_floors_sync")}`}
-          </button>
-          <button
-            class="btn btn-secondary"
-            ?disabled=${this._syncingRooms}
-            @click=${this._syncHaRooms}
-            title=${i18n.t("ha_rooms_sync")}
-          >
-            ${this._syncingRooms
-              ? `\u23F3 ${i18n.t("ha_rooms_syncing")}`
-              : `\uD83D\uDEAA ${i18n.t("ha_rooms_sync")}`}
-          </button>
+            <button
+              class="btn btn-icon ha-sync-btn"
+              ?disabled=${this._generatingGroups}
+              @click=${this._generateHaGroups}
+              aria-label=${i18n.t("ha_groups_generate")}
+              data-tooltip=${this._generatingGroups
+                ? i18n.t("ha_groups_generating")
+                : i18n.t("ha_groups_generate")}
+            >
+              ${this._generatingGroups ? `⏳` : `🏠`}
+            </button>
+            <button
+              class="btn btn-icon ha-sync-btn"
+              ?disabled=${this._syncingFloors}
+              @click=${this._syncHaFloors}
+              aria-label=${i18n.t("ha_floors_sync")}
+              data-tooltip=${this._syncingFloors
+                ? i18n.t("ha_floors_syncing")
+                : i18n.t("ha_floors_sync")}
+            >
+              ${this._syncingFloors ? `⏳` : `🏢`}
+            </button>
+            <button
+              class="btn btn-icon ha-sync-btn"
+              ?disabled=${this._syncingRooms}
+              @click=${this._syncHaRooms}
+              aria-label=${i18n.t("ha_rooms_sync")}
+              data-tooltip=${this._syncingRooms
+                ? i18n.t("ha_rooms_syncing")
+                : i18n.t("ha_rooms_sync")}
+            >
+              ${this._syncingRooms ? `⏳` : `🚪`}
+            </button>
+          </div>
         </div>
       </div>
 
