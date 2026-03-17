@@ -24,7 +24,12 @@ import {
 } from "../../utils/sorting";
 
 function renderMarkdown(md: string): string {
-  const raw = marked.parse(md, { async: false }) as string;
+  const raw = marked.parseInline(md, {
+    async: false,
+    pedantic: false,
+    breaks: true,
+    gfm: true,
+  }) as string;
   return DOMPurify.sanitize(raw);
 }
 

@@ -145,35 +145,6 @@
 }
 
 /* ── Table ── */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  background: var(--dm-card-bg);
-  border-radius: var(--dm-radius);
-  box-shadow: var(--dm-shadow);
-}
-
-th {
-  position: sticky;
-  top: 0;
-  background: var(--dm-card-bg);
-  padding: 10px 12px;
-  text-align: left;
-  font-weight: 600;
-  font-size: 12px;
-  border-bottom: 2px solid var(--dm-border);
-  white-space: nowrap;
-  z-index: 1;
-}
-
-td {
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--dm-border);
-  vertical-align: top;
-  text-align: left;
-}
-
 tr:last-child td {
   border-bottom: none;
 }
