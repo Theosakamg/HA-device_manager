@@ -188,7 +188,7 @@ td {
   padding: 10px 12px;
   border-bottom: 1px solid var(--dm-border);
   vertical-align: middle;
-  height: 48px;
+  height: 24px;
 }
 
 /* Action column: align icons to the right */
