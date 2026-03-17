@@ -49,7 +49,7 @@ export class DmNodeDetail extends LitElement {
   @state() private _validationError = "";
   @state() private _addingChild = false;
   @state() private _newChildName = "";
-  @state() private _generatingGroups = false;
+  @state() private _syncingGroups = false;
   @state() private _syncingFloors = false;
   @state() private _syncingRooms = false;
   @state() private _editFloorId: number | null = null;
@@ -160,14 +160,14 @@ export class DmNodeDetail extends LitElement {
           >
             <button
               class="btn btn-icon ha-sync-btn"
-              ?disabled=${this._generatingGroups}
-              @click=${this._generateHaGroups}
-              aria-label=${i18n.t("ha_groups_generate")}
-              data-tooltip=${this._generatingGroups
-                ? i18n.t("ha_groups_generating")
-                : i18n.t("ha_groups_generate")}
+              ?disabled=${this._syncingGroups}
+              @click=${this._syncHaGroups}
+              aria-label=${i18n.t("ha_groups_sync")}
+              data-tooltip=${this._syncingGroups
+                ? i18n.t("ha_groups_syncing")
+                : i18n.t("ha_groups_sync")}
             >
-              ${this._generatingGroups ? `⏳` : `🏠`}
+              ${this._syncingGroups ? `⏳` : `🏠`}
             </button>
             <button
               class="btn btn-icon ha-sync-btn"
@@ -762,24 +762,26 @@ export class DmNodeDetail extends LitElement {
     return "📦";
   }
 
-  private async _generateHaGroups() {
-    if (!this.node || this._generatingGroups) return;
-    this._generatingGroups = true;
+  private async _syncHaGroups() {
+    if (!this.node || this._syncingGroups) return;
+    this._syncingGroups = true;
     try {
-      const result = await this._hierarchyClient.generateHaGroups();
+      const result = await this._hierarchyClient.syncHaGroups();
       if (result.total === 0) {
-        showToast(i18n.t("ha_groups_success_none"), "info");
+        showToast(i18n.t("ha_groups_sync_none"), "info");
       } else {
         showToast(
-          i18n.t("ha_groups_success").replace("{count}", String(result.total)),
+          i18n
+            .t("ha_groups_sync_success")
+            .replace("{count}", String(result.total)),
           "success"
         );
       }
     } catch (err) {
-      console.error("Failed to generate HA groups:", err);
-      showToast(i18n.t("ha_groups_error"), "error");
+      console.error("Failed to sync HA groups:", err);
+      showToast(i18n.t("ha_groups_sync_error"), "error");
     } finally {
-      this._generatingGroups = false;
+      this._syncingGroups = false;
     }
   }
 

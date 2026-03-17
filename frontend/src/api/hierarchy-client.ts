@@ -20,9 +20,9 @@ export class HierarchyClient extends BaseClient {
     return this.get<HierarchyTree>(`/buildings/${buildingId}/tree`);
   }
 
-  /** Generate HA groups for ALL buildings (full room → floor → building stack). */
-  async generateHaGroups(): Promise<HaGroupsResult> {
-    return this.post<HaGroupsResult>("/ha_groups/generate", {});
+  /** Sync HA groups for ALL buildings (full room → floor → building stack). */
+  async syncHaGroups(): Promise<HaGroupsResult> {
+    return this.post<HaGroupsResult>("/ha_groups/sync", {});
   }
 
   /** Synchronize all Device Manager floors to the HA native floor registry. */

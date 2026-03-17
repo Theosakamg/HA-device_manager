@@ -243,22 +243,22 @@ async def _create_typed_group(
 # ---------------------------------------------------------------------------
 
 
-class HaGroupsGenerateAPIView(BaseView):
-    """Generate typed HA groups for ALL buildings.
+class HaGroupsSyncAPIView(BaseView):
+    """Sync typed HA groups for ALL buildings.
 
-    POST /api/device_manager/ha_groups/generate
-    Body: ignored — always regenerates the complete room→floor→building stack.
+    POST /api/device_manager/ha_groups/sync
+    Body: ignored — always resyncs the complete room→floor→building stack.
     """
 
-    url = "/api/device_manager/ha_groups/generate"
-    name = "api:device_manager:ha_groups:generate"
+    url = "/api/device_manager/ha_groups/sync"
+    name = "api:device_manager:ha_groups:sync"
     requires_auth = True
 
     @csrf_protect
     async def post(self, request: web.Request) -> web.Response:
         repos = get_repos(request)
         hass = request.app["hass"]
-        _LOGGER.info("=== HA Groups generation started ===")
+        _LOGGER.info("=== HA Groups sync started ===")
 
         try:
             buildings = await repos["building"].find_all()
@@ -324,10 +324,10 @@ class HaGroupsGenerateAPIView(BaseView):
                 ", ".join(sorted({g["domain"] for g in created_typed})),
                 len(created_fallback),
             )
-            _LOGGER.info("=== HA Groups generation done ===")
+            _LOGGER.info("=== HA Groups sync done ===")
 
         except Exception as err:
-            _LOGGER.exception("Failed to generate HA groups", exc_info=err)
+            _LOGGER.exception("Failed to sync HA groups", exc_info=err)
             return self.json({"error": "Internal server error"}, status_code=500)
 
         result = [
@@ -344,7 +344,7 @@ class HaGroupsGenerateAPIView(BaseView):
             event_type="action",
             entity_type="ha_sync",
             message=(
-                f"Generated {len(result)} HA group(s): "
+                f"Synced {len(result)} HA group(s): "
                 f"{len(created_typed)} typed, {len(created_fallback)} fallback"
             ),
         )

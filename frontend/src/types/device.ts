@@ -184,7 +184,7 @@ export interface HaGroup {
 }
 
 /**
- * Response from POST /api/device_manager/ha_groups/generate.
+ * Response from POST /api/device_manager/ha_groups/sync.
  */
 export interface HaGroupsResult {
   groups: HaGroup[];

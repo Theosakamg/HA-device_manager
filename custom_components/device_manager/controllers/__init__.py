@@ -17,7 +17,7 @@ from .deploy_controller import DeployAPIView, DevicesScanAPIView
 from .ssh_key_controller import SSHKeyUploadAPIView
 from .stats_controller import StatsAPIView
 from .db_backup_controller import SQLiteExportAPIView, SQLiteImportAPIView
-from .ha_groups_controller import HaGroupsGenerateAPIView
+from .ha_groups_controller import HaGroupsSyncAPIView
 from .ha_floors_controller import HaFloorsSyncAPIView
 from .ha_rooms_controller import HaRoomsSyncAPIView
 from .activity_log_controller import ActivityLogAPIView, ActivityLogExportAPIView, ActivityLogPurgeAPIView
@@ -50,7 +50,7 @@ ALL_VIEWS = [
     DevicesScanAPIView,
     SSHKeyUploadAPIView,
     StatsAPIView,
-    HaGroupsGenerateAPIView,
+    HaGroupsSyncAPIView,
     HaFloorsSyncAPIView,
     HaRoomsSyncAPIView,
     ActivityLogAPIView,
