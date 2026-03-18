@@ -75,11 +75,17 @@ export class DmSystemView extends LitElement {
   // ── Settings state ──
   @state() private _settingsForm: AppSettings | null = null;
   @state() private _settingsSaving = false;
+  @state() private _settingsDirty = false;
   @state() private _settingsToast: { msg: string; ok: boolean } | null = null;
 
   // ── SSH key upload state ──
   @state() private _sshKeyUploading = false;
   @state() private _sshKeyToast: { msg: string; ok: boolean } | null = null;
+
+  // ── Mosquitto config state ──
+  @state() private _mqttConfigGenerating = false;
+  @state() private _mqttConfigSuccess: string | null = null;
+  @state() private _mqttConfigError: string | null = null;
 
   private _maintenanceClient = new MaintenanceClient();
   private _settingsClient = new SettingsClient();
@@ -500,6 +506,34 @@ export class DmSystemView extends LitElement {
         </div>
 
         ${this._renderSettingsActions()}
+
+        <p class="section-title">${i18n.t("maint_mqtt_config")}</p>
+        <p class="hint">${i18n.t("maint_mqtt_config_desc")}</p>
+        ${this._settingsDirty
+          ? html`<p class="hint" style="color:var(--warning-color,#f57c00)">
+              ⚠️ ${i18n.t("maint_mqtt_config_save_first")}
+            </p>`
+          : nothing}
+        <button
+          class="btn btn-secondary"
+          ?disabled=${this._mqttConfigGenerating || this._settingsDirty}
+          @click=${this._generateMosquittoConfig}
+        >
+          ${this._mqttConfigGenerating
+            ? i18n.t("maint_mqtt_config_generating")
+            : "📥 " + i18n.t("maint_mqtt_config")}
+        </button>
+        ${this._mqttConfigSuccess
+          ? html`<div class="result-panel" style="margin-top:12px">
+              <h4>✅ ${this._mqttConfigSuccess}</h4>
+            </div>`
+          : nothing}
+        ${this._mqttConfigError
+          ? html`<div class="result-panel error" style="margin-top:12px">
+              <h4>❌ ${i18n.t("error_loading")}</h4>
+              <p>${this._mqttConfigError}</p>
+            </div>`
+          : nothing}
       </div>
     `;
   }
@@ -980,6 +1014,7 @@ export class DmSystemView extends LitElement {
       ...this._settingsForm,
       [key]: (e.target as HTMLInputElement).value,
     };
+    this._settingsDirty = true;
   }
 
   private async _onSshKeyFileChange(e: Event) {
@@ -1032,8 +1067,26 @@ export class DmSystemView extends LitElement {
       };
     }
     this._settingsSaving = false;
+    this._settingsDirty = false;
     setTimeout(() => {
       this._settingsToast = null;
     }, 4000);
+  }
+
+  private async _generateMosquittoConfig() {
+    this._mqttConfigGenerating = true;
+    this._mqttConfigError = null;
+    this._mqttConfigSuccess = null;
+    try {
+      await this._maintenanceClient.generateMosquittoConfig();
+      this._mqttConfigSuccess = i18n.t("maint_mqtt_config_success");
+      setTimeout(() => {
+        this._mqttConfigSuccess = null;
+      }, 6000);
+    } catch (err) {
+      this._mqttConfigError = String(err);
+    } finally {
+      this._mqttConfigGenerating = false;
+    }
   }
 }

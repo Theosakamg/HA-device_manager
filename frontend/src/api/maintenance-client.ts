@@ -116,4 +116,35 @@ export class MaintenanceClient extends BaseClient {
       file
     );
   }
+
+  /** Generate and download a Mosquitto MQTT config ZIP archive. */
+  async generateMosquittoConfig(): Promise<void> {
+    const url = `${this.baseUrl}/maintenance/generate-mosquitto-config`;
+    const headers = this.buildHeaders();
+    const response = await fetch(url, {
+      method: "GET",
+      headers,
+      credentials: "same-origin",
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(
+        err.error ||
+          `Mosquitto config generation failed: ${response.statusText}`
+      );
+    }
+
+    const disposition = response.headers.get("Content-Disposition") || "";
+    const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
+    const filename = filenameMatch?.[1] || "mosquitto-config.zip";
+
+    const blob = await response.blob();
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+  }
 }
