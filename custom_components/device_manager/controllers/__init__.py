@@ -11,7 +11,7 @@ from .device_function_controller import DeviceFunctionsAPIView, DeviceFunctionAP
 from .hierarchy_controller import HierarchyAPIView
 from .import_controller import CSVImportAPIView
 from .export_controller import ExportAPIView
-from .maintenance_controller import MaintenanceCleanDBAPIView, MaintenanceClearIPCacheAPIView
+from .maintenance_controller import MaintenanceCleanDBAPIView, MaintenanceClearIPCacheAPIView, MaintenanceMosquittoConfigAPIView
 from .settings_controller import SettingsAPIView
 from .deploy_controller import DeployAPIView, DevicesScanAPIView
 from .ssh_key_controller import SSHKeyUploadAPIView
@@ -45,6 +45,7 @@ ALL_VIEWS = [
     SQLiteImportAPIView,
     MaintenanceCleanDBAPIView,
     MaintenanceClearIPCacheAPIView,
+    MaintenanceMosquittoConfigAPIView,
     SettingsAPIView,
     DeployAPIView,
     DevicesScanAPIView,

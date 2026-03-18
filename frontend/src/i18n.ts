@@ -305,6 +305,11 @@ const translations: { [lang: string]: Translations } = {
       "Reset the IP address of all devices to NULL. Useful after a network change.",
     maint_clear_ip_cache_success: "IP cache cleared",
     maint_clear_ip_updated: "devices updated",
+    maint_mqtt_config: "Generate Mosquitto Config",
+    maint_mqtt_config_desc:
+      "Generate Mosquitto broker configuration files (passwd, acl, mosquitto.conf) based on the current hierarchy.",
+    maint_mqtt_config_generating: "Generating...",
+    maint_mqtt_config_success: "Mosquitto config generated and downloaded",
 
     // Common
     name: "Name",
@@ -708,6 +713,11 @@ const translations: { [lang: string]: Translations } = {
       "Réinitialise l'adresse IP de tous les équipements à NULL. Utile après un changement de réseau.",
     maint_clear_ip_cache_success: "Cache IP effacé",
     maint_clear_ip_updated: "équipements mis à jour",
+    maint_mqtt_config: "Générer la Config Mosquitto",
+    maint_mqtt_config_desc:
+      "Génère les fichiers de configuration Mosquitto (passwd, acl, mosquitto.conf) basés sur la hiérarchie actuelle.",
+    maint_mqtt_config_generating: "Génération en cours...",
+    maint_mqtt_config_success: "Config Mosquitto générée et téléchargée",
 
     // Common
     name: "Nom",

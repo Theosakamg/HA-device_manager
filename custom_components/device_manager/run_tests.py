@@ -32,6 +32,7 @@ test_ha_groups = load_test_module('test_ha_groups')
 test_ha_floors = load_test_module('test_ha_floors')
 test_ha_rooms = load_test_module('test_ha_rooms')
 test_crud_fk_diff = load_test_module('test_crud_fk_diff')
+test_mosquitto_config = load_test_module('test_mosquitto_config')
 
 # Import test functions from test_device
 test_compute_derived_fields_from_fixtures = (
@@ -328,6 +329,35 @@ def run():
     ]
 
     for test_name, test_func in crud_fk_tests:
+        total_tests += 1
+        try:
+            test_func()
+            print(f'  ✓ {test_name}')
+        except AssertionError as e:
+            failures += 1
+            print(f'  ✗ {test_name}')
+            print(f'    {e}')
+        except Exception as e:
+            failures += 1
+            print(f'  ✗ {test_name} (ERROR)')
+            print(f'    {type(e).__name__}: {e}')
+
+    # Mosquitto config generation tests
+    print("\n📡 Mosquitto Config Generation Tests")
+    mosquitto_tests = [
+        ("passwd contains room credentials", test_mosquitto_config.test_passwd_contains_room_credentials),
+        ("passwd contains admin", test_mosquitto_config.test_passwd_contains_admin),
+        ("acl room topic format", test_mosquitto_config.test_acl_room_topic_format),
+        ("acl admin full access", test_mosquitto_config.test_acl_admin_full_access),
+        ("room without credentials skipped", test_mosquitto_config.test_room_without_credentials_skipped),
+        ("mosquitto.conf references correct paths", test_mosquitto_config.test_mosquitto_conf_references_correct_paths),
+        ("zip contains three files", test_mosquitto_config.test_zip_contains_three_files),
+        ("mqtt prefix leading slash stripped", test_mosquitto_config.test_mqtt_prefix_leading_slash_stripped),
+        ("empty hierarchy only admin", test_mosquitto_config.test_empty_hierarchy_only_admin),
+        ("no admin user no admin entry", test_mosquitto_config.test_no_admin_user_empty_admin_entry),
+    ]
+
+    for test_name, test_func in mosquitto_tests:
         total_tests += 1
         try:
             test_func()
