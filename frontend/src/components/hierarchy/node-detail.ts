@@ -156,13 +156,15 @@ export class DmNodeDetail extends LitElement {
           <div
             class="ha-sync-toolbar"
             role="toolbar"
-            aria-label="HA sync actions"
+            aria-label=${i18n.t("ha_sync_toolbar_label")}
           >
             <button
               class="btn btn-icon ha-sync-btn"
               ?disabled=${this._syncingGroups}
               @click=${this._syncHaGroups}
-              aria-label=${i18n.t("ha_groups_sync")}
+              aria-label=${this._syncingGroups
+                ? i18n.t("ha_groups_syncing")
+                : i18n.t("ha_groups_sync")}
               data-tooltip=${this._syncingGroups
                 ? i18n.t("ha_groups_syncing")
                 : i18n.t("ha_groups_sync")}
@@ -173,7 +175,9 @@ export class DmNodeDetail extends LitElement {
               class="btn btn-icon ha-sync-btn"
               ?disabled=${this._syncingFloors}
               @click=${this._syncHaFloors}
-              aria-label=${i18n.t("ha_floors_sync")}
+              aria-label=${this._syncingFloors
+                ? i18n.t("ha_floors_syncing")
+                : i18n.t("ha_floors_sync")}
               data-tooltip=${this._syncingFloors
                 ? i18n.t("ha_floors_syncing")
                 : i18n.t("ha_floors_sync")}
@@ -184,7 +188,9 @@ export class DmNodeDetail extends LitElement {
               class="btn btn-icon ha-sync-btn"
               ?disabled=${this._syncingRooms}
               @click=${this._syncHaRooms}
-              aria-label=${i18n.t("ha_rooms_sync")}
+              aria-label=${this._syncingRooms
+                ? i18n.t("ha_rooms_syncing")
+                : i18n.t("ha_rooms_sync")}
               data-tooltip=${this._syncingRooms
                 ? i18n.t("ha_rooms_syncing")
                 : i18n.t("ha_rooms_sync")}
