@@ -354,6 +354,7 @@ const translations: { [lang: string]: Translations } = {
       "Slug must contain only letters, numbers, hyphens and underscores",
     validation_url_format: "Image must be a valid http/https URL",
 
+    ha_sync_toolbar_label: "HA sync actions",
     // HA Groups
     ha_groups_sync: "Sync HA Groups",
     ha_groups_syncing: "Syncing groups…",
@@ -757,6 +758,7 @@ const translations: { [lang: string]: Translations } = {
       "Le slug doit contenir uniquement des lettres, chiffres, tirets et underscores",
     validation_url_format: "L'image doit être une URL http/https valide",
 
+    ha_sync_toolbar_label: "Actions de synchronisation HA",
     // HA Groups
     ha_groups_sync: "Synchroniser les groupes HA",
     ha_groups_syncing: "Synchronisation des groupes…",
