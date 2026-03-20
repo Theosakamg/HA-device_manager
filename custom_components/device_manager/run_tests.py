@@ -34,6 +34,7 @@ test_ha_rooms = load_test_module('test_ha_rooms')
 test_crud_fk_diff = load_test_module('test_crud_fk_diff')
 test_mosquitto_config = load_test_module('test_mosquitto_config')
 test_init_unload = load_test_module('test_init_unload')
+test_network_scanner = load_test_module('test_network_scanner')
 
 # Import test functions from test_device
 test_compute_derived_fields_from_fixtures = (
@@ -388,6 +389,34 @@ def run():
         total_tests += 1
         try:
             _unload_inst.setUp()
+            test_func()
+            print(f'  ✓ {test_name}')
+        except AssertionError as e:
+            failures += 1
+            print(f'  ✗ {test_name}')
+            print(f'    {e}')
+        except Exception as e:
+            failures += 1
+            print(f'  ✗ {test_name} (ERROR)')
+            print(f'    {type(e).__name__}: {e}')
+
+    # Network scanner error propagation tests
+    print("\n📡 Network Scanner Error Propagation Tests")
+    scanner_tests = [
+        ("missing script config raises", test_network_scanner.test_missing_scan_script_raises),
+        ("timeout raises NetworkScanError", test_network_scanner.test_timeout_raises),
+        ("subprocess exception raises", test_network_scanner.test_subprocess_exception_raises),
+        ("nonzero exit code raises", test_network_scanner.test_nonzero_exit_raises),
+        ("invalid YAML output raises", test_network_scanner.test_invalid_yaml_raises),
+        ("non-dict output raises", test_network_scanner.test_non_dict_output_raises),
+        ("successful scan returns dict", test_network_scanner.test_successful_scan_returns_dict),
+        ("update_device_ips without scan returns error", test_network_scanner.test_update_device_ips_without_scan_returns_error),
+        ("update_device_ips with empty scan proceeds", test_network_scanner.test_update_device_ips_with_empty_scan_proceeds),
+    ]
+
+    for test_name, test_func in scanner_tests:
+        total_tests += 1
+        try:
             test_func()
             print(f'  ✓ {test_name}')
         except AssertionError as e:

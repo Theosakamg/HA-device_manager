@@ -5,7 +5,7 @@
 import logging
 import os
 import subprocess
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 import yaml  # type: ignore[import-untyped]
 
@@ -14,6 +14,10 @@ from ...repositories import DeviceRepository
 from ..utility import get_config
 
 logger = logging.getLogger(__name__)
+
+
+class NetworkScanError(Exception):
+    """Raised when the network scan fails and cannot produce results."""
 
 
 class NetworkScanner:
@@ -32,7 +36,7 @@ class NetworkScanner:
             db: DatabaseManager instance (must be already initialized).
         """
         self.db = db
-        self._scan_results: Dict[str, str] = {}
+        self._scan_results: Optional[Dict[str, str]] = None
 
     def run_network_scan(self) -> Dict[str, str]:
         """Execute network scan script to discover MAC-to-IP mappings.
@@ -43,8 +47,9 @@ class NetworkScanner:
         scan_script_content = get_config('SCAN_SCRIPT_CONTENT', '')
 
         if not scan_script_content:
-            logger.error("SCAN_SCRIPT_CONTENT is not configured. Cannot perform network scan.")
-            return {}
+            msg = "SCAN_SCRIPT_CONTENT is not configured. Cannot perform network scan."
+            logger.error(msg)
+            raise NetworkScanError(msg)
 
         logger.info("Executing scan script from database")
 
@@ -70,18 +75,21 @@ class NetworkScanner:
                 env=env,
                 timeout=300,  # 5 minute timeout
             )
-        except subprocess.TimeoutExpired:
-            logger.error("Scan script timed out after 5 minutes")
-            return {}
+        except subprocess.TimeoutExpired as exc:
+            msg = "Scan script timed out after 5 minutes"
+            logger.error(msg)
+            raise NetworkScanError(msg) from exc
         except Exception as e:
-            logger.error(f"Failed to execute scan script: {e}")
-            return {}
+            msg = f"Failed to execute scan script: {e}"
+            logger.error(msg)
+            raise NetworkScanError(msg) from e
 
         # Check for errors
         stderr_output = result.stderr.decode('utf-8').strip()
         if result.returncode != 0:
-            logger.error(f"Scan script error (exit {result.returncode}): {stderr_output}")
-            return {}
+            msg = f"Scan script error (exit {result.returncode}): {stderr_output}"
+            logger.error(msg)
+            raise NetworkScanError(msg)
         if stderr_output:
             logger.warning(f"Scan script stderr: {stderr_output}")
 
@@ -91,11 +99,12 @@ class NetworkScanner:
             scan_result = yaml.safe_load(raw_output)
 
             if not isinstance(scan_result, dict):
-                logger.error(
+                msg = (
                     f"Unexpected scan output format (expected dict, got {type(scan_result).__name__}): "
                     f"{raw_output!r}"
                 )
-                return {}
+                logger.error(msg)
+                raise NetworkScanError(msg)
 
             # Normalize: lowercase MACs
             self._scan_results = {
@@ -107,8 +116,9 @@ class NetworkScanner:
             return self._scan_results
 
         except yaml.YAMLError as e:
-            logger.error(f"Failed to parse scan script output: {e}")
-            return {}
+            msg = f"Failed to parse scan script output: {e}"
+            logger.error(msg)
+            raise NetworkScanError(msg) from e
 
     async def update_device_ips(self) -> Dict[str, Any]:
         """Update device IP addresses in the database from scan results.
@@ -116,7 +126,7 @@ class NetworkScanner:
         Returns:
             Statistics dictionary with keys: total, mapped, not_found, errors, error_details.
         """
-        if not self._scan_results:
+        if self._scan_results is None:
             logger.warning("No scan results available. Run run_network_scan() first.")
             return {
                 "total": 0,
