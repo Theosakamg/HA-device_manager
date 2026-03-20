@@ -4,6 +4,7 @@ import logging
 
 from .base import BaseView, get_repos, get_db_path, rate_limit, csrf_protect, emit_activity_log, fmt_entity_label
 from ..provisioning.deploy import deploy, scan
+from ..provisioning.core.scanner import NetworkScanError
 from ..provisioning.utility import update_runtime_configs
 
 _LOGGER = logging.getLogger(__name__)
@@ -83,7 +84,30 @@ class DevicesScanAPIView(BaseView):
         settings = await get_repos(request)["settings"].get_all()
         update_runtime_configs(settings)
         db_path = get_db_path(request)
-        stats = await hass.async_add_executor_job(scan, db_path)
+        try:
+            stats = await hass.async_add_executor_job(scan, db_path)
+        except NetworkScanError as exc:
+            _LOGGER.error("Network scan failed: %s", exc)
+            await emit_activity_log(
+                request,
+                event_type="action",
+                entity_type="scan",
+                message="Network scan failed",
+                result=str(exc),
+                severity="error",
+            )
+            return self.json({"error": str(exc)}, status_code=500)
+        except Exception as exc:
+            _LOGGER.exception("Unexpected error during network scan")
+            await emit_activity_log(
+                request,
+                event_type="action",
+                entity_type="scan",
+                message="Network scan failed unexpectedly",
+                result=str(exc),
+                severity="error",
+            )
+            return self.json({"error": "Internal server error"}, status_code=500)
         await emit_activity_log(
             request,
             event_type="action",
