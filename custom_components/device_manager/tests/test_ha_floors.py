@@ -4,33 +4,17 @@ Validates floor ID generation and the controller's sync / rollback logic
 without requiring a live Home Assistant instance.
 """
 
-import importlib.util
 import sys
 import types
-from pathlib import Path
+
+import helpers  # provided via sys.path by run_tests.py
 
 # ---------------------------------------------------------------------------
 # Minimal stub setup — load only the controller module under test
 # ---------------------------------------------------------------------------
 
-base_dir = Path(__file__).resolve().parents[1]
-
-# Stub aiohttp
-aiohttp_module = types.ModuleType("aiohttp")
-web_module = types.ModuleType("aiohttp.web")
-web_module.Request = object  # type: ignore[attr-defined]
-web_module.Response = object  # type: ignore[attr-defined]
-aiohttp_module.web = web_module  # type: ignore[attr-defined]
-sys.modules.setdefault("aiohttp", aiohttp_module)
-sys.modules.setdefault("aiohttp.web", web_module)
-
-# Stub homeassistant packages
-for mod_name in [
-    "homeassistant",
-    "homeassistant.components",
-    "homeassistant.components.http",
-]:
-    sys.modules.setdefault(mod_name, types.ModuleType(mod_name))
+helpers.stub_ha_modules()
+helpers.stub_aiohttp()
 
 
 class _FakeHAView:
@@ -73,14 +57,11 @@ sys.modules[
 ] = base_ctrl_stub
 
 # Now load the actual module under test
-ctrl_path = base_dir / "controllers" / "ha_floors_controller.py"
-spec = importlib.util.spec_from_file_location(
-    "ha_floors_controller", str(ctrl_path)
+ctrl_module = helpers.load_module(
+    "controllers/ha_floors_controller.py",
+    package="custom_components.device_manager.controllers",
+    module_name="ha_floors_controller",
 )
-assert spec is not None and spec.loader is not None
-ctrl_module = importlib.util.module_from_spec(spec)
-ctrl_module.__package__ = "custom_components.device_manager.controllers"
-spec.loader.exec_module(ctrl_module)  # type: ignore[union-attr]
 
 HaFloorsSyncAPIView = ctrl_module.HaFloorsSyncAPIView
 
@@ -308,3 +289,23 @@ def test_level_resets_per_building():
     # Erwan floors — level resets to 0
     assert synced[2] == {"name": "Erwan - Lvl0", "level": 0}
     assert synced[3] == {"name": "Erwan - Lvl1", "level": 1}
+
+
+# ---------------------------------------------------------------------------
+# Test suite registration
+# ---------------------------------------------------------------------------
+
+SUITE_LABEL = "🏢 HA Floors Controller Tests"
+TEST_SUITE = [
+    ("registry create auto-generates floor_id", test_registry_create_auto_generates_id),
+    ("registry get_floor_by_name found", test_registry_get_floor_by_name_found),
+    ("registry get_floor_by_name missing", test_registry_get_floor_by_name_missing),
+    ("rollback deletes created floors", test_rollback_deletes_created_floors),
+    ("rollback restores updated floors", test_rollback_restores_updated_floors),
+    ("rollback is reversed order", test_rollback_is_reversed_order),
+    ("rollback skips update without original", test_rollback_skips_update_without_original),
+    ("rollback tolerates registry error", test_rollback_tolerates_registry_error),
+    ("create entry floor_id is accessible", test_create_entry_floor_id_is_accessible),
+    ("ha name per building is unique", test_ha_name_per_building_is_unique),
+    ("level resets per building", test_level_resets_per_building),
+]

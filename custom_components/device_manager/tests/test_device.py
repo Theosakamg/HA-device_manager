@@ -6,54 +6,19 @@ the same derived fields as the legacy Device class.
 
 import json
 from pathlib import Path
-import importlib.util
-import sys
-import types
 
-# Load modules by file path to avoid importing package __init__
-# (which requires homeassistant)
-base_dir = Path(__file__).resolve().parents[1]
+import helpers  # provided via sys.path by run_tests.py
 
-# Load case_convert utility
-case_convert_path = base_dir / 'utils' / 'case_convert.py'
-spec = importlib.util.spec_from_file_location('case_convert', str(case_convert_path))
-assert spec is not None and spec.loader is not None, "Cannot load case_convert"
-case_convert = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(case_convert)  # type: ignore[union-attr]
+# ---------------------------------------------------------------------------
+# Bootstrap: load DmDevice model via shared helper
+# ---------------------------------------------------------------------------
 
-# Create mock parent package modules for relative imports
-custom_components_module = types.ModuleType('custom_components')
-device_manager_module = types.ModuleType('device_manager')
-utils_module = types.ModuleType('utils')
-utils_module.case_convert = case_convert  # type: ignore[attr-defined]
-
-sys.modules['custom_components'] = custom_components_module
-sys.modules['custom_components.device_manager'] = device_manager_module
-sys.modules['custom_components.device_manager.utils'] = utils_module
-sys.modules['custom_components.device_manager.utils.case_convert'] = case_convert
-
-# Load base module
-base_path = base_dir / 'models' / 'base.py'
-spec = importlib.util.spec_from_file_location('base_module', str(base_path))
-assert spec is not None and spec.loader is not None, "Cannot load base model"
-base_module = importlib.util.module_from_spec(spec)
-base_module.__package__ = 'custom_components.device_manager.models'
-spec.loader.exec_module(base_module)  # type: ignore[union-attr]
-
-# Load device module
-device_path = base_dir / 'models' / 'device.py'
-spec = importlib.util.spec_from_file_location('device_module', str(device_path))
-assert spec is not None and spec.loader is not None, "Cannot load device model"
-device_module = importlib.util.module_from_spec(spec)
-device_module.__package__ = 'custom_components.device_manager.models'
-sys.modules['custom_components.device_manager.models.base'] = base_module
-spec.loader.exec_module(device_module)  # type: ignore[union-attr]
-
-DmDevice = device_module.DmDevice
-DeviceRoomRef = device_module.DeviceRoomRef
-DeviceFloorRef = device_module.DeviceFloorRef
-DeviceBuildingRef = device_module.DeviceBuildingRef
-DeviceLinkedRefs = device_module.DeviceLinkedRefs
+_m = helpers.load_device_model()
+DmDevice = _m.DmDevice
+DeviceRoomRef = _m.DeviceRoomRef
+DeviceFloorRef = _m.DeviceFloorRef
+DeviceBuildingRef = _m.DeviceBuildingRef
+DeviceLinkedRefs = _m.DeviceLinkedRefs
 
 FIXTURES = Path(__file__).parent / "fixtures" / "devices.json"
 
@@ -141,3 +106,13 @@ def test_compute_derived_fields_from_fixtures():
                 f"FQDN mismatch for {mac}: "
                 f"expected {expected_fqdn}, got {fqdn}"
             )
+
+
+# ---------------------------------------------------------------------------
+# Test suite registration
+# ---------------------------------------------------------------------------
+
+SUITE_LABEL = "📦 Device Model Tests (Legacy Fixtures)"
+TEST_SUITE = [
+    ("compute derived fields from fixtures", test_compute_derived_fields_from_fixtures),
+]

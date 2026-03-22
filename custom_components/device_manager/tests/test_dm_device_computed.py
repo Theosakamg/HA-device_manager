@@ -4,60 +4,18 @@ These tests ensure that computed methods (mqtt_topic, hostname, fqdn)
 maintain their expected format and always return lowercase values.
 """
 
-from pathlib import Path
-import importlib.util
-import sys
-import types
+import helpers  # provided via sys.path by run_tests.py
 
-# Load modules by file path to avoid importing package __init__ (which requires homeassistant)
-base_dir = Path(__file__).resolve().parents[1]
+# ---------------------------------------------------------------------------
+# Bootstrap: load DmDevice model via shared helper
+# ---------------------------------------------------------------------------
 
-# Load case_convert utility
-case_convert_path = base_dir / 'utils' / 'case_convert.py'
-spec = importlib.util.spec_from_file_location('case_convert', str(case_convert_path))
-assert spec is not None and spec.loader is not None, "Cannot load case_convert"
-case_convert = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(case_convert)  # type: ignore[union-attr]
-
-# Load base module with injected dependencies
-base_path = base_dir / 'models' / 'base.py'
-spec = importlib.util.spec_from_file_location('base_module', str(base_path))
-assert spec is not None, "Cannot find spec for base_module"
-base_module = importlib.util.module_from_spec(spec)
-# Create a mock namespace for the relative imports
-# Create parent packages
-custom_components_module = types.ModuleType('custom_components')
-device_manager_module = types.ModuleType('device_manager')
-utils_module = types.ModuleType('utils')
-utils_module.case_convert = case_convert  # type: ignore[attr-defined]
-
-sys.modules['custom_components'] = custom_components_module
-sys.modules['custom_components.device_manager'] = device_manager_module
-sys.modules['custom_components.device_manager.utils'] = utils_module
-sys.modules['custom_components.device_manager.utils.case_convert'] = case_convert
-
-# Set __package__ so relative imports work
-base_module.__package__ = 'custom_components.device_manager.models'
-assert spec.loader is not None, "base_module spec has no loader"
-spec.loader.exec_module(base_module)  # type: ignore[union-attr]
-
-# Load device module
-device_path = base_dir / 'models' / 'device.py'
-spec = importlib.util.spec_from_file_location('device_module', str(device_path))
-assert spec is not None and spec.loader is not None, "Cannot load device_module"
-device_module = importlib.util.module_from_spec(spec)
-# Set __package__ so relative imports work
-device_module.__package__ = 'custom_components.device_manager.models'
-# Add base module to sys.modules so device can import it
-sys.modules['custom_components.device_manager.models.base'] = base_module
-spec.loader.exec_module(device_module)  # type: ignore[union-attr]
-
-# Import classes
-DmDevice = device_module.DmDevice
-DeviceRoomRef = device_module.DeviceRoomRef
-DeviceFloorRef = device_module.DeviceFloorRef
-DeviceBuildingRef = device_module.DeviceBuildingRef
-DeviceLinkedRefs = device_module.DeviceLinkedRefs
+_m = helpers.load_device_model()
+DmDevice = _m.DmDevice
+DeviceRoomRef = _m.DeviceRoomRef
+DeviceFloorRef = _m.DeviceFloorRef
+DeviceBuildingRef = _m.DeviceBuildingRef
+DeviceLinkedRefs = _m.DeviceLinkedRefs
 
 
 def create_test_device(
@@ -236,3 +194,24 @@ def test_to_camel_dict_full_includes_computed():
         assert hostname == hostname.lower(), f"hostname must be lowercase: {hostname}"
     if fqdn:
         assert fqdn == fqdn.lower(), f"fqdn must be lowercase: {fqdn}"
+
+
+# ---------------------------------------------------------------------------
+# Test suite registration
+# ---------------------------------------------------------------------------
+
+SUITE_LABEL = "🔧 DmDevice Computed Methods Tests"
+TEST_SUITE = [
+    ("mqtt_topic format & lowercase", test_mqtt_topic_format),
+    ("mqtt_topic None when missing building", test_mqtt_topic_returns_none_when_missing_building),
+    ("mqtt_topic structure (5 segments)", test_mqtt_topic_structure),
+    ("hostname format & lowercase", test_hostname_format),
+    ("hostname None when missing building", test_hostname_returns_none_when_missing_building),
+    ("fqdn format & lowercase", test_fqdn_format),
+    ("fqdn custom suffix", test_fqdn_custom_suffix),
+    ("display_name full hierarchy", test_display_name_full),
+    ("display_name fallback to MAC", test_display_name_fallback_to_mac),
+    ("link with full IP", test_link_with_full_ip),
+    ("link with numeric IP", test_link_with_numeric_ip),
+    ("to_camel_dict_full includes computed fields", test_to_camel_dict_full_includes_computed),
+]

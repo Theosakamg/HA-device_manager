@@ -4,37 +4,17 @@ Validates entity ID generation, slugification, domain mapping and group naming
 without requiring a live Home Assistant instance.
 """
 
-import importlib.util
 import sys
 import types
-from pathlib import Path
+
+import helpers  # provided via sys.path by run_tests.py
 
 # ---------------------------------------------------------------------------
 # Minimal stub setup — load only the controller module under test
 # ---------------------------------------------------------------------------
 
-base_dir = Path(__file__).resolve().parents[1]
-
-# The controller only imports `aiohttp.web` and `.base` at top-level.
-# We mock them so the module loads without a real HA environment.
-
-# Stub aiohttp
-aiohttp_module = types.ModuleType("aiohttp")
-web_module = types.ModuleType("aiohttp.web")
-web_module.Request = object  # type: ignore[attr-defined]
-web_module.Response = object  # type: ignore[attr-defined]
-aiohttp_module.web = web_module  # type: ignore[attr-defined]
-sys.modules.setdefault("aiohttp", aiohttp_module)
-sys.modules.setdefault("aiohttp.web", web_module)
-
-# Stub homeassistant packages
-for mod_name in [
-    "homeassistant",
-    "homeassistant.components",
-    "homeassistant.components.http",
-]:
-    sys.modules.setdefault(mod_name, types.ModuleType(mod_name))
-
+helpers.stub_ha_modules()
+helpers.stub_aiohttp()
 
 class _FakeHAView:
     requires_auth = True
@@ -73,14 +53,11 @@ sys.modules[
 ] = base_ctrl_stub
 
 # Now load the actual module under test
-ctrl_path = base_dir / "controllers" / "ha_groups_controller.py"
-spec = importlib.util.spec_from_file_location(
-    "ha_groups_controller", str(ctrl_path)
+ctrl_module = helpers.load_module(
+    "controllers/ha_groups_controller.py",
+    package="custom_components.device_manager.controllers",
+    module_name="ha_groups_controller",
 )
-assert spec is not None and spec.loader is not None
-ctrl_module = importlib.util.module_from_spec(spec)
-ctrl_module.__package__ = "custom_components.device_manager.controllers"
-spec.loader.exec_module(ctrl_module)  # type: ignore[union-attr]
 
 # Grab helpers
 _slugify = ctrl_module._slugify
@@ -185,3 +162,37 @@ def test_floor_group_has_building_prefix():
 def test_building_group_has_building_prefix():
     obj = _building_group_object_id("myHome", "shutters")
     assert obj.startswith("my")
+
+
+# ---------------------------------------------------------------------------
+# Test suite registration
+# ---------------------------------------------------------------------------
+
+SUITE_LABEL = "🏠 HA Groups Controller Tests"
+TEST_SUITE = [
+    ("slugify basic", test_slugify_basic),
+    ("slugify spaces", test_slugify_spaces),
+    ("slugify special chars", test_slugify_special_chars),
+    ("slugify multiple separators", test_slugify_multiple_separators),
+    ("ha_domain light", test_ha_domain_light),
+    ("ha_domain shutter → cover", test_ha_domain_shutter),
+    ("ha_domain heater → climate", test_ha_domain_heater),
+    ("ha_domain tv → media_player", test_ha_domain_tv),
+    ("ha_domain button → binary_sensor", test_ha_domain_button),
+    ("ha_domain energy → sensor", test_ha_domain_energy),
+    ("ha_domain unknown → switch", test_ha_domain_unknown_defaults_to_switch),
+    ("ha_domain case insensitive", test_ha_domain_case_insensitive),
+    ("plural light", test_plural_light),
+    ("plural shutter", test_plural_shutter),
+    ("plural unknown appends s", test_plural_unknown_appends_s),
+    ("device entity_id standard", test_device_entity_id_standard),
+    ("device entity_id matches hostname pattern", test_device_entity_id_matches_hostname_pattern),
+    ("device entity_id uppercase building", test_device_entity_id_uppercase_building),
+    ("device entity_id empty position omitted", test_device_entity_id_empty_position_omitted),
+    ("room group entity_id", test_room_group_entity_id),
+    ("floor group entity_id", test_floor_group_entity_id),
+    ("building group entity_id", test_building_group_entity_id),
+    ("room group special chars", test_room_group_special_chars),
+    ("floor group has building prefix", test_floor_group_has_building_prefix),
+    ("building group has building prefix", test_building_group_has_building_prefix),
+]

@@ -5,39 +5,19 @@ returning an empty dict, so callers can handle errors explicitly.
 """
 
 import asyncio
-import importlib.util
-import re
 import subprocess
 import sys
 import types
-from contextlib import contextmanager
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import helpers  # provided via sys.path by run_tests.py
 
-@contextmanager
-def assert_raises(expected_exc, match: str = ""):
-    """Stdlib-only replacement for pytest.raises with optional message match."""
-    try:
-        yield
-    except expected_exc as exc:  # type: ignore[misc]
-        if match and not re.search(match, str(exc)):
-            raise AssertionError(
-                f"{expected_exc.__name__} raised but message {str(exc)!r} "
-                f"did not match pattern {match!r}"
-            ) from exc
-        return
-    except Exception as exc:
-        raise AssertionError(
-            f"Expected {expected_exc.__name__}, got {type(exc).__name__}: {exc}"
-        ) from exc
-    raise AssertionError(f"{expected_exc.__name__} was not raised")
+# Re-export assert_raises from helpers so existing test code using it works
+assert_raises = helpers.assert_raises
 
 # ---------------------------------------------------------------------------
 # Bootstrap: load scanner module without importing the full HA package
 # ---------------------------------------------------------------------------
-
-base_dir = Path(__file__).resolve().parents[1]
 
 # Stub out all transitive dependencies
 _yaml_stub = types.ModuleType("yaml")
@@ -48,11 +28,10 @@ class _YAMLError(Exception):
 
 _yaml_stub.YAMLError = _YAMLError  # type: ignore[attr-defined]
 
+helpers.stub_ha_modules()
+
 for _mod_name, _mod in [
     ("yaml", _yaml_stub),
-    ("homeassistant", types.ModuleType("homeassistant")),
-    ("homeassistant.components", types.ModuleType("homeassistant.components")),
-    ("homeassistant.components.http", types.ModuleType("homeassistant.components.http")),
 ]:
     sys.modules.setdefault(_mod_name, _mod)
 
@@ -80,12 +59,11 @@ for _k, _v in [
     sys.modules.setdefault(_k, _v)
 
 # Load scanner module
-_scanner_path = base_dir / "provisioning" / "core" / "scanner.py"
-_spec = importlib.util.spec_from_file_location("scanner_module", str(_scanner_path))
-assert _spec and _spec.loader
-_scanner_module = importlib.util.module_from_spec(_spec)
-_scanner_module.__package__ = "custom_components.device_manager.provisioning.core"
-_spec.loader.exec_module(_scanner_module)  # type: ignore[union-attr]
+_scanner_module = helpers.load_module(
+    "provisioning/core/scanner.py",
+    package="custom_components.device_manager.provisioning.core",
+    module_name="scanner_module",
+)
 
 NetworkScanner = _scanner_module.NetworkScanner  # type: ignore[attr-defined]
 NetworkScanError = _scanner_module.NetworkScanError  # type: ignore[attr-defined]
@@ -228,3 +206,21 @@ def test_update_device_ips_with_empty_scan_proceeds():
 
     assert result["errors"] == 0
     assert result["total"] == 0
+
+
+# ---------------------------------------------------------------------------
+# Test suite registration
+# ---------------------------------------------------------------------------
+
+SUITE_LABEL = "📡 Network Scanner Error Propagation Tests"
+TEST_SUITE = [
+    ("missing script config raises", test_missing_scan_script_raises),
+    ("timeout raises NetworkScanError", test_timeout_raises),
+    ("subprocess exception raises", test_subprocess_exception_raises),
+    ("nonzero exit code raises", test_nonzero_exit_raises),
+    ("invalid YAML output raises", test_invalid_yaml_raises),
+    ("non-dict output raises", test_non_dict_output_raises),
+    ("successful scan returns dict", test_successful_scan_returns_dict),
+    ("update_device_ips without scan returns error", test_update_device_ips_without_scan_returns_error),
+    ("update_device_ips with empty scan proceeds", test_update_device_ips_with_empty_scan_proceeds),
+]

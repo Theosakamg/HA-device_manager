@@ -5,29 +5,19 @@ production controller so they exercise the real code path instead of
 a local copy.
 """
 
-import importlib.util
 import io
 import sys
 import types
 import zipfile
-from pathlib import Path
+
+import helpers  # provided via sys.path by run_tests.py
 
 # ---------------------------------------------------------------------------
 # Bootstrap: load maintenance_controller without importing the full HA package
 # ---------------------------------------------------------------------------
 
-base_dir = Path(__file__).resolve().parents[1]
-
-_ha_http = types.ModuleType("homeassistant.components.http")
-_ha_http.HomeAssistantView = object  # type: ignore[attr-defined]
-for _mod_name, _mod in [
-    ("homeassistant", types.ModuleType("homeassistant")),
-    ("homeassistant.components", types.ModuleType("homeassistant.components")),
-    ("homeassistant.components.http", _ha_http),
-    ("aiohttp", types.ModuleType("aiohttp")),
-    ("aiohttp.web", types.ModuleType("aiohttp.web")),
-]:
-    sys.modules.setdefault(_mod_name, _mod)  # type: ignore[arg-type]
+helpers.stub_ha_modules()
+helpers.stub_aiohttp()
 
 _base_stub = types.ModuleType("custom_components.device_manager.controllers.base")
 _base_stub.BaseView = object  # type: ignore[attr-defined]
@@ -52,12 +42,11 @@ for _mod_name, _mod in [
 ]:
     sys.modules.setdefault(_mod_name, _mod)  # type: ignore[arg-type]
 
-_ctrl_path = base_dir / "controllers" / "maintenance_controller.py"
-_spec = importlib.util.spec_from_file_location("maintenance_controller", str(_ctrl_path))
-assert _spec and _spec.loader
-_ctrl_module = importlib.util.module_from_spec(_spec)
-_ctrl_module.__package__ = "custom_components.device_manager.controllers"
-_spec.loader.exec_module(_ctrl_module)  # type: ignore[union-attr]
+_ctrl_module = helpers.load_module(
+    "controllers/maintenance_controller.py",
+    package="custom_components.device_manager.controllers",
+    module_name="maintenance_controller",
+)
 
 # The real production function under test
 generate_mosquitto_files = _ctrl_module.generate_mosquitto_files  # type: ignore[attr-defined]
@@ -170,3 +159,23 @@ def test_room_with_none_password_skipped():
     assert "user_ok:pass_ok" in passwd
     assert "user_bad" not in passwd
     assert "room_bad" not in acl
+
+
+# ---------------------------------------------------------------------------
+# Test suite registration
+# ---------------------------------------------------------------------------
+
+SUITE_LABEL = "📡 Mosquitto Config Generation Tests"
+TEST_SUITE = [
+    ("passwd contains room credentials", test_passwd_contains_room_credentials),
+    ("passwd contains admin", test_passwd_contains_admin),
+    ("acl room topic format", test_acl_room_topic_format),
+    ("acl admin full access", test_acl_admin_full_access),
+    ("room without credentials skipped", test_room_without_credentials_skipped),
+    ("mosquitto.conf references correct paths", test_mosquitto_conf_references_correct_paths),
+    ("zip contains three files", test_zip_contains_three_files),
+    ("mqtt prefix leading slash stripped", test_mqtt_prefix_leading_slash_stripped),
+    ("empty hierarchy only admin", test_empty_hierarchy_only_admin),
+    ("no admin password skips admin entry", test_no_admin_password_skips_admin_entry),
+    ("room with None password skipped", test_room_with_none_password_skipped),
+]

@@ -1,64 +1,48 @@
 """Tests for CSV import functionality."""
 
 import asyncio
-from pathlib import Path
-import tempfile
-import importlib.util
 import sys
 import types
+from pathlib import Path
+import tempfile
 
-# Load modules by file path to avoid importing package __init__
-# (which requires homeassistant)
-base_dir = Path(__file__).resolve().parents[1]
+import helpers  # provided via sys.path by run_tests.py
 
-# Load database_manager
-db_manager_path = base_dir / 'services' / 'database_manager.py'
-spec = importlib.util.spec_from_file_location('database_manager', str(db_manager_path))
-assert spec is not None and spec.loader is not None, "Cannot load database_manager"
-database_manager_module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(database_manager_module)  # type: ignore[union-attr]
+# ---------------------------------------------------------------------------
+# Bootstrap: load services and repositories without importing the full HA package
+# ---------------------------------------------------------------------------
+
+database_manager_module = helpers.load_module("services/database_manager.py")
 DatabaseManager = database_manager_module.DatabaseManager  # type: ignore[attr-defined]
 
-# Load csv_import_service
-csv_import_path = base_dir / 'services' / 'csv_import_service.py'
-spec = importlib.util.spec_from_file_location('csv_import_service', str(csv_import_path))
-assert spec is not None and spec.loader is not None, "Cannot load csv_import_service"
-csv_import_module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(csv_import_module)  # type: ignore[union-attr]
+csv_import_module = helpers.load_module("services/csv_import_service.py")
 CSVImportService = csv_import_module.CSVImportService  # type: ignore[attr-defined]
 
-# Load repositories
-base_repo_path = base_dir / 'repositories' / 'base.py'
-spec = importlib.util.spec_from_file_location('base_repository', str(base_repo_path))
-assert spec is not None, "Cannot find spec for base_repository"
-base_repo_module = importlib.util.module_from_spec(spec)
+# Inject package namespace for relative imports in repositories
+_cm = types.ModuleType("custom_components")
+_dm = types.ModuleType("custom_components.device_manager")
+_svc = types.ModuleType("custom_components.device_manager.services")
+_svc.database_manager = database_manager_module  # type: ignore[attr-defined]
 
-# Create mock modules for relative imports in repositories
-custom_components_module = types.ModuleType('custom_components')
-device_manager_module = types.ModuleType('device_manager')
-services_module = types.ModuleType('services')
-services_module.database_manager = database_manager_module  # type: ignore[attr-defined]
+sys.modules["custom_components"] = _cm
+sys.modules["custom_components.device_manager"] = _dm
+sys.modules["custom_components.device_manager.services"] = _svc
+sys.modules["custom_components.device_manager.services.database_manager"] = database_manager_module
 
-sys.modules['custom_components'] = custom_components_module
-sys.modules['custom_components.device_manager'] = device_manager_module
-sys.modules['custom_components.device_manager.services'] = services_module
-sys.modules['custom_components.device_manager.services.database_manager'] = database_manager_module
-
-base_repo_module.__package__ = 'custom_components.device_manager.repositories'
-assert spec is not None and spec.loader is not None, "Cannot load base_repository"
-spec.loader.exec_module(base_repo_module)  # type: ignore[union-attr]
+base_repo_module = helpers.load_module(
+    "repositories/base.py",
+    package="custom_components.device_manager.repositories",
+)
 
 
 # Load individual repository modules
 def load_repository(repo_name: str):
     """Load a repository module."""
-    repo_path = base_dir / 'repositories' / f'{repo_name}.py'
-    spec = importlib.util.spec_from_file_location(repo_name, str(repo_path))
-    assert spec is not None and spec.loader is not None, f"Cannot load {repo_name}"
-    repo_module = importlib.util.module_from_spec(spec)
-    repo_module.__package__ = 'custom_components.device_manager.repositories'
-    sys.modules['custom_components.device_manager.repositories.base'] = base_repo_module
-    spec.loader.exec_module(repo_module)  # type: ignore[union-attr]
+    sys.modules["custom_components.device_manager.repositories.base"] = base_repo_module
+    return helpers.load_module(
+        f"repositories/{repo_name}.py",
+        package="custom_components.device_manager.repositories",
+    )
 
 
 SAMPLE_CSV = Path(__file__).resolve().parents[2] / "samples" / "Electrique - Domotique.csv"
@@ -108,3 +92,13 @@ def test_csv_import_to_db():
             )
 
     asyncio.run(coro())
+
+
+# ---------------------------------------------------------------------------
+# Test suite registration
+# ---------------------------------------------------------------------------
+
+SUITE_LABEL = "📥 CSV Import Tests"
+TEST_SUITE = [
+    ("csv import to database", test_csv_import_to_db),
+]

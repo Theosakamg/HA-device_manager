@@ -10,24 +10,15 @@ Covers all accepted identifier formats:
 
 import sys
 import types
-import importlib.util
-from pathlib import Path
+
+import helpers  # provided via sys.path by run_tests.py
 
 
 def _load_device_controller():
     """Load device_controller.py with all HA/aiohttp dependencies mocked."""
-    base_dir = Path(__file__).resolve().parents[1]
+    helpers.stub_aiohttp()
+    helpers.stub_ha_modules()
 
-    # Mock aiohttp
-    aiohttp_mod = types.ModuleType("aiohttp")
-    web_mod = types.ModuleType("aiohttp.web")
-    web_mod.Request = object  # type: ignore[attr-defined]
-    web_mod.Response = object  # type: ignore[attr-defined]
-    aiohttp_mod.web = web_mod  # type: ignore[attr-defined]
-    sys.modules.setdefault("aiohttp", aiohttp_mod)
-    sys.modules.setdefault("aiohttp.web", web_mod)
-
-    # Ensure package namespace exists
     for pkg in (
         "custom_components",
         "custom_components.device_manager",
@@ -64,16 +55,11 @@ def _load_device_controller():
     case_convert_mod.to_snake_case_dict = lambda d: d  # type: ignore[attr-defined]
     sys.modules["custom_components.device_manager.utils.case_convert"] = case_convert_mod
 
-    controller_path = base_dir / "controllers" / "device_controller.py"
-    spec = importlib.util.spec_from_file_location(
-        "custom_components.device_manager.controllers.device_controller",
-        str(controller_path),
+    return helpers.load_module(
+        "controllers/device_controller.py",
+        package="custom_components.device_manager.controllers",
+        module_name="custom_components.device_manager.controllers.device_controller",
     )
-    assert spec is not None and spec.loader is not None, "Cannot load device_controller"
-    mod = importlib.util.module_from_spec(spec)
-    mod.__package__ = "custom_components.device_manager.controllers"
-    spec.loader.exec_module(mod)  # type: ignore[union-attr]
-    return mod
 
 
 _ctrl = _load_device_controller()
@@ -150,3 +136,25 @@ def test_short_eui64_rejected():
 
 def test_eui64_wrong_prefix_rejected():
     assert not _is_valid_identifier("00124b0025156aca")         # 16 hex but no 0x prefix
+
+
+# ---------------------------------------------------------------------------
+# Test suite registration
+# ---------------------------------------------------------------------------
+
+SUITE_LABEL = "🔒 Identifier Validation Tests"
+TEST_SUITE = [
+    ("MAC colon uppercase", test_mac_colon_uppercase),
+    ("MAC colon lowercase", test_mac_colon_lowercase),
+    ("MAC hyphen", test_mac_hyphen),
+    ("MAC compact", test_mac_compact),
+    ("EUI-64 colon", test_eui64_colon),
+    ("Zigbee EUI-64 (0x...)", test_zigbee_eui64_hex_prefix),
+    ("empty string rejected", test_empty_string_rejected),
+    ("plain text rejected", test_plain_text_rejected),
+    ("non-hex chars rejected", test_non_hex_chars_rejected),
+    ("IP address rejected", test_ip_address_rejected),
+    ("short MAC rejected", test_short_mac_rejected),
+    ("short EUI-64 rejected", test_short_eui64_rejected),
+    ("EUI-64 without 0x rejected", test_eui64_wrong_prefix_rejected),
+]

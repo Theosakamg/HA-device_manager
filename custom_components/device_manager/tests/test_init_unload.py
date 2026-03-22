@@ -179,3 +179,25 @@ class TestAsyncUnloadEntry(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ---------------------------------------------------------------------------
+# Test suite registration
+# ---------------------------------------------------------------------------
+
+def _make_unload_test(method_name: str):
+    """Wrap a TestAsyncUnloadEntry method so setUp() is called first."""
+    def _run():
+        inst = TestAsyncUnloadEntry()
+        inst.setUp()
+        getattr(inst, method_name)()
+    return _run
+
+
+SUITE_LABEL = "🔌 Integration Unload Tests"
+TEST_SUITE = [
+    ("async_remove_panel called on unload", _make_unload_test("test_async_remove_panel_called_on_unload")),
+    ("db closed on unload", _make_unload_test("test_db_closed_on_unload")),
+    ("hass.data cleared on unload", _make_unload_test("test_hass_data_cleared_on_unload")),
+    ("unload returns True", _make_unload_test("test_unload_returns_true")),
+]

@@ -4,33 +4,17 @@ Validates the controller's sync / rollback logic without requiring a live
 Home Assistant instance.
 """
 
-import importlib.util
 import sys
 import types
-from pathlib import Path
+
+import helpers  # provided via sys.path by run_tests.py
 
 # ---------------------------------------------------------------------------
 # Minimal stub setup — load only the controller module under test
 # ---------------------------------------------------------------------------
 
-base_dir = Path(__file__).resolve().parents[1]
-
-# Stub aiohttp
-aiohttp_module = types.ModuleType("aiohttp")
-web_module = types.ModuleType("aiohttp.web")
-web_module.Request = object  # type: ignore[attr-defined]
-web_module.Response = object  # type: ignore[attr-defined]
-aiohttp_module.web = web_module  # type: ignore[attr-defined]
-sys.modules.setdefault("aiohttp", aiohttp_module)
-sys.modules.setdefault("aiohttp.web", web_module)
-
-# Stub homeassistant packages
-for mod_name in [
-    "homeassistant",
-    "homeassistant.components",
-    "homeassistant.components.http",
-]:
-    sys.modules.setdefault(mod_name, types.ModuleType(mod_name))
+helpers.stub_ha_modules()
+helpers.stub_aiohttp()
 
 
 class _FakeHAView:
@@ -73,14 +57,11 @@ sys.modules[
 ] = base_ctrl_stub
 
 # Now load the actual module under test
-ctrl_path = base_dir / "controllers" / "ha_rooms_controller.py"
-spec = importlib.util.spec_from_file_location(
-    "ha_rooms_controller", str(ctrl_path)
+ctrl_module = helpers.load_module(
+    "controllers/ha_rooms_controller.py",
+    package="custom_components.device_manager.controllers",
+    module_name="ha_rooms_controller",
 )
-assert spec is not None and spec.loader is not None
-ctrl_module = importlib.util.module_from_spec(spec)
-ctrl_module.__package__ = "custom_components.device_manager.controllers"
-spec.loader.exec_module(ctrl_module)  # type: ignore[union-attr]
 
 HaRoomsSyncAPIView = ctrl_module.HaRoomsSyncAPIView
 _compute_area_id = ctrl_module._compute_area_id
@@ -355,3 +336,29 @@ def test_rollback_multiple_rooms_reversed():
         f"delete:{e1.id}",
         f"delete:{e0.id}",
     ]
+
+
+# ---------------------------------------------------------------------------
+# Test suite registration
+# ---------------------------------------------------------------------------
+
+SUITE_LABEL = "🚪 HA Rooms Controller Tests"
+TEST_SUITE = [
+    ("registry create auto-generates area id", test_registry_create_auto_generates_id),
+    ("registry create with floor_id", test_registry_create_with_floor_id),
+    ("registry get_area_by_name missing", test_registry_get_area_by_name_missing),
+    ("rollback deletes created areas", test_rollback_deletes_created_areas),
+    ("rollback restores updated areas", test_rollback_restores_updated_areas),
+    ("rollback is reversed order", test_rollback_is_reversed_order),
+    ("rollback skips update without original", test_rollback_skips_update_without_original),
+    ("rollback multiple rooms reversed", test_rollback_multiple_rooms_reversed),
+    ("compute_area_id basic", test_compute_area_id_basic),
+    ("slugify fallback ascii", test_slugify_fallback_ascii),
+    ("compute_area_id special chars", test_compute_area_id_special_chars),
+    ("registry create then update name keeps id", test_registry_create_then_update_name_keeps_id),
+    ("compute_area_id matches registry create id", test_compute_area_id_matches_registry_create_id),
+    ("registry get_area by id found", test_registry_get_area_by_id_found),
+    ("registry get_area missing", test_registry_get_area_missing),
+    ("duplicate name detection", test_duplicate_name_detection),
+    ("unique name not marked duplicate", test_unique_name_not_marked_duplicate),
+]
