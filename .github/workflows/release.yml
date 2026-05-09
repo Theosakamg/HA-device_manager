@@ -15,14 +15,14 @@ jobs:
     name: Backend Quality Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/quality-backend
 
   quality-frontend:
     name: Frontend Quality Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/quality-frontend
 
   # ── HACS Validation ────────────────────────────────────────────────────────
@@ -31,7 +31,7 @@ jobs:
     name: Validate HACS
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: HACS validation
         uses: hacs/action@main
@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [quality-backend, quality-frontend, validate-hacs]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -72,7 +72,7 @@ jobs:
           sed -i 's/"version": ".*"/"version": "${{ steps.version.outputs.VERSION }}"/' frontend/package.json
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "24"
           cache: "npm"
