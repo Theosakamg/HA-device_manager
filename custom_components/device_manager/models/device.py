@@ -239,6 +239,29 @@ class DmDevice(SerializableMixin):
 
         return f"http://{self.ip}"
 
+
+    def mqtt_topic_base(self) -> Optional[str]:
+        """Return the base MQTT topic for this device, without position.
+
+        Format: ``{building_slug}/{floor_slug}/{room_slug}``
+
+        Returns:
+            The base MQTT topic string or ``None`` when required transient data is missing.
+        """
+        if (
+            not self._building.slug
+            or not self._floor.slug
+            or not self._room.slug
+        ):
+            return None
+
+        return (
+            f"{self._building.slug}"
+            f"/{self._floor.slug}"
+            f"/{self._room.slug}"
+        ).lower()
+
+
     def mqtt_topic(self) -> Optional[str]:
         """Return the MQTT topic for this device.
 
@@ -248,18 +271,14 @@ class DmDevice(SerializableMixin):
             The MQTT topic string or ``None`` when required transient data is missing.
         """
         if (
-            not self._building.slug
-            or not self._floor.slug
-            or not self._room.slug
-            or not self._refs.function_name
+            not self._refs.function_name
+            or not self.position_slug
         ):
             return None
 
         function_slug = self._refs.function_name.lower().replace(" ", "_")
         return (
-            f"{self._building.slug}"
-            f"/{self._floor.slug}"
-            f"/{self._room.slug}"
+            f"{self.mqtt_topic_base()}"
             f"/{function_slug}"
             f"/{self.position_slug}"
         ).lower()

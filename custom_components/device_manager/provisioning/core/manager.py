@@ -29,7 +29,7 @@ class ProvisioningManager:
             db: DatabaseManager instance (must be already initialized).
         """
         self.db = db
-        self._devices: List[DmDevice] = []
+        self._all_devices: List[DmDevice] = []
         self._settings: dict = {}
 
     async def load_devices(
@@ -54,6 +54,7 @@ class ProvisioningManager:
         try:
             # Load all devices with joins (transient fields populated)
             devices = await repo.find_all()
+            self._all_devices = devices  # Store all devices for later access
 
             # Apply filters
             if enabled_only:
@@ -66,10 +67,9 @@ class ProvisioningManager:
                 mac_filter_lower = [m.lower().strip() for m in mac_filter]
                 devices = [d for d in devices if d.mac.lower() in mac_filter_lower]
 
-            self._devices = devices
-            logger.debug(f"Loaded {len(self._devices)} devices from database")
+            logger.debug(f"Loaded {len(devices)} devices from database")
 
-            return self._devices
+            return devices
 
         except Exception as e:
             logger.error(f"Failed to load devices: {e}")
@@ -103,7 +103,21 @@ class ProvisioningManager:
         Returns:
             List of DmDevice instances.
         """
-        return self._devices
+        return self._all_devices
+
+    def get_device_by_id(self, device_id: int) -> Optional[DmDevice]:
+        """Get a specific device by its ID.
+
+        Args:
+            device_id: The ID of the device to retrieve.
+
+        Returns:
+            DmDevice instance if found, else None.
+        """
+        for device in self._all_devices:
+            if device.id == device_id:
+                return device
+        return None
 
     async def load_settings(self) -> dict:
         """Load application settings from the database.

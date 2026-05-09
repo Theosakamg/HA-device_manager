@@ -6,6 +6,7 @@ maintain their expected format and always return lowercase values.
 
 import helpers  # provided via sys.path by run_tests.py
 
+
 # ---------------------------------------------------------------------------
 # Bootstrap: load DmDevice model via shared helper
 # ---------------------------------------------------------------------------
@@ -65,8 +66,8 @@ def test_mqtt_topic_format():
     assert result == result.lower(), "MQTT topic must be lowercase"
 
 
-def test_mqtt_topic_returns_none_when_missing_building():
-    """Test MQTT topic returns None when building_slug is missing."""
+def test_mqtt_topic_base_returns_none_when_missing_building():
+    """Test MQTT topic base returns None when building_slug is missing."""
     device = DmDevice(
         mac="AA:BB:CC:DD:EE:FF",
         position_slug="main",
@@ -74,8 +75,21 @@ def test_mqtt_topic_returns_none_when_missing_building():
         _room=DeviceRoomRef(slug="room"),
         _refs=DeviceLinkedRefs(function_name="Light"),
     )
-    result = device.mqtt_topic()
+    result = device.mqtt_topic_base()
     assert result is None, f"Should return None when building_slug is missing, got: {result}"
+
+
+def test_mqtt_topic_returns_none_when_missing_position():
+    """Test MQTT topic returns None when position_slug is missing."""
+    device = DmDevice(
+        mac="AA:BB:CC:DD:EE:FF",
+        _building=DeviceBuildingRef(slug="main"),
+        _floor=DeviceFloorRef(slug="L1"),
+        _room=DeviceRoomRef(slug="room"),
+        _refs=DeviceLinkedRefs(function_name="Light"),
+    )
+    result = device.mqtt_topic()
+    assert result is None, f"Should return None when position_slug is missing, got: {result}"
 
 
 def test_mqtt_topic_structure():
@@ -203,7 +217,8 @@ def test_to_camel_dict_full_includes_computed():
 SUITE_LABEL = "🔧 DmDevice Computed Methods Tests"
 TEST_SUITE = [
     ("mqtt_topic format & lowercase", test_mqtt_topic_format),
-    ("mqtt_topic None when missing building", test_mqtt_topic_returns_none_when_missing_building),
+    ("mqtt_topic None when missing building", test_mqtt_topic_base_returns_none_when_missing_building),
+    ("mqtt_topic None when missing position", test_mqtt_topic_returns_none_when_missing_position),
     ("mqtt_topic structure (5 segments)", test_mqtt_topic_structure),
     ("hostname format & lowercase", test_hostname_format),
     ("hostname None when missing building", test_hostname_returns_none_when_missing_building),

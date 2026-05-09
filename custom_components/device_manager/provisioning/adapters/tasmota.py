@@ -508,10 +508,20 @@ class TasmotaAdapter(FirmwareAdapter):
         Returns:
             Target MQTT topic or None.
         """
-        # In the refactored version, the repository should resolve target devices
-        # For now, we'll just return a placeholder
-        # TODO: Implement proper target resolution in ProvisioningManager
-        return None
+
+        target_topic = None
+
+        if device.target_id:
+            target_device = self.manager.get_device_by_id(device.target_id)
+
+            if target_device:
+                mqtt_topic_base = target_device.mqtt_topic_base()
+                mqtt_topic_full = target_device.mqtt_topic()
+                target_topic = mqtt_topic_full.replace(mqtt_topic_base, '').lstrip('/')
+            else:
+                logger.warning(f"Target device with ID {device.target_id} not found for {device.mac}")
+        
+        return target_topic
 
     def _configure_light(self, device: DmDevice) -> None:
         """Configure light-specific settings.
