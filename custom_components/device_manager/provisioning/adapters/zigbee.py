@@ -319,17 +319,26 @@ class ZigbeeAdapter(FirmwareAdapter):
 
         for device in self.devices_to_configure:
             ieee = device.mac.lower()
-            friendly_name = device.hostname() or f"zigbee_{device.mac.replace(':', '_')}"
+            mqtt_topic = device.mqtt_topic()
+            display_name = device.display_name()
 
-            config[ieee] = {
+            # friendly_name should be the MQTT topic
+            friendly_name = mqtt_topic or f"zigbee_{device.mac.replace(':', '_')}"
+
+            device_config: Dict[str, Any] = {
                 'friendly_name': friendly_name,
-                'retain': True,
+                'homeassistant': {
+                    'name': display_name,
+                }
             }
 
-            # Add MQTT topic if available
-            mqtt_topic = device.mqtt_topic()
-            if mqtt_topic:
-                config[ieee]['mqtt_topic'] = mqtt_topic
+            # Add suggested_area if room name is available
+            if device._room.name:
+                device_config['homeassistant']['device'] = {
+                    'suggested_area': device._room.name
+                }
+
+            config[ieee] = device_config
 
         return config
 
