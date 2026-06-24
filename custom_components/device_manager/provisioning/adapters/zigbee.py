@@ -263,16 +263,13 @@ class ZigbeeAdapter(FirmwareAdapter):
 
         logger.info(f"Configuring {len(self.devices_to_configure)} Zigbee devices")
 
-        # Build device configuration
+        # Build device configuration - only for the devices being deployed
         zigbee_config = self._build_devices_config()
 
-        # Merge with existing configuration
-        existing_config: dict[str, object] = {}
-        if os.path.exists(ZIGBEE_CONFIG_FILE):
-            with open(ZIGBEE_CONFIG_FILE, 'r') as f:
-                raw_config = yaml.safe_load(f)
-                existing_config = raw_config if isinstance(raw_config, dict) else {}
+        # Download existing configuration from bridge to avoid losing other devices
+        existing_config = self._download_config_from_bridge()
 
+        # Merge: keep existing devices and update/add only the new ones
         merged_config = {**existing_config, **zigbee_config}
 
         # Write merged configuration
@@ -368,6 +365,59 @@ class ZigbeeAdapter(FirmwareAdapter):
             logger.error(f"Failed to push config file (exit {result.returncode}): {stderr_output}")
         else:
             logger.info("Config file pushed successfully.")
+
+    def _download_config_from_bridge(self) -> Dict[str, object]:
+        """Download existing device configuration from Zigbee2MQTT bridge.
+
+        This ensures we preserve devices that were already configured on the bridge.
+
+        Returns:
+            Dictionary of existing device configurations, or empty dict if not available.
+        """
+        bridge_config_path = get_config('BRIDGE_DEVICES_CONFIG_PATH', None)
+        bridge_host = get_config('BRIDGE_HOST', None)
+
+        if not bridge_config_path or not bridge_host:
+            logger.debug("Bridge config path or host not configured, skipping download")
+            return {}
+
+        ssh_key = get_config('SCAN_SCRIPT_PRIVATE_KEY_FILE', '')
+        temp_download_file = f"{ZIGBEE_CONFIG_FILE}.remote"
+
+        cmd = ['scp']
+        if ssh_key:
+            cmd += ['-i', ssh_key]
+        cmd += ['-o', 'LogLevel=ERROR', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+        cmd += [f'{bridge_host}:{bridge_config_path}', temp_download_file]
+
+        try:
+            result = subprocess.run(
+                ['bash', '-c', ' '.join(cmd)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=10
+            )
+
+            if result.returncode != 0:
+                stderr_output = result.stderr.decode('utf-8').strip()
+                logger.warning(f"Failed to download config from bridge (exit {result.returncode}): {stderr_output}")
+                return {}
+
+            # Load the downloaded config
+            if os.path.exists(temp_download_file):
+                with open(temp_download_file, 'r') as f:
+                    raw_config = yaml.safe_load(f)
+                    config = raw_config if isinstance(raw_config, dict) else {}
+                os.remove(temp_download_file)
+                logger.info(f"Downloaded {len(config)} devices from bridge")
+                return config
+
+        except subprocess.TimeoutExpired:
+            logger.warning("Timeout downloading config from bridge")
+        except Exception as e:
+            logger.warning(f"Error downloading config from bridge: {e}")
+
+        return {}
 
     def _restart_bridge(self) -> None:
         """Restart Zigbee2MQTT bridge to apply configuration."""
