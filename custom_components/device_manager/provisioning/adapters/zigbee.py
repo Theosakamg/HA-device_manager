@@ -252,7 +252,10 @@ class ZigbeeAdapter(FirmwareAdapter):
     def post_process(self, devices: List[DmDevice]) -> None:
         """Post-process all Zigbee devices.
 
-        This updates the Zigbee2MQTT configuration and restarts the bridge.
+        Updates the Zigbee2MQTT configuration for compatibility with both v1 and v2:
+        - For Z2M v1: uploads devices.yml via SCP and restarts the bridge
+        - For Z2M v2: configures devices via MQTT API to avoid race condition where
+          Z2M overwrites devices.yml on shutdown before our SCP-uploaded config is read back
 
         Args:
             devices: All processed devices.
@@ -278,11 +281,57 @@ class ZigbeeAdapter(FirmwareAdapter):
 
         logger.info(f"Wrote Zigbee configuration to {ZIGBEE_CONFIG_FILE}")
 
-        # Upload configuration to bridge
+        # Upload configuration to bridge (Z2M v1 compatibility)
         self._upload_config_to_bridge()
 
-        # Restart bridge to apply changes
+        # Configure devices via MQTT API (Z2M v2 compatibility)
+        for device in self.devices_to_configure:
+            self._configure_device_via_mqtt(device)
+
+        # Restart bridge to apply changes (Z2M v1 compatibility)
         self._restart_bridge()
+
+    def _configure_device_via_mqtt(self, device: DmDevice) -> None:
+        """Configure a Zigbee device via the Zigbee2MQTT MQTT API.
+
+        Uses the bridge request API to rename the device and set its options
+        without requiring a bridge restart. This avoids the race condition
+        where Z2M overwrites devices.yml on shutdown before our file upload
+        is applied (a regression introduced with Zigbee2MQTT v2).
+
+        Args:
+            device: Device to configure.
+        """
+        mqtt_prefix = self.manager.get_setting('mqtt_topic_prefix', 'home')
+        ieee = device.mac.lower()
+        friendly_name = device.mqtt_topic() or f"zigbee_{device.mac.replace(':', '_')}"
+        display_name = device.display_name()
+
+        # Step 1: rename the device (IEEE addr -> friendly name)
+        rename_payload = json.dumps({"from": ieee, "to": friendly_name})
+        rename_topic = f"{mqtt_prefix}/bridge/request/device/rename"
+        try:
+            self._mqtt_publish(rename_topic, rename_payload)
+            logger.info(f"Renamed {ieee} -> {friendly_name}")
+        except Exception as e:
+            logger.error(f"Failed to rename device {ieee}: {e}")
+            return
+
+        # Step 2: set homeassistant options on the device
+        ha_options: Dict[str, Any] = {'name': display_name}
+        if device._room.name:
+            ha_options['device'] = {'suggested_area': device._room.name}
+
+        options_payload = json.dumps({
+            "id": friendly_name,
+            "options": {"homeassistant": ha_options},
+        })
+        options_topic = f"{mqtt_prefix}/bridge/request/device/options"
+        try:
+            self._mqtt_publish(options_topic, options_payload)
+            logger.info(f"Set options for {friendly_name}: {ha_options}")
+        except Exception as e:
+            logger.error(f"Failed to set options for {friendly_name}: {e}")
 
     def _dump_config(self, device: DmDevice) -> None:
         """Dump device configuration to backup file.
