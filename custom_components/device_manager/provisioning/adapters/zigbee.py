@@ -304,8 +304,9 @@ class ZigbeeAdapter(FirmwareAdapter):
         """
         mqtt_prefix = self.manager.get_setting('mqtt_topic_prefix', 'home')
         ieee = device.mac.lower()
-        friendly_name = device.mqtt_topic() or f"zigbee_{device.mac.replace(':', '_')}"
+
         display_name = device.display_name()
+        friendly_name = self._get_device_friendly_name(device)
 
         # Step 1: rename the device (IEEE addr -> friendly name)
         rename_payload = json.dumps({"from": ieee, "to": friendly_name})
@@ -368,11 +369,8 @@ class ZigbeeAdapter(FirmwareAdapter):
 
         for device in self.devices_to_configure:
             ieee = device.mac.lower()
-            mqtt_topic = device.mqtt_topic()
             display_name = device.display_name()
-
-            # friendly_name should be the MQTT topic
-            friendly_name = mqtt_topic or f"zigbee_{device.mac.replace(':', '_')}"
+            friendly_name = self._get_device_friendly_name(device)
 
             device_config: Dict[str, Any] = {
                 'friendly_name': friendly_name,
@@ -487,3 +485,29 @@ class ZigbeeAdapter(FirmwareAdapter):
         except Exception as e:
             logger.error(f"Failed to restart bridge: {e}")
             raise
+
+    def _get_device_friendly_name(self, device: DmDevice) -> str:
+        """Construct a friendly name for the device.
+
+        Args:
+            device: Device to construct name for.
+        """
+        # Build friendly_name without building slug (mqtt_prefix is added by Z2M)
+        function_slug = device._refs.function_name.lower().replace(" ", "_")
+
+        if (
+            device._floor.slug
+            and device._room.slug
+            and function_slug
+            and device.position_slug
+        ):
+            friendly_name = (
+                f"{device._floor.slug}/"
+                f"{device._room.slug}/"
+                f"{function_slug}/"
+                f"{device.position_slug}"
+            ).lower()
+        else:
+            friendly_name = f"zigbee_{device.mac.replace(':', '_')}"
+
+        return friendly_name
