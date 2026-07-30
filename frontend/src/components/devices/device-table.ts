@@ -45,6 +45,7 @@ export class DmDeviceTable extends LitElement {
       { key: "refs.functionName", label: i18n.t("device_function") },
       { key: "positionName", label: i18n.t("device_position_name") },
       { key: "refs.firmwareName", label: i18n.t("device_firmware") },
+      { key: "swVersion", label: i18n.t("device_firmware_version") },
       { key: "refs.modelName", label: i18n.t("device_model") },
       { key: "refs.targetMac", label: i18n.t("device_target") },
       {
@@ -69,9 +70,13 @@ export class DmDeviceTable extends LitElement {
   @state() private _showDeploy = false;
   @state() private _editingDevice: DmDevice | null = null;
   @state() private _presetRoomId: number | null = null;
+  @state() private _cloneSource: DmDevice | null = null;
+  @state() private _saveError = "";
   @state() private _sort: SortState = { key: null, dir: null };
   @state() private _confirmOpen = false;
   @state() private _pendingDeleteDevice: DmDevice | null = null;
+  @state() private _actionsMenuDevice: DmDevice | null = null;
+  @state() private _actionsMenuPos = { top: 0, left: 0 };
   // Column filters
   @state() private _colFilters: Record<string, string[]> = {};
   @state() private _openFilterCol: string | null = null;
@@ -143,6 +148,8 @@ export class DmDeviceTable extends LitElement {
       if (!isNaN(roomId)) {
         this._presetRoomId = roomId;
         this._editingDevice = null;
+        this._cloneSource = null;
+        this._saveError = "";
         this._showForm = true;
         // Clean the hash so a page refresh doesn't re-open the form
         window.location.hash = "#devices";
@@ -706,6 +713,7 @@ export class DmDeviceTable extends LitElement {
                       <td>${device.refs?.functionName ?? "—"}</td>
                       <td>${device.positionName}</td>
                       <td>${device.refs?.firmwareName ?? "—"}</td>
+                      <td>${device.swVersion ?? "—"}</td>
                       <td>${device.refs?.modelName ?? "—"}</td>
                       <td class="mac">${device.refs?.targetMac ?? "—"}</td>
                       <td class="deploy-status">
@@ -746,10 +754,10 @@ export class DmDeviceTable extends LitElement {
                         </button>
                         <button
                           class="btn-icon"
-                          title="${i18n.t("delete")}"
-                          @click=${() => this._requestDelete(device)}
+                          title="${i18n.t("actions")}"
+                          @click=${(e: Event) => this._openActionsMenu(e, device)}
                         >
-                          🗑️
+                          ⋮
                         </button>
                       </td>
                     </tr>
@@ -764,10 +772,14 @@ export class DmDeviceTable extends LitElement {
             <dm-device-form
               .device=${this._editingDevice}
               .presetRoomId=${this._presetRoomId}
+              .cloneFrom=${this._cloneSource}
+              .saveError=${this._saveError}
               @form-save=${this._onFormSave}
               @form-cancel=${() => {
                 this._showForm = false;
                 this._presetRoomId = null;
+                this._cloneSource = null;
+                this._saveError = "";
               }}
             ></dm-device-form>
           `
@@ -790,25 +802,72 @@ export class DmDeviceTable extends LitElement {
         @dialog-cancel=${this._onCancelDelete}
       ></dm-confirm-dialog>
 
+      ${this._actionsMenuDevice ? this._renderActionsMenu() : nothing}
+
       ${this._openFilterCol !== null
         ? this._renderFilterDropdown(this._openFilterCol)
         : nothing}
     `;
   }
 
+  /** Render the small floating actions menu (Clone / Delete) anchored to the ⋮ button. */
+  private _renderActionsMenu() {
+    const device = this._actionsMenuDevice!;
+    return html`
+      <div
+        class="col-filter-backdrop"
+        @click=${() => {
+          this._actionsMenuDevice = null;
+        }}
+      ></div>
+      <div
+        class="row-actions-menu"
+        style="top:${this._actionsMenuPos.top}px; left:${this._actionsMenuPos
+          .left}px"
+      >
+        <button
+          class="row-actions-menu-item"
+          @click=${() => this._openClone(device)}
+        >
+          ⧉ ${i18n.t("clone")}
+        </button>
+        <button
+          class="row-actions-menu-item row-actions-menu-item-danger"
+          @click=${() => this._requestDelete(device)}
+        >
+          🗑️ ${i18n.t("delete")}
+        </button>
+      </div>
+    `;
+  }
+
   private _openCreate() {
     this._editingDevice = null;
     this._presetRoomId = null;
+    this._cloneSource = null;
+    this._saveError = "";
     this._showForm = true;
   }
 
   private _openEdit(device: DmDevice) {
     this._editingDevice = device;
+    this._cloneSource = null;
+    this._saveError = "";
+    this._showForm = true;
+  }
+
+  private _openClone(device: DmDevice) {
+    this._editingDevice = null;
+    this._presetRoomId = null;
+    this._cloneSource = device;
+    this._saveError = "";
+    this._actionsMenuDevice = null;
     this._showForm = true;
   }
 
   private async _onFormSave(e: CustomEvent) {
     const { isEdit, id, data } = e.detail;
+    this._saveError = "";
     try {
       if (isEdit) {
         await this._client.update(id, data);
@@ -816,15 +875,30 @@ export class DmDeviceTable extends LitElement {
         await this._client.create(data);
       }
       this._showForm = false;
+      this._cloneSource = null;
       await this._load();
     } catch (err) {
       console.error("Failed to save device:", err);
+      this._saveError = err instanceof Error ? err.message : String(err);
     }
+  }
+
+  private _openActionsMenu(e: Event, device: DmDevice) {
+    e.stopPropagation();
+    if (this._actionsMenuDevice === device) {
+      this._actionsMenuDevice = null;
+      return;
+    }
+    const btn = e.currentTarget as HTMLElement;
+    const rect = btn.getBoundingClientRect();
+    this._actionsMenuPos = { top: rect.bottom + 4, left: rect.right - 150 };
+    this._actionsMenuDevice = device;
   }
 
   private _requestDelete(device: DmDevice) {
     this._pendingDeleteDevice = device;
     this._confirmOpen = true;
+    this._actionsMenuDevice = null;
   }
 
   private async _onConfirmDelete() {

@@ -28,6 +28,10 @@ export class DmDeviceForm extends LitElement {
 
   @property({ type: Object }) device: DmDevice | null = null;
   @property({ type: Number }) presetRoomId: number | null = null;
+  /** Source device to prefill from when cloning (mac/ip left empty). Never triggers edit mode. */
+  @property({ type: Object }) cloneFrom: DmDevice | null = null;
+  /** Server-side save error surfaced from the parent (e.g. duplicate MAC/IP). */
+  @property({ type: String }) saveError = "";
 
   @state() private _rooms: DmRoom[] = [];
   @state() private _models: DmDeviceModel[] = [];
@@ -90,6 +94,27 @@ export class DmDeviceForm extends LitElement {
         functionId: this.device.functionId ?? "",
         targetId: this.device.targetId ?? "",
       };
+    } else if (this.cloneFrom) {
+      // Clone mode: copy all fields except mac/ip (unique constraints, must be
+      // re-entered for the replacement hardware). `device` stays null so this
+      // is still routed through the create (POST) path, not update (PUT).
+      this._form = {
+        mac: "",
+        ip: "",
+        positionName: this.cloneFrom.positionName ?? "",
+        positionSlug: this.cloneFrom.positionSlug ?? "",
+        mode: this.cloneFrom.mode ?? "",
+        interlock: this.cloneFrom.interlock ?? "",
+        haDeviceClass: this.cloneFrom.haDeviceClass ?? "",
+        extra: this.cloneFrom.extra ?? "",
+        enabled: this.cloneFrom.enabled ?? true,
+        state: this.cloneFrom.state ?? "deployed",
+        roomId: this.cloneFrom.roomId ?? "",
+        modelId: this.cloneFrom.modelId ?? "",
+        firmwareId: this.cloneFrom.firmwareId ?? "",
+        functionId: this.cloneFrom.functionId ?? "",
+        targetId: this.cloneFrom.targetId ?? "",
+      };
     } else {
       this._form = {
         mac: "",
@@ -120,11 +145,18 @@ export class DmDeviceForm extends LitElement {
       return html`<div class="loading">${i18n.t("loading")}</div>`;
 
     const isEdit = this.device !== null;
+    const isClone = !isEdit && this.cloneFrom !== null;
     return html`
       <div class="modal-overlay" @click=${this._cancel}>
         <div class="modal" @click=${(e: Event) => e.stopPropagation()}>
           <div class="modal-header">
-            <h2>${isEdit ? i18n.t("edit_device") : i18n.t("add_device")}</h2>
+            <h2>
+              ${isEdit
+                ? i18n.t("edit_device")
+                : isClone
+                  ? i18n.t("clone_device")
+                  : i18n.t("add_device")}
+            </h2>
             <button class="btn-icon" @click=${this._cancel}>✕</button>
           </div>
 
@@ -390,9 +422,9 @@ export class DmDeviceForm extends LitElement {
           </div>
 
           <div class="modal-actions">
-            ${this._validationError
+            ${this._validationError || this.saveError
               ? html`<div class="validation-error">
-                  ${this._validationError}
+                  ${this._validationError || this.saveError}
                 </div>`
               : ""}
             <button class="btn btn-secondary" @click=${this._cancel}>

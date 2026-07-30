@@ -95,6 +95,12 @@ export interface DmDevice {
    * Computed server-side, present in full-detail API responses.
    */
   fqdn?: string | null;
+  /**
+   * Live firmware version reported by Home Assistant's device registry
+   * (`sw_version`). Fetched live on every request — never persisted in the
+   * local database. `null`/undefined when the device isn't registered in HA.
+   */
+  swVersion?: string | null;
 }
 
 /**
