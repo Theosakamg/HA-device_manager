@@ -755,7 +755,8 @@ export class DmDeviceTable extends LitElement {
                         <button
                           class="btn-icon"
                           title="${i18n.t("actions")}"
-                          @click=${(e: Event) => this._openActionsMenu(e, device)}
+                          @click=${(e: Event) =>
+                            this._openActionsMenu(e, device)}
                         >
                           ⋮
                         </button>
@@ -803,7 +804,6 @@ export class DmDeviceTable extends LitElement {
       ></dm-confirm-dialog>
 
       ${this._actionsMenuDevice ? this._renderActionsMenu() : nothing}
-
       ${this._openFilterCol !== null
         ? this._renderFilterDropdown(this._openFilterCol)
         : nothing}
