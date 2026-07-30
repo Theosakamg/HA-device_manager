@@ -286,6 +286,8 @@ class CrudListView(BaseView):
         * ``filter_param``      – query-string key used for optional filtering.
         * ``filter_method``     – repo method name when the filter is present.
         * ``_serialize_entity`` – override to customise serialization output.
+        * ``_extra_fields``     – override to inject live, non-persisted data
+          (e.g. values fetched from Home Assistant) into the response.
     """
 
     repo_key: str = ""
@@ -307,6 +309,24 @@ class CrudListView(BaseView):
         """
         return entity.to_camel_dict()
 
+    async def _extra_fields(
+        self, entity: SerializableMixin, request: web.Request
+    ) -> dict[str, Any]:
+        """Return extra, non-persisted fields to merge into the serialized dict.
+
+        Override in subclasses to enrich the response with data fetched live
+        from an external source (e.g. Home Assistant's device registry)
+        without storing it in the local database. No-op by default.
+        """
+        return {}
+
+    async def _serialize_with_extra(
+        self, entity: SerializableMixin, request: web.Request
+    ) -> dict[str, Any]:
+        data = self._serialize_entity(entity)
+        data.update(await self._extra_fields(entity, request))
+        return data
+
     @_handle_errors("entities")
     async def get(self, request: web.Request) -> web.Response:
         """Return all entities, with optional parent filtering."""
@@ -323,9 +343,13 @@ class CrudListView(BaseView):
                 items = await getattr(repos[self.repo_key], self.filter_method)(
                     parent_id_int
                 )
-                return self.json([self._serialize_entity(i) for i in items])
+                return self.json(
+                    [await self._serialize_with_extra(i, request) for i in items]
+                )
         items = await repos[self.repo_key].find_all()
-        return self.json([self._serialize_entity(i) for i in items])
+        return self.json(
+            [await self._serialize_with_extra(i, request) for i in items]
+        )
 
     @_handle_errors("entity")
     @csrf_protect
@@ -373,6 +397,8 @@ class CrudDetailView(BaseView):
     Optional overrides:
         * ``normalize_data``    – pre-process incoming data before update.
         * ``_serialize_entity`` – override to customise serialization output.
+        * ``_extra_fields``     – override to inject live, non-persisted data
+          (e.g. values fetched from Home Assistant) into the response.
     """
 
     repo_key: str = ""
@@ -392,6 +418,17 @@ class CrudDetailView(BaseView):
         """
         return entity.to_camel_dict()
 
+    async def _extra_fields(
+        self, entity: SerializableMixin, request: web.Request
+    ) -> dict[str, Any]:
+        """Return extra, non-persisted fields to merge into the serialized dict.
+
+        Override in subclasses to enrich the response with data fetched live
+        from an external source (e.g. Home Assistant's device registry)
+        without storing it in the local database. No-op by default.
+        """
+        return {}
+
     @_handle_errors("entity")
     async def get(self, request: web.Request, entity_id: str) -> web.Response:
         """Get a single entity by ID."""
@@ -402,7 +439,9 @@ class CrudDetailView(BaseView):
         result = await _get_or_404(self, repos, self.repo_key, eid, self.entity_name)
         if isinstance(result, web.Response):
             return result
-        return self.json(self._serialize_entity(result))
+        data = self._serialize_entity(result)
+        data.update(await self._extra_fields(result, request))
+        return self.json(data)
 
     @_handle_errors("entity")
     @csrf_protect

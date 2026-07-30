@@ -24,6 +24,7 @@ from typing import Any
 from aiohttp import web
 
 from .base import BaseView, get_repos, csrf_protect, emit_activity_log
+from ..utils.ha_device_lookup import get_ha_device
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -122,44 +123,22 @@ def _device_entity_id(
 def _resolve_device_entities(hass: Any, mac: str, domain: str) -> list[str]:
     """Return real HA entity IDs for the given device MAC and domain.
 
-    Queries the HA device registry by MAC (network or Zigbee IEEE address),
+    Looks up the HA device registry by MAC (network or Zigbee IEEE address),
     then the entity registry filtered by domain.  Only enabled entities are
     returned.  Returns an empty list when the device is not registered in HA.
     """
     try:
-        from homeassistant.helpers import device_registry as dr, entity_registry as er  # type: ignore[import]
+        from homeassistant.helpers import entity_registry as er  # type: ignore[import]
     except Exception:
         return []
 
-    device_reg = dr.async_get(hass)
-    entity_reg = er.async_get(hass)
-
-    ha_device = None
-
-    # Standard network MAC (Tasmota, ESPHome, …)
-    try:
-        normalized = dr.format_mac(mac)
-        ha_device = device_reg.async_get_device(
-            connections={(dr.CONNECTION_NETWORK_MAC, normalized)}
-        )
-    except Exception:
-        pass
-
-    # Zigbee IEEE address: DM stores "0x00124b0025156aca" → "00:12:4b:00:25:15:6a:ca"
-    if ha_device is None and isinstance(mac, str) and mac.lower().startswith("0x"):
-        try:
-            raw = mac[2:].lower().zfill(16)
-            ieee = ":".join(raw[i:i+2] for i in range(0, 16, 2))
-            ha_device = device_reg.async_get_device(
-                connections={(dr.CONNECTION_ZIGBEE, ieee)}
-            )
-        except Exception:
-            pass
+    ha_device = get_ha_device(hass, mac)
 
     if ha_device is None:
         _LOGGER.debug("[resolve] mac=%s → not found in HA device registry", mac)
         return []
 
+    entity_reg = er.async_get(hass)
     entries = er.async_entries_for_device(entity_reg, ha_device.id)
     found = [
         e.entity_id

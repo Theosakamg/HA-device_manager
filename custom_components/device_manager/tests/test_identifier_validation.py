@@ -55,6 +55,11 @@ def _load_device_controller():
     case_convert_mod.to_snake_case_dict = lambda d: d  # type: ignore[attr-defined]
     sys.modules["custom_components.device_manager.utils.case_convert"] = case_convert_mod
 
+    # Mock ..utils.ha_device_lookup
+    ha_lookup_mod = types.ModuleType("custom_components.device_manager.utils.ha_device_lookup")
+    ha_lookup_mod.get_ha_sw_version = lambda hass, mac: None  # type: ignore[attr-defined]
+    sys.modules["custom_components.device_manager.utils.ha_device_lookup"] = ha_lookup_mod
+
     return helpers.load_module(
         "controllers/device_controller.py",
         package="custom_components.device_manager.controllers",

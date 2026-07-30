@@ -101,6 +101,17 @@ class SQLiteImportAPIView(BaseView):
             db_manager = hass.data[DOMAIN][DATA_KEY_DB]
             db_path = db_manager.db_path
 
+            # Home Assistant's shared aiohttp Application caps request bodies
+            # at 16 MB (``MAX_CLIENT_SIZE``). That default is far below the
+            # 200 MB this endpoint advertises, so any real-world database
+            # (which grows over time with activity logs) larger than 16 MB
+            # would fail deep inside ``request.post()`` with a raw payload
+            # error — caught by the broad ``except Exception`` below and
+            # surfaced as an unhelpful generic 500. Clone the request with a
+            # larger per-endpoint limit so uploads up to ``_MAX_DB_SIZE`` are
+            # actually accepted, matching the documented/enforced limit.
+            request = request.clone(client_max_size=_MAX_DB_SIZE)
+
             post = await request.post()
             file_field = post.get("file")
 
@@ -155,6 +166,15 @@ class SQLiteImportAPIView(BaseView):
             )
             return self.json({"success": True, "backup": backup_str})
 
+        except web.HTTPRequestEntityTooLarge:
+            # Raised by aiohttp itself (e.g. a reverse proxy / Content-Length
+            # still exceeding the cloned limit). Surface a clear 413 instead
+            # of falling through to the generic 500 below.
+            _LOGGER.warning("SQLite import rejected: payload too large")
+            return self.json(
+                {"error": "File too large (max 200 MB)"},
+                status_code=413,
+            )
         except Exception as err:
             _LOGGER.exception("SQLite import failed", exc_info=err)
             # Best-effort: try to re-initialize the connection if it was closed.
