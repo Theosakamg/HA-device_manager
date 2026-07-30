@@ -60,4 +60,5 @@ def get_ha_sw_version(hass: Any, mac: str) -> Optional[str]:
     ha_device = get_ha_device(hass, mac)
     if ha_device is None:
         return None
-    return ha_device.sw_version
+    sw_version = ha_device.sw_version
+    return str(sw_version) if sw_version is not None else None
