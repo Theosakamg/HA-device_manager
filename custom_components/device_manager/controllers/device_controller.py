@@ -11,6 +11,7 @@ from .base import get_repos
 from ..models.base import SerializableMixin
 from ..models.device import DmDevice
 from ..utils.case_convert import to_snake_case_dict
+from ..utils.ha_device_lookup import get_ha_sw_version
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -66,6 +67,14 @@ class DevicesAPIView(CrudListView):
         """Serialize a DmDevice with all transient JOIN fields and computed values."""
         assert isinstance(entity, DmDevice)
         return entity.to_camel_dict_full()
+
+    async def _extra_fields(
+        self, entity: SerializableMixin, request: web.Request
+    ) -> dict[str, Any]:
+        """Add the live HA firmware version (never persisted locally)."""
+        assert isinstance(entity, DmDevice)
+        hass = request.app["hass"]
+        return {"swVersion": get_ha_sw_version(hass, entity.mac)}
 
     @_handle_errors("Device")
     async def post(self, request: web.Request) -> web.Response:
@@ -140,3 +149,11 @@ class DeviceAPIView(CrudDetailView):
         """Serialize a DmDevice with all transient JOIN fields and computed values."""
         assert isinstance(entity, DmDevice)
         return entity.to_camel_dict_full()
+
+    async def _extra_fields(
+        self, entity: SerializableMixin, request: web.Request
+    ) -> dict[str, Any]:
+        """Add the live HA firmware version (never persisted locally)."""
+        assert isinstance(entity, DmDevice)
+        hass = request.app["hass"]
+        return {"swVersion": get_ha_sw_version(hass, entity.mac)}

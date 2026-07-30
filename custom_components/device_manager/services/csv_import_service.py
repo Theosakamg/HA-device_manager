@@ -8,6 +8,9 @@ from typing import Any, Dict, Optional
 
 _LOGGER = logging.getLogger(__name__)
 
+# Matches a MAC address in colon or dash notation (e.g. AA:BB:CC:DD:EE:FF).
+_MAC_RE = re.compile(r"^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$")
+
 
 def _sanitize_slug(value: str) -> str:
     """Convert a string to a URL-safe slug.
@@ -50,7 +53,9 @@ HEADER_MAP = {
     "Check": None,
     "MAC": "mac",
     "State": "state",
+    "Building": "building_name",
     "Level": "level",
+    "Floor": "floor_name",
     "Room FR": "room_fr",
     "Position FR": "position_fr",
     "Function": "function",
@@ -133,9 +138,14 @@ class CSVImportService:
                 # Extract fields from CSV
                 parsed = self._parse_row(row)
 
-                # 1. Ensure Building exists (use configured default name)
-                building_key = self._settings.get(
-                    "default_building_name", "Building"
+                # 1. Ensure Building exists. Prefer the CSV-provided
+                #    ``Building`` column (round-tripped from a prior export)
+                #    so custom building names survive re-import; fall back
+                #    to the configured default for legacy CSVs that lack
+                #    this column.
+                building_key = (
+                    parsed.get("building_name", "")
+                    or self._settings.get("default_building_name", "Building")
                 )
                 if building_key not in building_cache:
                     building_id = await self._find_or_create_hierarchy(
@@ -145,10 +155,20 @@ class CSVImportService:
                     )
                     building_cache[building_key] = building_id
 
-                # 2. Ensure Floor exists
+                # 2. Ensure Floor exists. The slug stays derived from the
+                #    ``Level`` value (it drives MQTT topics / entity IDs
+                #    and must remain stable), but prefer the CSV-provided
+                #    ``Floor`` display name so custom names round-trip;
+                #    fall back to the legacy "Lvl{n}" template otherwise.
+                #    Only prepend the "l" prefix for numeric levels
+                #    (matching the "l0"/"l1" convention) — non-numeric
+                #    values (e.g. a "logical" floor) are already a slug
+                #    on their own and must be used as-is, mirroring the
+                #    export-side extraction in export_controller.py so
+                #    the slug round-trips exactly.
                 level_raw = str(parsed.get("level", "0")).strip() or "0"
-                floor_name = f"Floor {level_raw}"
-                floor_slug = f"l{level_raw}"
+                floor_name = parsed.get("floor_name", "") or f"Lvl{level_raw}"
+                floor_slug = f"l{level_raw}" if level_raw.isdigit() else level_raw
                 floor_key = f"{building_cache[building_key]}:{floor_slug}"
                 if floor_key not in floor_cache:
                     floor_id = await self._find_or_create_hierarchy(
@@ -389,26 +409,47 @@ class CSVImportService:
     ) -> Optional[int]:
         """Resolve a target string to a device ID within the same room.
 
-        The target format is ``function_slug/position_slug``
-        (e.g. ``light/ceiling``).  Only devices in ``room_id`` are
-        considered — the security model restricts links to the same room.
+        Two target formats are supported, since :mod:`export_controller`
+        writes the target device's **MAC address** (this is also the
+        format used by real-world exported/production CSV files):
+
+        - ``MAC address`` (e.g. ``AA:BB:CC:DD:EE:FF``) — matched against
+          the target device's MAC (case-insensitive).
+        - ``function_slug/position_slug`` (e.g. ``light/ceiling``) — kept
+          for backward compatibility with older hand-written CSVs.
+
+        Only devices in ``room_id`` are considered — the security model
+        restricts links to the same room.
 
         Args:
-            raw_target: Raw target string from the CSV (e.g. ``light/ceiling``).
+            raw_target: Raw target string from the CSV (a MAC address or
+                ``function_slug/position_slug``).
             room_id: The room ID of the source device.
 
         Returns:
             The target device ID, or None if no match is found.
         """
-        if not raw_target or "/" not in raw_target:
+        raw_target = (raw_target or "").strip()
+        if not raw_target:
             return None
-        parts = raw_target.strip().lower().split("/", 1)
+
+        candidates = await self.repos["device"].find_by_room(room_id)
+
+        if _MAC_RE.match(raw_target):
+            target_mac = raw_target.strip().lower()
+            for device in candidates:
+                if (device.mac or "").strip().lower() == target_mac:
+                    return int(device.id)
+            return None
+
+        if "/" not in raw_target:
+            return None
+        parts = raw_target.lower().split("/", 1)
         target_function_slug = parts[0].strip()
         target_position_slug = parts[1].strip()
         if not target_function_slug or not target_position_slug:
             return None
 
-        candidates = await self.repos["device"].find_by_room(room_id)
         for device in candidates:
             fn = (device._refs.function_name or "").strip().lower()
             ps = (device.position_slug or "").strip().lower()

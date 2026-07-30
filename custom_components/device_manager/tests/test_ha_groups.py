@@ -52,6 +52,18 @@ sys.modules[
     "custom_components.device_manager.controllers.base"
 ] = base_ctrl_stub
 
+# Stub ..utils.ha_device_lookup (used by ha_groups_controller for MAC → HA device lookup)
+sys.modules["custom_components.device_manager.utils"] = types.ModuleType(
+    "custom_components.device_manager.utils"
+)
+ha_device_lookup_stub = types.ModuleType(
+    "custom_components.device_manager.utils.ha_device_lookup"
+)
+ha_device_lookup_stub.get_ha_device = lambda hass, mac: None  # type: ignore[attr-defined]
+sys.modules[
+    "custom_components.device_manager.utils.ha_device_lookup"
+] = ha_device_lookup_stub
+
 # Now load the actual module under test
 ctrl_module = helpers.load_module(
     "controllers/ha_groups_controller.py",

@@ -23,7 +23,9 @@ CSV_COLUMNS = [
     "Check",
     "MAC",
     "State",
+    "Building",
     "Level",
+    "Floor",
     "Room FR",
     "Position FR",
     "Function",
@@ -58,10 +60,16 @@ def _device_to_row(device: DmDevice) -> dict[str, str]:
     The returned keys must match :data:`CSV_COLUMNS` exactly so that an
     exported CSV can be re-imported by :class:`CSVImportService`.
     """
-    # Extract the numeric floor value from the slug (e.g. "l0" → "0")
+    # Extract the numeric floor value from the slug (e.g. "l0" → "0").
+    # Only strip the leading "l" when the remainder is purely numeric —
+    # some floors have non-numeric slugs (e.g. a manually created
+    # "logical" floor with slug "logical"), and blindly stripping a
+    # single leading "l" from those would corrupt the value ("logical"
+    # → "ogical"). The import side mirrors this same numeric check when
+    # rebuilding the slug, so the round trip stays consistent.
     floor_slug = device._floor.slug or ""
-    if floor_slug.startswith("l"):
-        level_num = floor_slug.lstrip("l")
+    if floor_slug.startswith("l") and floor_slug[1:].isdigit():
+        level_num = floor_slug[1:]
     else:
         level_num = floor_slug
 
@@ -78,7 +86,9 @@ def _device_to_row(device: DmDevice) -> dict[str, str]:
         "Check": "",
         "MAC": device.mac,
         "State": state,
+        "Building": device._building.name or "",
         "Level": level_num,
+        "Floor": device._floor.name or "",
         "Room FR": device._room.name or "",
         "Position FR": device.position_name,
         "Function": device._refs.function_name or "",
