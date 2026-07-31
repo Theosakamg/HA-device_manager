@@ -229,6 +229,50 @@ def test_configure_device_without_template_skips_but_still_configures():
 
 
 # ---------------------------------------------------------------------------
+# Tests — Referer header (Tasmota Referer/CORS protection, see SetOption128)
+# ---------------------------------------------------------------------------
+
+def test_dump_config_sends_self_referencing_referer_header():
+    """_dump_config() must send a self-referencing Referer header.
+
+    Tasmota rejects HTTP API calls with an empty/foreign Referer unless
+    SetOption128 1 is set or a Webpassword is configured - which is exactly
+    the state right after a factory reset (Webpassword cleared). A
+    same-origin Referer is trusted regardless, unblocking freshly-reset
+    devices without needing console/serial access.
+    """
+    adapter = _make_adapter()
+    device = _make_device(ip="192.168.1.77")
+    adapter.backup_path = "/tmp"
+
+    mock_response = MagicMock()
+    mock_response.content = b"dummy-config-dump"
+
+    with patch.object(_tasmota_module.requests, "get", return_value=mock_response) as mock_get, \
+         patch("builtins.open", MagicMock()):
+        adapter._dump_config(device)
+
+    _, kwargs = mock_get.call_args
+    assert kwargs.get("headers") == {"Referer": "http://192.168.1.77/"}
+
+
+def test_send_commands_sends_self_referencing_referer_header():
+    """_send_commands() must send a self-referencing Referer header."""
+    adapter = _make_adapter()
+    device = _make_device(ip="192.168.1.88")
+
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {"Template": "Ok"}
+
+    with patch.object(_tasmota_module.requests, "get", return_value=mock_response) as mock_get:
+        adapter._send_commands(device, {"Template": "x"})
+
+    _, kwargs = mock_get.call_args
+    assert kwargs.get("headers") == {"Referer": "http://192.168.1.88/"}
+
+
+# ---------------------------------------------------------------------------
 # Test suite registration
 # ---------------------------------------------------------------------------
 
@@ -241,4 +285,6 @@ TEST_SUITE = [
     ("whitespace-only template is skipped", test_whitespace_only_template_is_skipped),
     ("template applied before base config", test_configure_device_applies_template_before_base_config),
     ("no template: deploy unaffected (regression)", test_configure_device_without_template_skips_but_still_configures),
+    ("_dump_config sends self-referencing Referer header", test_dump_config_sends_self_referencing_referer_header),
+    ("_send_commands sends self-referencing Referer header", test_send_commands_sends_self_referencing_referer_header),
 ]

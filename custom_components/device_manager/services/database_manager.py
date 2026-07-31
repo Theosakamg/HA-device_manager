@@ -181,6 +181,12 @@ class DatabaseManager:
             self._connection.row_factory = aiosqlite.Row
             await self._connection.execute("PRAGMA foreign_keys = ON")
             await self._connection.execute("PRAGMA journal_mode = WAL")
+            # The integration and the deploy/scan background jobs each open
+            # their own connection to the same DB file. Without a busy
+            # timeout, a write collision between them raises
+            # "database is locked" immediately instead of retrying, which is
+            # what left the DB locked after a deploy run. Retry for up to 5s.
+            await self._connection.execute("PRAGMA busy_timeout = 5000")
         return self._connection
 
     async def initialize(self) -> None:

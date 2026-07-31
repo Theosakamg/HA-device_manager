@@ -3,7 +3,7 @@
 import logging
 
 from .base import BaseView, get_repos, get_db_path, rate_limit, csrf_protect, emit_activity_log, fmt_entity_label
-from ..provisioning.deploy import deploy, scan
+from ..provisioning.deploy import deploy, scan, DeployInProgressError
 from ..provisioning.core import NetworkScanError
 from ..provisioning.utility import update_runtime_configs
 
@@ -42,7 +42,11 @@ class DeployAPIView(BaseView):
             mac_filter = mac_filter.split(",")
 
         db_path = get_db_path(request)
-        await hass.async_add_executor_job(deploy, db_path, firmware_types, mac_filter)
+        try:
+            await hass.async_add_executor_job(deploy, db_path, firmware_types, mac_filter)
+        except DeployInProgressError as exc:
+            _LOGGER.warning("Deploy rejected: %s", exc)
+            return self.json({"error": str(exc)}, status_code=409)
 
         # Build human-readable entity list when a MAC filter is provided.
         repos = get_repos(request)
@@ -86,6 +90,9 @@ class DevicesScanAPIView(BaseView):
         db_path = get_db_path(request)
         try:
             stats = await hass.async_add_executor_job(scan, db_path)
+        except DeployInProgressError as exc:
+            _LOGGER.warning("Scan rejected: %s", exc)
+            return self.json({"error": str(exc)}, status_code=409)
         except NetworkScanError as exc:
             _LOGGER.error("Network scan failed: %s", exc)
             await emit_activity_log(
