@@ -85,7 +85,7 @@ TasmotaAdapter = _tasmota_module.TasmotaAdapter
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _make_device(model_template: str = "", ip: str = "192.168.1.50") -> DmDevice:
+def _make_device(model_template: str = "", ip: str = "192.168.1.50"):
     """Build a minimal DmDevice suitable for adapter tests."""
     return DmDevice(
         mac="AA:BB:CC:DD:EE:FF",
@@ -105,7 +105,7 @@ def _make_device(model_template: str = "", ip: str = "192.168.1.50") -> DmDevice
     )
 
 
-def _make_adapter() -> TasmotaAdapter:
+def _make_adapter():
     """Build a TasmotaAdapter without touching the real filesystem."""
     with patch.object(TasmotaAdapter, "_create_backup_folder", lambda self: None):
         return TasmotaAdapter(manager=MagicMock())
