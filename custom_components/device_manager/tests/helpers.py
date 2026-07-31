@@ -52,6 +52,27 @@ def stub_aiohttp() -> None:
     sys.modules.setdefault("aiohttp.web", web_mod)
 
 
+def stub_dto() -> None:
+    """Expose the dependency-free composite DTOs under ``...device_manager.dto``.
+
+    Controllers import DTOs via ``from ..dto import X``. Loading the real
+    ``dto`` package ``__init__`` would pull in the persistence layer, so this
+    helper loads only the stdlib-only DTO modules and attaches their classes to
+    a stub ``dto`` package module.
+    """
+    dto_pkg = sys.modules.get("custom_components.device_manager.dto")
+    if dto_pkg is None:
+        dto_pkg = types.ModuleType("custom_components.device_manager.dto")
+        sys.modules["custom_components.device_manager.dto"] = dto_pkg
+
+    ha_sync = load_module(
+        "dto/ha_sync_result_dto.py",
+        package="custom_components.device_manager.dto",
+        module_name="ha_sync_result_dto",
+    )
+    dto_pkg.HaSyncResultDto = ha_sync.HaSyncResultDto  # type: ignore[attr-defined]
+
+
 def load_module(
     rel_path: str,
     package: "str | None" = None,
@@ -136,21 +157,29 @@ def load_device_model():
     _dm = types.ModuleType("custom_components.device_manager")
     _utils = types.ModuleType("custom_components.device_manager.utils")
     _utils.case_convert = case_convert  # type: ignore[attr-defined]
+    _persistence = types.ModuleType("custom_components.device_manager.persistence")
+    _persistence_models = types.ModuleType(
+        "custom_components.device_manager.persistence.models"
+    )
 
     sys.modules.setdefault("custom_components", _cm)
     sys.modules.setdefault("custom_components.device_manager", _dm)
     sys.modules.setdefault("custom_components.device_manager.utils", _utils)
     sys.modules.setdefault("custom_components.device_manager.utils.case_convert", case_convert)
+    sys.modules.setdefault("custom_components.device_manager.persistence", _persistence)
+    sys.modules.setdefault(
+        "custom_components.device_manager.persistence.models", _persistence_models
+    )
 
     base_mod = load_module(
-        "models/base.py",
-        package="custom_components.device_manager.models",
+        "persistence/models/base.py",
+        package="custom_components.device_manager.persistence.models",
     )
-    sys.modules["custom_components.device_manager.models.base"] = base_mod
+    sys.modules["custom_components.device_manager.persistence.models.base"] = base_mod
 
     device_mod = load_module(
-        "models/device.py",
-        package="custom_components.device_manager.models",
+        "persistence/models/device.py",
+        package="custom_components.device_manager.persistence.models",
     )
 
     import types as _types

@@ -1,4 +1,4 @@
-"""Tests for the deploy()/scan() concurrency lock in provisioning/deploy.py.
+"""Tests for the deploy()/scan() concurrency lock in managers/deploy.py.
 
 Verifies that a second deploy() or scan() call raises DeployInProgressError
 immediately (instead of racing with an in-progress run on the same SQLite
@@ -15,7 +15,7 @@ import helpers  # provided via sys.path by run_tests.py
 assert_raises = helpers.assert_raises
 
 # ---------------------------------------------------------------------------
-# Bootstrap: load provisioning/deploy.py with its heavier dependencies
+# Bootstrap: load managers/deploy.py with its heavier dependencies
 # (ProvisioningManager, FirmwareFactory, NetworkScanner, DatabaseManager,
 # DeviceRepository, Initializer) stubbed out, since this test only exercises
 # the module-level concurrency lock, not the actual deploy/scan logic.
@@ -26,41 +26,42 @@ helpers.stub_ha_modules()
 for _name in (
     "custom_components",
     "custom_components.device_manager",
-    "custom_components.device_manager.provisioning",
-    "custom_components.device_manager.provisioning.core",
-    "custom_components.device_manager.services",
+    "custom_components.device_manager.managers",
+    "custom_components.device_manager.persistence",
+    "custom_components.device_manager.firmware",
+    "custom_components.device_manager.firmware.base",
 ):
     sys.modules.setdefault(_name, types.ModuleType(_name))
 
-_core_manager_stub = types.ModuleType("custom_components.device_manager.provisioning.core.manager")
-_core_manager_stub.ProvisioningManager = object  # type: ignore[attr-defined]
-sys.modules["custom_components.device_manager.provisioning.core.manager"] = _core_manager_stub
+_provision_manager_stub = types.ModuleType("custom_components.device_manager.managers.provision_manager")
+_provision_manager_stub.ProvisioningManager = object  # type: ignore[attr-defined]
+sys.modules["custom_components.device_manager.managers.provision_manager"] = _provision_manager_stub
 
-_core_factory_stub = types.ModuleType("custom_components.device_manager.provisioning.core.firmware_factory")
-_core_factory_stub.FirmwareFactory = object  # type: ignore[attr-defined]
-sys.modules["custom_components.device_manager.provisioning.core.firmware_factory"] = _core_factory_stub
+_factory_stub = types.ModuleType("custom_components.device_manager.firmware.base.firmware_factory")
+_factory_stub.FirmwareFactory = object  # type: ignore[attr-defined]
+sys.modules["custom_components.device_manager.firmware.base.firmware_factory"] = _factory_stub
 
-_core_scanner_stub = types.ModuleType("custom_components.device_manager.provisioning.core.scanner")
-_core_scanner_stub.NetworkScanner = object  # type: ignore[attr-defined]
-sys.modules["custom_components.device_manager.provisioning.core.scanner"] = _core_scanner_stub
+_scanner_stub = types.ModuleType("custom_components.device_manager.managers.network_scanner")
+_scanner_stub.NetworkScanner = object  # type: ignore[attr-defined]
+sys.modules["custom_components.device_manager.managers.network_scanner"] = _scanner_stub
 
-_prov_utility_stub = types.ModuleType("custom_components.device_manager.provisioning.utility")
-_prov_utility_stub.Initializer = object  # type: ignore[attr-defined]
-_prov_utility_stub.get_config = lambda key, default='': default  # type: ignore[attr-defined]
-sys.modules["custom_components.device_manager.provisioning.utility"] = _prov_utility_stub
+_utility_stub = types.ModuleType("custom_components.device_manager.firmware.base.utility")
+_utility_stub.Initializer = object  # type: ignore[attr-defined]
+_utility_stub.get_config = lambda key, default='': default  # type: ignore[attr-defined]
+sys.modules["custom_components.device_manager.firmware.base.utility"] = _utility_stub
 
-_db_manager_stub = types.ModuleType("custom_components.device_manager.services.database_manager")
+_db_manager_stub = types.ModuleType("custom_components.device_manager.persistence.database_manager")
 _db_manager_stub.DatabaseManager = object  # type: ignore[attr-defined]
-sys.modules["custom_components.device_manager.services.database_manager"] = _db_manager_stub
+sys.modules["custom_components.device_manager.persistence.database_manager"] = _db_manager_stub
 
-_repos_stub = types.ModuleType("custom_components.device_manager.repositories")
+_repos_stub = types.ModuleType("custom_components.device_manager.persistence.repositories")
 _repos_stub.DeviceRepository = object  # type: ignore[attr-defined]
-sys.modules["custom_components.device_manager.repositories"] = _repos_stub
+sys.modules["custom_components.device_manager.persistence.repositories"] = _repos_stub
 
 # Module under test.
 _deploy_module = helpers.load_module(
-    "provisioning/deploy.py",
-    package="custom_components.device_manager.provisioning",
+    "managers/deploy.py",
+    package="custom_components.device_manager.managers",
     module_name="deploy_module",
 )
 

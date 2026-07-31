@@ -18,8 +18,8 @@ if TYPE_CHECKING:
     # Only for static type-checking: the real classes are loaded dynamically
     # below via helpers.load_module() so MyPy can resolve their real types
     # without this import ever running (avoids needing homeassistant at runtime).
-    from custom_components.device_manager.models.device import DmDevice as DmDeviceType
-    from custom_components.device_manager.provisioning.adapters.tasmota import (
+    from custom_components.device_manager.persistence.models.device import DmDevice as DmDeviceType
+    from custom_components.device_manager.firmware.tasmota.provision import (
         TasmotaAdapter as TasmotaAdapterType,
     )
 
@@ -35,10 +35,11 @@ helpers.stub_ha_modules()
 for _name in (
     "custom_components",
     "custom_components.device_manager",
-    "custom_components.device_manager.models",
-    "custom_components.device_manager.provisioning",
-    "custom_components.device_manager.provisioning.core",
-    "custom_components.device_manager.provisioning.adapters",
+    "custom_components.device_manager.persistence",
+    "custom_components.device_manager.persistence.models",
+    "custom_components.device_manager.firmware",
+    "custom_components.device_manager.firmware.base",
+    "custom_components.device_manager.firmware.tasmota",
 ):
     sys.modules.setdefault(_name, types.ModuleType(_name))
 
@@ -51,18 +52,18 @@ sys.modules.setdefault("custom_components.device_manager.utils", _utils_pkg_mod)
 sys.modules.setdefault("custom_components.device_manager.utils.case_convert", _case_convert)
 
 # Real models.base + models.device modules, registered so relative imports
-# from firmware_base.py / tasmota.py resolve correctly.
+# from firmware_adapter.py / provision.py resolve correctly.
 _models_base = helpers.load_module(
-    "models/base.py",
-    package="custom_components.device_manager.models",
+    "persistence/models/base.py",
+    package="custom_components.device_manager.persistence.models",
 )
-sys.modules["custom_components.device_manager.models.base"] = _models_base
+sys.modules["custom_components.device_manager.persistence.models.base"] = _models_base
 
 _models_device = helpers.load_module(
-    "models/device.py",
-    package="custom_components.device_manager.models",
+    "persistence/models/device.py",
+    package="custom_components.device_manager.persistence.models",
 )
-sys.modules["custom_components.device_manager.models.device"] = _models_device
+sys.modules["custom_components.device_manager.persistence.models.device"] = _models_device
 
 DmDevice = _models_device.DmDevice
 DeviceRoomRef = _models_device.DeviceRoomRef
@@ -70,22 +71,29 @@ DeviceFloorRef = _models_device.DeviceFloorRef
 DeviceBuildingRef = _models_device.DeviceBuildingRef
 DeviceLinkedRefs = _models_device.DeviceLinkedRefs
 
-# Stub provisioning.utility.get_config (reads env/settings in the real app).
-_prov_utility_stub = types.ModuleType("custom_components.device_manager.provisioning.utility")
+# Stub firmware.base.utility.get_config (reads env/settings in the real app).
+_prov_utility_stub = types.ModuleType("custom_components.device_manager.firmware.base.utility")
 _prov_utility_stub.get_config = lambda key, default='': default  # type: ignore[attr-defined]
-sys.modules["custom_components.device_manager.provisioning.utility"] = _prov_utility_stub
+sys.modules["custom_components.device_manager.firmware.base.utility"] = _prov_utility_stub
 
-# Real firmware_base module (only depends on models.device, already stubbed above).
-_firmware_base = helpers.load_module(
-    "provisioning/core/firmware_base.py",
-    package="custom_components.device_manager.provisioning.core",
+# Real firmware_adapter module (only depends on persistence.models.device, loaded above).
+_firmware_adapter = helpers.load_module(
+    "firmware/base/firmware_adapter.py",
+    package="custom_components.device_manager.firmware.base",
 )
-sys.modules["custom_components.device_manager.provisioning.core.firmware_base"] = _firmware_base
+sys.modules["custom_components.device_manager.firmware.base.firmware_adapter"] = _firmware_adapter
+
+# Real tasmota.shared module (pure HTTP/URL/Referer helpers used by provision.py).
+_tasmota_shared = helpers.load_module(
+    "firmware/tasmota/shared.py",
+    package="custom_components.device_manager.firmware.tasmota",
+)
+sys.modules["custom_components.device_manager.firmware.tasmota.shared"] = _tasmota_shared
 
 # Module under test.
 _tasmota_module = helpers.load_module(
-    "provisioning/adapters/tasmota.py",
-    package="custom_components.device_manager.provisioning.adapters",
+    "firmware/tasmota/provision.py",
+    package="custom_components.device_manager.firmware.tasmota",
     module_name="tasmota_module",
 )
 TasmotaAdapter = _tasmota_module.TasmotaAdapter

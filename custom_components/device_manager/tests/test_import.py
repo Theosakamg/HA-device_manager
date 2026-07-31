@@ -12,36 +12,36 @@ import helpers  # provided via sys.path by run_tests.py
 # Bootstrap: load services and repositories without importing the full HA package
 # ---------------------------------------------------------------------------
 
-database_manager_module = helpers.load_module("services/database_manager.py")
+database_manager_module = helpers.load_module("persistence/database_manager.py")
 DatabaseManager = database_manager_module.DatabaseManager  # type: ignore[attr-defined]
 
-csv_import_module = helpers.load_module("services/csv_import_service.py")
+csv_import_module = helpers.load_module("managers/csv_import_service.py")
 CSVImportService = csv_import_module.CSVImportService  # type: ignore[attr-defined]
 
 # Inject package namespace for relative imports in repositories
 _cm = types.ModuleType("custom_components")
 _dm = types.ModuleType("custom_components.device_manager")
-_svc = types.ModuleType("custom_components.device_manager.services")
-_svc.database_manager = database_manager_module  # type: ignore[attr-defined]
+_persist = types.ModuleType("custom_components.device_manager.persistence")
+_persist.database_manager = database_manager_module  # type: ignore[attr-defined]
 
 sys.modules["custom_components"] = _cm
 sys.modules["custom_components.device_manager"] = _dm
-sys.modules["custom_components.device_manager.services"] = _svc
-sys.modules["custom_components.device_manager.services.database_manager"] = database_manager_module
+sys.modules["custom_components.device_manager.persistence"] = _persist
+sys.modules["custom_components.device_manager.persistence.database_manager"] = database_manager_module
 
 base_repo_module = helpers.load_module(
-    "repositories/base.py",
-    package="custom_components.device_manager.repositories",
+    "persistence/repositories/base.py",
+    package="custom_components.device_manager.persistence.repositories",
 )
 
 
 # Load individual repository modules
 def load_repository(repo_name: str):
     """Load a repository module."""
-    sys.modules["custom_components.device_manager.repositories.base"] = base_repo_module
+    sys.modules["custom_components.device_manager.persistence.repositories.base"] = base_repo_module
     return helpers.load_module(
-        f"repositories/{repo_name}.py",
-        package="custom_components.device_manager.repositories",
+        f"persistence/repositories/{repo_name}.py",
+        package="custom_components.device_manager.persistence.repositories",
     )
 
 

@@ -16,9 +16,9 @@ export interface ClearIPCacheResult {
 export interface ScanStats {
   total: number;
   mapped: number;
-  not_found: number;
+  notFound: number;
   errors: number;
-  error_details: string[];
+  errorDetails: string[];
 }
 
 export interface ScanResult {

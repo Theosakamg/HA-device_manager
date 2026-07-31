@@ -1,0 +1,122 @@
+tasmota_restart_device:
+  name: Restart Tasmota device
+  description: Restart a single Tasmota device over HTTP (default) or MQTT.
+  fields:
+    device_id:
+      name: Device
+      description: The Tasmota device to restart.
+      required: true
+      selector:
+        device:
+          integration: tasmota
+    use_mqtt:
+      name: Use MQTT
+      description: Send the command over MQTT instead of HTTP.
+      required: false
+      default: false
+      selector:
+        boolean:
+
+tasmota_upgrade_device:
+  name: Upgrade Tasmota device
+  description: Trigger an OTA firmware upgrade on a single Tasmota device.
+  fields:
+    device_id:
+      name: Device
+      description: The Tasmota device to upgrade.
+      required: true
+      selector:
+        device:
+          integration: tasmota
+    use_mqtt:
+      name: Use MQTT
+      description: Send the command over MQTT instead of HTTP.
+      required: false
+      default: false
+      selector:
+        boolean:
+
+tasmota_get_status:
+  name: Get Tasmota status
+  description: Query the full status (Status 0) of a single Tasmota device over HTTP.
+  fields:
+    device_id:
+      name: Device
+      description: The Tasmota device to query.
+      required: true
+      selector:
+        device:
+          integration: tasmota
+
+tasmota_switch_ap:
+  name: Switch Tasmota AP
+  description: Switch the active WiFi access point of a single Tasmota device.
+  fields:
+    device_id:
+      name: Device
+      description: The Tasmota device.
+      required: true
+      selector:
+        device:
+          integration: tasmota
+    ap_id:
+      name: AP slot
+      description: Access point slot to activate (0 = toggle, 1, or 2).
+      required: false
+      default: 1
+      selector:
+        number:
+          min: 0
+          max: 2
+          mode: box
+
+tasmota_check_unavailable:
+  name: Check unavailable Tasmota devices
+  description: Ping every device (or a filtered subset) and report which are offline.
+  fields:
+    mac_filter:
+      name: MAC filter
+      description: Optional list of MAC addresses to restrict the check to.
+      required: false
+      selector:
+        object:
+
+tasmota_force_ap:
+  name: Force AP (batch)
+  description: Switch the active access point on every device (or a filtered subset).
+  fields:
+    ap_id:
+      name: AP slot
+      description: Access point slot to activate (1 or 2).
+      required: false
+      default: 1
+      selector:
+        number:
+          min: 0
+          max: 2
+          mode: box
+    mac_filter:
+      name: MAC filter
+      description: Optional list of MAC addresses to restrict the operation to.
+      required: false
+      selector:
+        object:
+
+tasmota_update_firmware:
+  name: Update firmware (batch)
+  description: >-
+    Trigger an OTA upgrade only on devices older than the target version
+    (numeric version comparison).
+  fields:
+    version:
+      name: Target version
+      description: The version to upgrade toward (e.g. 14.5.0).
+      required: true
+      selector:
+        text:
+    mac_filter:
+      name: MAC filter
+      description: Optional list of MAC addresses to restrict the operation to.
+      required: false
+      selector:
+        object:

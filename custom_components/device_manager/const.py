@@ -139,3 +139,12 @@ ssh -T -i "$PRIVATE_KEY_FILE" """
 # Legacy aliases (for backward compat in code that imported these directly)
 DNS_SUFFIX = DEFAULT_SETTINGS[SETTING_DNS_SUFFIX]
 DEFAULT_IP_PREFIX = DEFAULT_SETTINGS[SETTING_IP_PREFIX]
+
+# Tasmota runtime service names (registered in __init__.async_setup_entry)
+SERVICE_TASMOTA_RESTART = "tasmota_restart_device"
+SERVICE_TASMOTA_UPGRADE = "tasmota_upgrade_device"
+SERVICE_TASMOTA_STATUS = "tasmota_get_status"
+SERVICE_TASMOTA_CHECK_UNAVAILABLE = "tasmota_check_unavailable"
+SERVICE_TASMOTA_SWITCH_AP = "tasmota_switch_ap"
+SERVICE_TASMOTA_FORCE_AP = "tasmota_force_ap"
+SERVICE_TASMOTA_UPDATE_FIRMWARE = "tasmota_update_firmware"
