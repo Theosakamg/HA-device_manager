@@ -41,6 +41,7 @@ _TEST_MODULES = [
     "test_init_unload",
     "test_network_scanner",
     "test_tasmota_adapter",
+    "test_deploy_lock",
 ]
 
 

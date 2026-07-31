@@ -205,6 +205,26 @@ class TasmotaAdapter(FirmwareAdapter):
 
         return str(requote_uri(url_full))
 
+    def _referer_headers(self, ip: Optional[str]) -> Dict[str, str]:
+        """Build a self-referencing Referer header for Tasmota HTTP API calls.
+
+        Tasmota rejects HTTP API requests with an empty/foreign Referer unless
+        ``SetOption128 1`` is set or a Webpassword is configured (error:
+        ``HTTP: Referer '' denied. Use 'SetOption128 1' ...``). This is enabled
+        by default after a factory reset, which also clears any configured
+        Webpassword - a chicken-and-egg lockout since we need HTTP access to
+        reconfigure the device. Sending a same-origin Referer (as a browser
+        hitting the device's own web UI would) is trusted by Tasmota
+        regardless of SetOption128, so always set it. Do not remove.
+
+        Args:
+            ip: Device IP address.
+
+        Returns:
+            Headers dict with a self-referencing Referer.
+        """
+        return {"Referer": f"http://{ip}/"}
+
     def _dump_config(self, device: DmDevice) -> None:
         """Dump device configuration to backup file.
 
@@ -228,7 +248,8 @@ class TasmotaAdapter(FirmwareAdapter):
                     url,
                     allow_redirects=True,
                     timeout=5.0,
-                    auth=HTTPBasicAuth(DEVICE_USER, password)
+                    auth=HTTPBasicAuth(DEVICE_USER, password),
+                    headers=self._referer_headers(device.ip),
                 )
                 response.raise_for_status()
 
@@ -291,7 +312,8 @@ class TasmotaAdapter(FirmwareAdapter):
                     url,
                     allow_redirects=True,
                     timeout=10.0,
-                    auth=HTTPBasicAuth(DEVICE_USER, password)
+                    auth=HTTPBasicAuth(DEVICE_USER, password),
+                    headers=self._referer_headers(device.ip),
                 )
 
                 # Verify HTTP status code

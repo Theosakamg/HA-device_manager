@@ -5,6 +5,7 @@ Handles deploying firmware configurations to devices.
 
 import asyncio
 import logging
+import threading
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 
@@ -21,35 +22,45 @@ logger = logging.getLogger(__name__)
 _DEPLOY_DONE = "done"
 _DEPLOY_FAIL = "fail"
 
+# deploy() and scan() each run synchronously inside a Home Assistant executor
+# thread and open their own DatabaseManager connection to the same SQLite
+# file. Without serialization, two concurrent calls (e.g. a user triggering a
+# second deploy while one is running) can collide on writes. This lock
+# rejects a second call immediately (see DeployInProgressError) rather than
+# letting it race - the caller (deploy_controller.py) turns that into a 409.
+_DEPLOY_LOCK = threading.Lock()
 
-def _persist_deploy_results(
+
+class DeployInProgressError(RuntimeError):
+    """Raised when deploy() or scan() is invoked while one is already running."""
+
+
+def _persist_device_status(
     db: DatabaseManager,
-    results: Dict[int, str]
+    device_id: int,
+    status: str
 ) -> None:
-    """Persist per-device deploy status to the database (sync wrapper).
+    """Persist a single device's deploy status to the database (sync wrapper).
+
+    Called right after each device is processed, rather than batching all
+    statuses into one commit at the end of the loop, so already-processed
+    devices keep their status even if a later device raises or the whole
+    run is interrupted.
 
     Args:
         db: DatabaseManager instance.
-        results: Dictionary mapping device IDs to deploy status.
+        device_id: ID of the device to update.
+        status: New deploy status (_DEPLOY_DONE or _DEPLOY_FAIL).
     """
 
-    async def _update_all():
+    async def _update() -> None:
         repo = DeviceRepository(db)
-        try:
-            for device_id, status in results.items():
-                try:
-                    await repo.update_deploy_status(device_id, status)
-                except Exception as e:
-                    logger.error(
-                        f"Failed to persist deploy status for device {device_id}: {e}"
-                    )
-        except Exception as e:
-            logger.error(f"Failed to persist deploy results: {e}")
+        await repo.update_deploy_status(device_id, status)
 
     try:
-        asyncio.run(_update_all())
+        asyncio.run(_update())
     except Exception as e:
-        logger.error(f"Failed to persist deploy results: {e}")
+        logger.error(f"Failed to persist deploy status for device {device_id}: {e}")
 
 
 def deploy(
@@ -59,6 +70,10 @@ def deploy(
 ) -> None:
     """Deploy configurations to devices.
 
+    Rejects immediately (raises DeployInProgressError) if a deploy or scan is
+    already running, instead of letting a second executor-thread call open a
+    competing DB connection to the same file mid-run.
+
     Args:
         db_path: Path to database file.
         firmware_types: Optional list of firmware types to filter devices by.
@@ -66,7 +81,24 @@ def deploy(
                        If None, all enabled devices are deployed.
         mac_filter: Optional list of MAC addresses to filter devices.
                    If None or empty, all enabled devices are deployed.
+
+    Raises:
+        DeployInProgressError: If a deploy or scan is already running.
     """
+    if not _DEPLOY_LOCK.acquire(blocking=False):
+        raise DeployInProgressError("A deployment or scan is already in progress")
+    try:
+        _deploy_impl(db_path, firmware_types, mac_filter)
+    finally:
+        _DEPLOY_LOCK.release()
+
+
+def _deploy_impl(
+    db_path: Path,
+    firmware_types: Optional[List[str]] = None,
+    mac_filter: Optional[List[str]] = None
+) -> None:
+    """Actual deploy implementation, guarded by deploy()'s lock."""
     Initializer()
     logger.info('Initializing deployment...')
 
@@ -152,7 +184,6 @@ def deploy(
         success = 0
         error = 0
         skipped = 0
-        deploy_results: Dict[int, str] = {}
 
         for device in devices:
             count += 1
@@ -169,7 +200,7 @@ def deploy(
                     )
                     skipped += 1
                     if device.id is not None:
-                        deploy_results[device.id] = _DEPLOY_FAIL
+                        _persist_device_status(db, device.id, _DEPLOY_FAIL)
                     continue
 
                 # Check if device can be deployed
@@ -177,7 +208,7 @@ def deploy(
                     logger.warning(f"Device {device.mac} cannot be deployed (no IP or not reachable)")
                     skipped += 1
                     if device.id is not None:
-                        deploy_results[device.id] = _DEPLOY_FAIL
+                        _persist_device_status(db, device.id, _DEPLOY_FAIL)
                     continue
 
                 # Deploy device
@@ -186,13 +217,13 @@ def deploy(
 
                 success += 1
                 if device.id is not None:
-                    deploy_results[device.id] = _DEPLOY_DONE
+                    _persist_device_status(db, device.id, _DEPLOY_DONE)
 
             except Exception as e:
                 logger.error(f"Failed to deploy device {device.mac}: {e}", exc_info=True)
                 error += 1
                 if device.id is not None:
-                    deploy_results[device.id] = _DEPLOY_FAIL
+                    _persist_device_status(db, device.id, _DEPLOY_FAIL)
 
         # Post-process (e.g., Zigbee bridge restart)
         logger.info("Running post-processing...")
@@ -201,11 +232,6 @@ def deploy(
                 adapter.post_process(devices)
             except Exception as e:
                 logger.error(f"Post-processing failed for {adapter.get_firmware_type()}: {e}")
-
-        # Persist deploy results
-        if deploy_results:
-            logger.info(f"Persisting deploy status for {len(deploy_results)} devices...")
-            _persist_deploy_results(db, deploy_results)
 
         logger.info(
             f"Deployment completed! Total: {count}, Success: {success}, "
@@ -222,12 +248,28 @@ def deploy(
 def scan(db_path: Path) -> Dict[str, Any]:
     """Scan network and update device IP addresses.
 
+    Rejects immediately (raises DeployInProgressError) if a deploy or scan is
+    already running.
+
     Args:
         db_path: Path to database file.
 
     Returns:
         Statistics dictionary with scan results.
+
+    Raises:
+        DeployInProgressError: If a deploy or scan is already running.
     """
+    if not _DEPLOY_LOCK.acquire(blocking=False):
+        raise DeployInProgressError("A deployment or scan is already in progress")
+    try:
+        return _scan_impl(db_path)
+    finally:
+        _DEPLOY_LOCK.release()
+
+
+def _scan_impl(db_path: Path) -> Dict[str, Any]:
+    """Actual scan implementation, guarded by scan()'s lock."""
     Initializer()
     logger.info('Initializing network scan...')
 
