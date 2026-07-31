@@ -10,7 +10,21 @@ from typing import Any
 from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
 
-from ..const import DATA_KEY_DB, DATA_KEY_REPOS, DOMAIN
+from ..const import DATA_KEY_CRYPTO, DATA_KEY_DB, DOMAIN
+from ..persistence.database_manager import DatabaseManager
+from ..persistence.repositories import (
+    ActivityLogRepository,
+    BuildingRepository,
+    DeviceFirmwareRepository,
+    DeviceFunctionRepository,
+    DeviceModelRepository,
+    DeviceRepository,
+    FloorRepository,
+    MaintenanceRepository,
+    RoomRepository,
+    SettingsRepository,
+    StatsRepository,
+)
 from ..utils.case_convert import to_camel_case_dict, to_snake_case_dict
 
 _LOGGER = logging.getLogger(__name__)
@@ -111,15 +125,28 @@ def csrf_protect(func):
 
 
 def get_repos(request: web.Request) -> dict[str, Any]:
-    """Return the shared repository dict.
+    """Build a fresh set of repositories for this request.
 
-    Single coupling point between controllers and hass.data.  All
-    controllers must go through this helper instead of accessing
-    ``hass.data[DOMAIN]`` directly.
+    Repositories are lightweight (no I/O at construction time), so creating
+    them per-request is cheap and avoids sharing mutable state across requests.
+    The DatabaseManager singleton (and crypto key) are read from hass.data.
     """
     hass = request.app["hass"]
-    repos: dict[str, Any] = hass.data[DOMAIN][DATA_KEY_REPOS]
-    return repos
+    db: DatabaseManager = hass.data[DOMAIN][DATA_KEY_DB]
+    crypto_key: str = hass.data[DOMAIN].get(DATA_KEY_CRYPTO, "")
+    return {
+        "building": BuildingRepository(db),
+        "floor": FloorRepository(db),
+        "room": RoomRepository(db, crypto_key=crypto_key),
+        "device": DeviceRepository(db),
+        "device_model": DeviceModelRepository(db),
+        "device_firmware": DeviceFirmwareRepository(db),
+        "device_function": DeviceFunctionRepository(db),
+        "settings": SettingsRepository(db),
+        "activity_log": ActivityLogRepository(db),
+        "stats": StatsRepository(db),
+        "maintenance": MaintenanceRepository(db),
+    }
 
 
 def get_db_path(request: web.Request):
