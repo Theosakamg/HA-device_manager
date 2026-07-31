@@ -76,6 +76,7 @@ class DeviceBuildingRef:
 class DeviceLinkedRefs:
     """Transient reference names for model, firmware, function and target."""
     model_name: str = ""
+    model_template: str = ""
     firmware_name: str = ""
     function_name: str = ""
     target_mac: str = ""
@@ -174,6 +175,7 @@ class DmDevice(SerializableMixin):
         }
         data["refs"] = {
             "modelName": self._refs.model_name,
+            "modelTemplate": self._refs.model_template,
             "firmwareName": self._refs.firmware_name,
             "functionName": self._refs.function_name,
             "targetMac": self._refs.target_mac,
@@ -404,6 +406,7 @@ class DmDevice(SerializableMixin):
             ),
             _refs=DeviceLinkedRefs(
                 model_name=normalized.get("model_name", ""),
+                model_template=normalized.get("model_template", "") or "",
                 firmware_name=normalized.get("firmware_name", ""),
                 function_name=normalized.get("function_name", ""),
                 target_mac=normalized.get("target_mac", ""),

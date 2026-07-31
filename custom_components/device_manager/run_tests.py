@@ -40,6 +40,7 @@ _TEST_MODULES = [
     "test_mosquitto_config",
     "test_init_unload",
     "test_network_scanner",
+    "test_tasmota_adapter",
 ]
 
 
