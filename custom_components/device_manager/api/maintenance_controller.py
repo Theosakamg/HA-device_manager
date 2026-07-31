@@ -7,7 +7,7 @@ import zipfile
 from aiohttp import web
 
 from .base import BaseView, rate_limit, csrf_protect, get_repos, emit_activity_log
-from ..const import DATA_KEY_DB, DOMAIN, SETTING_MQTT_PREFIX, SETTING_BUS_USERNAME, SETTING_BUS_PASSWORD
+from ..const import SETTING_MQTT_PREFIX, SETTING_BUS_USERNAME, SETTING_BUS_PASSWORD
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -43,7 +43,9 @@ def generate_mosquitto_files(
             _LOGGER.warning(
                 "Room %s/%s/%s has an encrypted password that could not be"
                 " decrypted — skipping from Mosquitto config",
-                b_slug, f_slug, r_slug,
+                b_slug,
+                f_slug,
+                r_slug,
             )
             continue
         # No credentials configured
@@ -60,8 +62,7 @@ def generate_mosquitto_files(
         acl_blocks.append(f"user {admin_user}\ntopic readwrite #\n")
     elif admin_user and not admin_pass:
         _LOGGER.warning(
-            "Admin user '%s' has no password configured in settings —"
-            " skipping admin entry from Mosquitto config",
+            "Admin user '%s' has no password configured in settings —" " skipping admin entry from Mosquitto config",
             admin_user,
         )
 
@@ -75,19 +76,6 @@ def generate_mosquitto_files(
         "acl_file /mosquitto/config/acl\n"
     )
     return passwd_content, acl_content, mosquitto_conf
-
-
-# Whitelist of tables that can be cleaned — protects against injection
-# if the table list were ever made dynamic.
-_CLEANABLE_TABLES = (
-    "dm_devices",
-    "dm_rooms",
-    "dm_floors",
-    "dm_buildings",
-    "dm_device_models",
-    "dm_device_firmwares",
-    "dm_device_functions",
-)
 
 
 class MaintenanceCleanDBAPIView(BaseView):
@@ -120,30 +108,9 @@ class MaintenanceCleanDBAPIView(BaseView):
             )
 
         try:
-            hass = request.app["hass"]
-            db_mgr = hass.data[DOMAIN][DATA_KEY_DB]
-            conn = await db_mgr.get_connection()
+            counts = await get_repos(request)["maintenance"].wipe_all_data()
 
-            # Delete in order respecting FK constraints
-            counts: dict[str, int] = {}
-            for table in _CLEANABLE_TABLES:
-                cursor = await conn.execute(
-                    f"DELETE FROM {table}"  # noqa: S608 — table from whitelist
-                )
-                counts[table] = cursor.rowcount
-
-            # Reset autoincrement counters (sqlite_sequence)
-            for table in _CLEANABLE_TABLES:
-                await conn.execute(
-                    "DELETE FROM sqlite_sequence WHERE name = ?",
-                    (table,),
-                )
-
-            await conn.commit()
-
-            _LOGGER.warning(
-                "Database cleaned: %s", counts
-            )
+            _LOGGER.warning("Database cleaned: %s", counts)
             await emit_activity_log(
                 request,
                 event_type="action",
@@ -152,10 +119,12 @@ class MaintenanceCleanDBAPIView(BaseView):
                 result=str(counts),
                 severity="warning",
             )
-            return self.json({
-                "success": True,
-                "deleted": counts,
-            })
+            return self.json(
+                {
+                    "success": True,
+                    "deleted": counts,
+                }
+            )
         except Exception as err:
             _LOGGER.exception("Database clean failed", exc_info=err)
             return self.json(
@@ -179,15 +148,7 @@ class MaintenanceClearIPCacheAPIView(BaseView):
             JSON with the number of devices updated.
         """
         try:
-            hass = request.app["hass"]
-            db_mgr = hass.data[DOMAIN][DATA_KEY_DB]
-            conn = await db_mgr.get_connection()
-
-            cursor = await conn.execute(
-                "UPDATE dm_devices SET ip = NULL WHERE ip IS NOT NULL"
-            )
-            updated = cursor.rowcount
-            await conn.commit()
+            updated = await get_repos(request)["maintenance"].clear_ip_cache()
 
             _LOGGER.info("IP cache cleared: %d devices updated", updated)
             await emit_activity_log(
@@ -256,13 +217,15 @@ class MaintenanceMosquittoConfigAPIView(BaseView):
                 for floor in floors:
                     rooms = await repos["room"].find_by_floor(floor.id)
                     for room in rooms:
-                        rows.append((
-                            building.slug,
-                            floor.slug,
-                            room.login or None,
-                            room.password,
-                            room.slug,
-                        ))
+                        rows.append(
+                            (
+                                building.slug,
+                                floor.slug,
+                                room.login or None,
+                                room.password,
+                                room.slug,
+                            )
+                        )
 
             passwd_content, acl_content, mosquitto_conf = generate_mosquitto_files(
                 rows, mqtt_prefix, admin_user, admin_pass

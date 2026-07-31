@@ -15,8 +15,10 @@ from .repositories import (
     DeviceModelRepository,
     DeviceRepository,
     FloorRepository,
+    MaintenanceRepository,
     RoomRepository,
     SettingsRepository,
+    StatsRepository,
 )
 
 __all__ = [
@@ -28,6 +30,8 @@ __all__ = [
     "DeviceModelRepository",
     "DeviceRepository",
     "FloorRepository",
+    "MaintenanceRepository",
     "RoomRepository",
     "SettingsRepository",
+    "StatsRepository",
 ]

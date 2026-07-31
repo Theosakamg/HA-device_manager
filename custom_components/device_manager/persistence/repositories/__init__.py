@@ -9,6 +9,8 @@ from .device_firmware_repository import DeviceFirmwareRepository
 from .device_function_repository import DeviceFunctionRepository
 from .settings_repository import SettingsRepository
 from .activity_log_repository import ActivityLogRepository
+from .stats_repository import StatsRepository
+from .maintenance_repository import MaintenanceRepository
 
 __all__ = [
     "BuildingRepository",
@@ -20,4 +22,6 @@ __all__ = [
     "DeviceFunctionRepository",
     "SettingsRepository",
     "ActivityLogRepository",
+    "StatsRepository",
+    "MaintenanceRepository",
 ]

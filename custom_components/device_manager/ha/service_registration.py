@@ -36,7 +36,8 @@ from ..const import (
 )
 from ..persistence.repositories import SettingsRepository
 from ..firmware.tasmota.target import TasmotaTargetError, resolve_device_id_to_mac
-from ..managers import maintenance_manager, update_manager
+from ..managers.maintenance_manager import MaintenanceManager
+from ..managers.update_manager import UpdateManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -94,12 +95,15 @@ async def _log(hass: HomeAssistant, call: ServiceCall, message: str, result: str
 def async_register_services(hass: HomeAssistant) -> None:
     """Register all Tasmota runtime services on *hass*."""
 
+    maintenance = MaintenanceManager()
+    update = UpdateManager()
+
     async def _restart(call: ServiceCall) -> ServiceResponse:
         mac = await _resolve_mac(hass, call)
         settings = await _load_settings(hass)
         use_mqtt = bool(call.data.get("use_mqtt", False))
         result = await hass.async_add_executor_job(
-            maintenance_manager.restart_device, _db_path(hass), mac, settings, use_mqtt
+            maintenance.restart_device, _db_path(hass), mac, settings, use_mqtt
         )
         await _log(hass, call, f"Restart {mac}", "success")
         return dict(result)
@@ -109,7 +113,7 @@ def async_register_services(hass: HomeAssistant) -> None:
         settings = await _load_settings(hass)
         use_mqtt = bool(call.data.get("use_mqtt", False))
         result = await hass.async_add_executor_job(
-            update_manager.upgrade_device, _db_path(hass), mac, settings, use_mqtt
+            update.upgrade_device, _db_path(hass), mac, settings, use_mqtt
         )
         await _log(hass, call, f"Upgrade {mac}", "success")
         return dict(result)
@@ -118,7 +122,7 @@ def async_register_services(hass: HomeAssistant) -> None:
         mac = await _resolve_mac(hass, call)
         settings = await _load_settings(hass)
         result = await hass.async_add_executor_job(
-            maintenance_manager.get_status, _db_path(hass), mac, settings
+            maintenance.get_status, _db_path(hass), mac, settings
         )
         return dict(result)
 
@@ -127,7 +131,7 @@ def async_register_services(hass: HomeAssistant) -> None:
         settings = await _load_settings(hass)
         ap_id = int(call.data.get("ap_id", 1))
         result = await hass.async_add_executor_job(
-            maintenance_manager.switch_ap, _db_path(hass), mac, settings, ap_id
+            maintenance.switch_ap, _db_path(hass), mac, settings, ap_id
         )
         await _log(hass, call, f"Switch AP{ap_id} {mac}", "success")
         return dict(result)
@@ -136,7 +140,7 @@ def async_register_services(hass: HomeAssistant) -> None:
         settings = await _load_settings(hass)
         mac_filter = call.data.get("mac_filter") or None
         result = await hass.async_add_executor_job(
-            maintenance_manager.check_unavailable, _db_path(hass), settings, mac_filter
+            maintenance.check_unavailable, _db_path(hass), settings, mac_filter
         )
         return dict(result)
 
@@ -145,7 +149,7 @@ def async_register_services(hass: HomeAssistant) -> None:
         ap_id = int(call.data.get("ap_id", 1))
         mac_filter = call.data.get("mac_filter") or None
         result = await hass.async_add_executor_job(
-            maintenance_manager.force_ap_batch, _db_path(hass), settings, ap_id, mac_filter
+            maintenance.force_ap_batch, _db_path(hass), settings, ap_id, mac_filter
         )
         await _log(hass, call, f"Force AP{ap_id} (batch)", "success")
         return dict(result)
@@ -157,7 +161,7 @@ def async_register_services(hass: HomeAssistant) -> None:
             raise ServiceValidationError("version is required")
         mac_filter = call.data.get("mac_filter") or None
         result = await hass.async_add_executor_job(
-            update_manager.update_firmware_batch,
+            update.update_firmware_batch,
             _db_path(hass),
             settings,
             target_version,

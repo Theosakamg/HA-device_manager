@@ -4,16 +4,24 @@ from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
+# .env / .env.sample live at the root of the deployed module
+# (custom_components/device_manager/), not inside firmware/base/, so the fallback
+# file is found identically in every deployment case:
+# - dev: docker-compose bind-mounts ./custom_components/device_manager as-is
+# - prod: install.sh does `cp -r custom_components/device_manager <config>/custom_components/device_manager`
+_MODULE_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_DOTENV_PATH = os.path.join(_MODULE_ROOT, '.env')
+
 
 class Initializer:
 
     def __init__(self) -> None:
-        load_dotenv()
+        load_dotenv(dotenv_path=_DOTENV_PATH)
 
 
 def load_configs() -> dict:
     configs: dict[str, str] = {}
-    dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+    dotenv_path = _DOTENV_PATH
     if not os.path.exists(dotenv_path):
         logger.debug("No .env file found, skipping config file loading")
         return configs

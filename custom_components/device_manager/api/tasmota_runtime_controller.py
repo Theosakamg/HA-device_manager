@@ -16,9 +16,13 @@ from .base import (
     csrf_protect,
     emit_activity_log,
 )
-from ..managers import maintenance_manager, update_manager
+from ..managers.maintenance_manager import MaintenanceManager, BatchInProgressError, TasmotaRuntimeError
+from ..managers.update_manager import UpdateManager
 
 _LOGGER = logging.getLogger(__name__)
+
+_maintenance = MaintenanceManager()
+_update = UpdateManager()
 
 
 async def _load_settings(request):
@@ -52,9 +56,9 @@ class TasmotaRestartAPIView(BaseView):
         use_mqtt = bool(body.get("use_mqtt", False))
         try:
             result = await hass.async_add_executor_job(
-                maintenance_manager.restart_device, get_db_path(request), mac, settings, use_mqtt
+                _maintenance.restart_device, get_db_path(request), mac, settings, use_mqtt
             )
-        except maintenance_manager.TasmotaRuntimeError as exc:
+        except TasmotaRuntimeError as exc:
             return self.json({"error": str(exc)}, status_code=502)
         await emit_activity_log(
             request, event_type="action", entity_type="device",
@@ -81,9 +85,9 @@ class TasmotaUpgradeAPIView(BaseView):
         use_mqtt = bool(body.get("use_mqtt", False))
         try:
             result = await hass.async_add_executor_job(
-                update_manager.upgrade_device, get_db_path(request), mac, settings, use_mqtt
+                _update.upgrade_device, get_db_path(request), mac, settings, use_mqtt
             )
-        except update_manager.TasmotaRuntimeError as exc:
+        except TasmotaRuntimeError as exc:
             return self.json({"error": str(exc)}, status_code=502)
         await emit_activity_log(
             request, event_type="action", entity_type="device",
@@ -108,9 +112,9 @@ class TasmotaStatusAPIView(BaseView):
         settings = await _load_settings(request)
         try:
             result = await hass.async_add_executor_job(
-                maintenance_manager.get_status, get_db_path(request), mac, settings
+                _maintenance.get_status, get_db_path(request), mac, settings
             )
-        except maintenance_manager.TasmotaRuntimeError as exc:
+        except TasmotaRuntimeError as exc:
             return self.json({"error": str(exc)}, status_code=502)
         return self.json(result, status_code=200)
 
@@ -133,9 +137,9 @@ class TasmotaSwitchApAPIView(BaseView):
         ap_id = int(body.get("ap_id", 1))
         try:
             result = await hass.async_add_executor_job(
-                maintenance_manager.switch_ap, get_db_path(request), mac, settings, ap_id
+                _maintenance.switch_ap, get_db_path(request), mac, settings, ap_id
             )
-        except maintenance_manager.TasmotaRuntimeError as exc:
+        except TasmotaRuntimeError as exc:
             return self.json({"error": str(exc)}, status_code=502)
         await emit_activity_log(
             request, event_type="action", entity_type="device",
@@ -161,9 +165,9 @@ class TasmotaCheckUnavailableAPIView(BaseView):
             mac_filter = mac_filter.split(",")
         try:
             result = await hass.async_add_executor_job(
-                maintenance_manager.check_unavailable, get_db_path(request), settings, mac_filter
+                _maintenance.check_unavailable, get_db_path(request), settings, mac_filter
             )
-        except maintenance_manager.BatchInProgressError as exc:
+        except BatchInProgressError as exc:
             return self.json({"error": str(exc)}, status_code=409)
         return self.json(result, status_code=200)
 
@@ -186,9 +190,9 @@ class TasmotaForceApAPIView(BaseView):
             mac_filter = mac_filter.split(",")
         try:
             result = await hass.async_add_executor_job(
-                maintenance_manager.force_ap_batch, get_db_path(request), settings, ap_id, mac_filter
+                _maintenance.force_ap_batch, get_db_path(request), settings, ap_id, mac_filter
             )
-        except maintenance_manager.BatchInProgressError as exc:
+        except BatchInProgressError as exc:
             return self.json({"error": str(exc)}, status_code=409)
         await emit_activity_log(
             request, event_type="action", entity_type="device",
@@ -217,13 +221,13 @@ class TasmotaUpdateFirmwareAPIView(BaseView):
             mac_filter = mac_filter.split(",")
         try:
             result = await hass.async_add_executor_job(
-                update_manager.update_firmware_batch,
+                _update.update_firmware_batch,
                 get_db_path(request),
                 settings,
                 str(target_version),
                 mac_filter,
             )
-        except update_manager.BatchInProgressError as exc:
+        except BatchInProgressError as exc:
             return self.json({"error": str(exc)}, status_code=409)
         await emit_activity_log(
             request, event_type="action", entity_type="device",
