@@ -4,6 +4,7 @@ Handles provisioning of Tasmota devices.
 """
 
 import errno
+import json
 import logging
 import os
 from datetime import datetime
@@ -326,6 +327,42 @@ class TasmotaAdapter(FirmwareAdapter):
                 logger.warning(f"Command attempt {attempt + 1} failed, retrying...")
                 sleep(1.5)
 
+    def _configure_template(self, device: DmDevice) -> None:
+        """Apply the device model's Tasmota GPIO template, if one is defined.
+
+        Sends the model's ``template`` JSON (e.g.
+        ``{"NAME":...,"GPIO":[...],"FLAG":0,"BASE":1}``) via Tasmota's
+        ``Template`` command followed by ``Module 0`` to activate it.
+
+        Never forces a default: if the device has no model assigned, or the
+        model has no template configured, this is a no-op. Malformed template
+        JSON is logged and skipped (fail-soft) rather than aborting the
+        deploy.
+
+        Args:
+            device: Device to configure.
+        """
+        template_json = (device._refs.model_template or "").strip()
+
+        if not template_json:
+            logger.debug(
+                f"[{device.mac}] No template defined for model "
+                f"'{device._refs.model_name}', skipping."
+            )
+            return
+
+        try:
+            json.loads(template_json)
+        except (ValueError, TypeError) as e:
+            logger.warning(
+                f"[{device.mac}] Invalid template JSON for model "
+                f"'{device._refs.model_name}', skipping: {e}"
+            )
+            return
+
+        logger.debug(f"[{device.mac}] Applying template: {template_json}")
+        self._send_commands(device, {"Template": template_json, "Module": "0"})
+
     def _configure_device(self, device: DmDevice) -> None:
         """Configure Tasmota device with base settings.
 
@@ -342,6 +379,11 @@ class TasmotaAdapter(FirmwareAdapter):
         hostname = device.hostname()
         mqtt_topic_location = self._get_mqtt_topic_location(device)
         mqtt_topic_device = self._get_mqtt_topic_device(device)
+
+        # GPIO template (Part 0): must be applied before anything else so the
+        # correct module/GPIO mapping is in place for the settings that follow.
+        logger.info(f"[{device.mac}] Applying device model template...")
+        self._configure_template(device)
 
         # Base configuration (Part 1)
         logger.info(f"[{device.mac}] Applying base configuration...")

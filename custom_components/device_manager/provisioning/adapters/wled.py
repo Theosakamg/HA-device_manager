@@ -10,7 +10,7 @@ import os
 import subprocess
 from datetime import datetime
 from time import sleep
-from typing import Optional
+from typing import Any, Optional
 
 import requests  # type: ignore[import-untyped]
 
@@ -201,7 +201,7 @@ class WLEDAdapter(FirmwareAdapter):
         mqtt_topic = device.mqtt_topic()
 
         # Build configuration payload
-        config = {
+        config: dict[str, Any] = {
             "id": {
                 "mdns": hostname,
                 "name": device.display_name(),

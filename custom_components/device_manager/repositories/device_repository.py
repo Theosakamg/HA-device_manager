@@ -36,6 +36,7 @@ class DeviceRepository(BaseRepository[DmDevice]):
             h.name AS building_name,
             h.slug AS building_slug,
             dm.name AS model_name,
+            dm.template AS model_template,
             df.name AS firmware_name,
             dfn.name AS function_name,
             t.mac AS target_mac
