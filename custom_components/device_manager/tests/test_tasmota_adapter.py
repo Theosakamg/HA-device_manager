@@ -9,9 +9,19 @@ applied before any other device configuration.
 
 import sys
 import types
-from unittest.mock import MagicMock, call, patch
+from typing import TYPE_CHECKING
+from unittest.mock import MagicMock, patch
 
 import helpers  # provided via sys.path by run_tests.py
+
+if TYPE_CHECKING:
+    # Only for static type-checking: the real classes are loaded dynamically
+    # below via helpers.load_module() so MyPy can resolve their real types
+    # without this import ever running (avoids needing homeassistant at runtime).
+    from custom_components.device_manager.models.device import DmDevice as DmDeviceType
+    from custom_components.device_manager.provisioning.adapters.tasmota import (
+        TasmotaAdapter as TasmotaAdapterType,
+    )
 
 assert_raises = helpers.assert_raises
 
@@ -85,9 +95,9 @@ TasmotaAdapter = _tasmota_module.TasmotaAdapter
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _make_device(model_template: str = "", ip: str = "192.168.1.50"):
+def _make_device(model_template: str = "", ip: str = "192.168.1.50") -> "DmDeviceType":
     """Build a minimal DmDevice suitable for adapter tests."""
-    return DmDevice(
+    return DmDevice(  # type: ignore[no-any-return]
         mac="AA:BB:CC:DD:EE:FF",
         ip=ip,
         position_slug="desk",
@@ -105,10 +115,10 @@ def _make_device(model_template: str = "", ip: str = "192.168.1.50"):
     )
 
 
-def _make_adapter():
+def _make_adapter() -> "TasmotaAdapterType":
     """Build a TasmotaAdapter without touching the real filesystem."""
     with patch.object(TasmotaAdapter, "_create_backup_folder", lambda self: None):
-        return TasmotaAdapter(manager=MagicMock())
+        return TasmotaAdapter(manager=MagicMock())  # type: ignore[no-any-return]
 
 
 _VALID_TEMPLATE = (
