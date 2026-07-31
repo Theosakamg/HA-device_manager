@@ -75,6 +75,13 @@ _prov_utility_stub = types.ModuleType("custom_components.device_manager.provisio
 _prov_utility_stub.get_config = lambda key, default='': default  # type: ignore[attr-defined]
 sys.modules["custom_components.device_manager.provisioning.utility"] = _prov_utility_stub
 
+# Real tasmota_shared helpers (depend on models.device + utils.case_convert).
+_tasmota_shared = helpers.load_module(
+    "provisioning/core/tasmota_shared.py",
+    package="custom_components.device_manager.provisioning.core",
+)
+sys.modules["custom_components.device_manager.provisioning.core.tasmota_shared"] = _tasmota_shared
+
 # Real firmware_base module (only depends on models.device, already stubbed above).
 _firmware_base = helpers.load_module(
     "provisioning/core/firmware_base.py",

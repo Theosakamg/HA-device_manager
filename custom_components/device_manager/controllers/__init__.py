@@ -21,6 +21,15 @@ from .ha_groups_controller import HaGroupsSyncAPIView
 from .ha_floors_controller import HaFloorsSyncAPIView
 from .ha_rooms_controller import HaRoomsSyncAPIView
 from .activity_log_controller import ActivityLogAPIView, ActivityLogExportAPIView, ActivityLogPurgeAPIView
+from .tasmota_runtime_controller import (
+    TasmotaRestartAPIView,
+    TasmotaUpgradeAPIView,
+    TasmotaStatusAPIView,
+    TasmotaSwitchApAPIView,
+    TasmotaCheckUnavailableAPIView,
+    TasmotaForceApAPIView,
+    TasmotaUpdateFirmwareAPIView,
+)
 
 ALL_VIEWS = [
     StaticView,
@@ -57,4 +66,11 @@ ALL_VIEWS = [
     ActivityLogAPIView,
     ActivityLogExportAPIView,
     ActivityLogPurgeAPIView,
+    TasmotaRestartAPIView,
+    TasmotaUpgradeAPIView,
+    TasmotaStatusAPIView,
+    TasmotaSwitchApAPIView,
+    TasmotaCheckUnavailableAPIView,
+    TasmotaForceApAPIView,
+    TasmotaUpdateFirmwareAPIView,
 ]

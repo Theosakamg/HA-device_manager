@@ -104,6 +104,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     for view_class in ALL_VIEWS:
         hass.http.register_view(view_class())
 
+    # Register Tasmota runtime services (restart, upgrade, status, ...)
+    from .services.service_registration import async_register_services
+
+    async_register_services(hass)
+
     # Register sidebar panel as a native HA custom panel (web component)
     frontend.async_register_built_in_panel(
         hass,
@@ -127,6 +132,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     _LOGGER.info("Unloading Device Manager config entry")
+    # Unregister Tasmota runtime services
+    from .services.service_registration import async_unregister_services
+
+    async_unregister_services(hass)
     # Remove the sidebar panel so it can be re-registered on reload
     frontend.async_remove_panel(hass, "device_manager")
     # Close database connection

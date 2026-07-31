@@ -13,9 +13,9 @@ from typing import Optional, Dict
 
 import requests  # type: ignore[import-untyped]
 from requests.auth import HTTPBasicAuth  # type: ignore[import-untyped]
-from requests.utils import requote_uri  # type: ignore[import-untyped]
 
 from ..core.firmware_base import FirmwareAdapter
+from ..core import tasmota_shared
 from ..utility import get_config
 from ...models.device import DmDevice
 
@@ -176,13 +176,8 @@ class TasmotaAdapter(FirmwareAdapter):
         logger.info(f"Successfully deployed Tasmota device: {device.mac}")
 
     def _sanitize_data(self, data: str) -> str:
-        """Sanitize data for URL encoding."""
-        data_safe = data.replace("%", "%25")
-        data_safe = data_safe.replace("/", "%2F")
-        data_safe = data_safe.replace("#", "%23")
-        data_safe = data_safe.replace(" ", "%20")
-        data_safe = data_safe.replace(";", "%3B")
-        return data_safe
+        """Sanitize data for URL encoding (delegates to tasmota_shared)."""
+        return tasmota_shared.sanitize_data(data)
 
     def _build_url(self, ip: str, cmd: str, data: Optional[str] = None) -> str:
         """Build and sanitize URL for Tasmota HTTP API.
@@ -195,15 +190,7 @@ class TasmotaAdapter(FirmwareAdapter):
         Returns:
             Sanitized URL string.
         """
-        url_base = URL_BASE_TPL.format(IP_DEV=ip, CMND=cmd)
-
-        if data:
-            data_safe = self._sanitize_data(data)
-            url_full = url_base + data_safe
-        else:
-            url_full = url_base
-
-        return str(requote_uri(url_full))
+        return tasmota_shared.build_url(ip, cmd, data)
 
     def _referer_headers(self, ip: Optional[str]) -> Dict[str, str]:
         """Build a self-referencing Referer header for Tasmota HTTP API calls.
@@ -223,7 +210,7 @@ class TasmotaAdapter(FirmwareAdapter):
         Returns:
             Headers dict with a self-referencing Referer.
         """
-        return {"Referer": f"http://{ip}/"}
+        return tasmota_shared.referer_headers(ip)
 
     def _dump_config(self, device: DmDevice) -> None:
         """Dump device configuration to backup file.
@@ -474,7 +461,7 @@ class TasmotaAdapter(FirmwareAdapter):
             Topic location string (e.g., "home/l0/room").
         """
         mqtt_prefix = self.manager.get_setting('mqtt_topic_prefix', 'home')
-        return f"{mqtt_prefix}/{device._floor.slug}/{device._room.slug}"
+        return tasmota_shared.mqtt_topic_location(device, mqtt_prefix)
 
     def _get_mqtt_topic_device(self, device: DmDevice) -> str:
         """Get MQTT topic device part.
@@ -485,8 +472,7 @@ class TasmotaAdapter(FirmwareAdapter):
         Returns:
             Topic device string (e.g., "/function/position").
         """
-        function_slug = device._refs.function_name.lower().replace(" ", "_")
-        return f"/{function_slug}/{device.position_slug}"
+        return tasmota_shared.mqtt_topic_device(device)
 
     def _configure_interlock(self, device: DmDevice) -> None:
         """Configure interlock settings.
@@ -584,7 +570,7 @@ class TasmotaAdapter(FirmwareAdapter):
                 target_topic = mqtt_topic_full.replace(mqtt_topic_base, '').lstrip('/')
             else:
                 logger.warning(f"Target device with ID {device.target_id} not found for {device.mac}")
-        
+
         return target_topic
 
     def _configure_light(self, device: DmDevice) -> None:

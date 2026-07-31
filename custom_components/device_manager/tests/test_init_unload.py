@@ -115,6 +115,14 @@ class TestAsyncUnloadEntry(unittest.TestCase):
         services_mod = sys.modules["custom_components.device_manager.services"]
         services_mod.database_manager = db_manager_mod  # type: ignore[attr-defined]
 
+        # Stub the Tasmota service registration module imported by __init__.py.
+        service_reg_name = "custom_components.device_manager.services.service_registration"
+        service_reg_mod = types.ModuleType(service_reg_name)
+        service_reg_mod.async_register_services = lambda hass: None  # type: ignore[attr-defined]
+        service_reg_mod.async_unregister_services = lambda hass: None  # type: ignore[attr-defined]
+        sys.modules[service_reg_name] = service_reg_mod
+        services_mod.service_registration = service_reg_mod  # type: ignore[attr-defined]
+
         # Import the module under test
         import importlib.util
         from pathlib import Path

@@ -832,6 +832,18 @@ export class DmDeviceTable extends LitElement {
           ⧉ ${i18n.t("clone")}
         </button>
         <button
+          class="row-actions-menu-item"
+          @click=${() => this._tasmotaRestart(device)}
+        >
+          🔄 ${i18n.t("tasmota_restart")}
+        </button>
+        <button
+          class="row-actions-menu-item"
+          @click=${() => this._tasmotaUpgrade(device)}
+        >
+          ⬆️ ${i18n.t("tasmota_upgrade")}
+        </button>
+        <button
           class="row-actions-menu-item row-actions-menu-item-danger"
           @click=${() => this._requestDelete(device)}
         >
@@ -1028,5 +1040,25 @@ export class DmDeviceTable extends LitElement {
       }, 4000);
     }
     this._batchDeploying = false;
+  }
+
+  /** Restart a single Tasmota device (per-row action). */
+  private async _tasmotaRestart(device: DmDevice) {
+    this._actionsMenuDevice = null;
+    try {
+      await this._client.tasmotaRestart(device.mac);
+    } catch (err) {
+      console.error("Tasmota restart failed:", err);
+    }
+  }
+
+  /** Trigger an OTA upgrade on a single Tasmota device (per-row action). */
+  private async _tasmotaUpgrade(device: DmDevice) {
+    this._actionsMenuDevice = null;
+    try {
+      await this._client.tasmotaUpgrade(device.mac);
+    } catch (err) {
+      console.error("Tasmota upgrade failed:", err);
+    }
   }
 }

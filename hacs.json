@@ -3,5 +3,5 @@
   "zip_release": true,
   "filename": "device_manager.zip",
   "render_readme": true,
-  "homeassistant": "2024.2.0"
+  "homeassistant": "2024.8.0"
 }
