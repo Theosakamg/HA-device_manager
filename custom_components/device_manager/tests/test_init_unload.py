@@ -11,7 +11,6 @@ import types
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-
 DATA_KEY_DB = "db"  # mirrors const.DATA_KEY_DB — resolved at load time
 
 
@@ -102,9 +101,17 @@ class TestAsyncUnloadEntry(unittest.TestCase):
         sys.modules["custom_components.device_manager.utils.crypto"].generate_key = lambda: "testkey"  # type: ignore[attr-defined]
 
         repo_names = [
-            "BuildingRepository", "FloorRepository", "RoomRepository",
-            "DeviceRepository", "DeviceModelRepository", "DeviceFirmwareRepository",
-            "DeviceFunctionRepository", "SettingsRepository", "ActivityLogRepository",
+            "BuildingRepository",
+            "FloorRepository",
+            "RoomRepository",
+            "DeviceRepository",
+            "DeviceModelRepository",
+            "DeviceFirmwareRepository",
+            "DeviceFunctionRepository",
+            "SettingsRepository",
+            "ActivityLogRepository",
+            "StatsRepository",
+            "MaintenanceRepository",
         ]
         repos_mod = sys.modules["custom_components.device_manager.persistence.repositories"]
         for name in repo_names:
@@ -128,10 +135,9 @@ class TestAsyncUnloadEntry(unittest.TestCase):
         # Import the module under test
         import importlib.util
         from pathlib import Path
+
         init_path = Path(__file__).resolve().parents[1] / "__init__.py"
-        spec = importlib.util.spec_from_file_location(
-            "custom_components.device_manager", str(init_path)
-        )
+        spec = importlib.util.spec_from_file_location("custom_components.device_manager", str(init_path))
         assert spec and spec.loader
         self.init_module = importlib.util.module_from_spec(spec)
         self.init_module.__package__ = "custom_components.device_manager"
@@ -195,12 +201,15 @@ if __name__ == "__main__":
 # Test suite registration
 # ---------------------------------------------------------------------------
 
+
 def _make_unload_test(method_name: str):
     """Wrap a TestAsyncUnloadEntry method so setUp() is called first."""
+
     def _run():
         inst = TestAsyncUnloadEntry()
         inst.setUp()
         getattr(inst, method_name)()
+
     return _run
 
 

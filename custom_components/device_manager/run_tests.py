@@ -45,6 +45,8 @@ _TEST_MODULES = [
     "test_scan_report_dto",
     "test_import_result_dto",
     "test_stats_dto",
+    "test_stats_repository",
+    "test_maintenance_repository",
     "test_hierarchy_dto",
     "test_ha_sync_result_dto",
 ]

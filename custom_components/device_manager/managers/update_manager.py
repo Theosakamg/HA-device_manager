@@ -15,8 +15,7 @@ from ..firmware.tasmota.client import BatchInProgressError, TasmotaRuntimeError
 __all__ = [
     "BatchInProgressError",
     "TasmotaRuntimeError",
-    "upgrade_device",
-    "update_firmware_batch",
+    "UpdateManager",
 ]
 
 _UPDATE_BACKENDS: Dict[str, ModuleType] = {
@@ -24,19 +23,31 @@ _UPDATE_BACKENDS: Dict[str, ModuleType] = {
 }
 
 
-def _backend(firmware: str) -> ModuleType:
-    """Return the update backend module for *firmware*."""
-    try:
-        return _UPDATE_BACKENDS[firmware]
-    except KeyError as err:
-        raise ValueError(f"No update backend for firmware '{firmware}'") from err
+class UpdateManager:
+    """Dispatches firmware update operations to a per-firmware backend.
 
+    The firmware family is selected once at construction; every method then
+    forwards to that backend. Only Tasmota is implemented today.
+    """
 
-def upgrade_device(db_path, mac, settings, use_mqtt=False, firmware="tasmota"):
-    """Trigger a single-device OTA upgrade via its firmware update backend."""
-    return _backend(firmware).upgrade_device(db_path, mac, settings, use_mqtt)
+    def __init__(self, firmware: str = "tasmota") -> None:
+        """Resolve the update backend for *firmware*.
 
+        Args:
+            firmware: Firmware family key (defaults to ``"tasmota"``).
 
-def update_firmware_batch(db_path, settings, target_version, mac_filter=None, firmware="tasmota"):
-    """Trigger a version-gated fleet upgrade via the firmware update backend."""
-    return _backend(firmware).update_firmware_batch(db_path, settings, target_version, mac_filter)
+        Raises:
+            ValueError: If no update backend is registered for *firmware*.
+        """
+        try:
+            self._backend = _UPDATE_BACKENDS[firmware]
+        except KeyError as err:
+            raise ValueError(f"No update backend for firmware '{firmware}'") from err
+
+    def upgrade_device(self, db_path, mac, settings, use_mqtt=False):
+        """Trigger a single-device OTA upgrade via its firmware update backend."""
+        return self._backend.upgrade_device(db_path, mac, settings, use_mqtt)
+
+    def update_firmware_batch(self, db_path, settings, target_version, mac_filter=None):
+        """Trigger a version-gated fleet upgrade via the firmware update backend."""
+        return self._backend.update_firmware_batch(db_path, settings, target_version, mac_filter)

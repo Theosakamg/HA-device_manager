@@ -1,8 +1,9 @@
 """API controller for dashboard statistics.
 
-All aggregations are computed directly in SQLite (GROUP BY queries) so that
-only a handful of numbers are transported to the UI instead of the full
-device list.
+All aggregations are computed server-side by :class:`StatsRepository` (the
+persistence layer owns the SQL). The controller only orchestrates the repo
+calls and assembles the :class:`StatsDto`, so a handful of numbers are
+transported to the UI instead of the full device list.
 """
 
 import logging
@@ -45,155 +46,27 @@ class StatsAPIView(BaseView):
     async def get(self, request: web.Request) -> web.Response:
         """Compute and return dashboard statistics."""
         try:
-            repos = get_repos(request)
-            db = repos["device"].db
-            conn = await db.get_connection()
+            stats = get_repos(request)["stats"]
 
-            # ── Hierarchy counts (three cheap COUNT(*) queries) ──────────────
-            cursor = await conn.execute("SELECT COUNT(*) AS n FROM dm_buildings")
-            row = await cursor.fetchone()
-            total_buildings = int(row["n"]) if row else 0
+            hierarchy = await stats.count_hierarchy()
+            settings = await stats.count_settings()
 
-            cursor = await conn.execute("SELECT COUNT(*) AS n FROM dm_floors")
-            row = await cursor.fetchone()
-            total_floors = int(row["n"]) if row else 0
-
-            cursor = await conn.execute("SELECT COUNT(*) AS n FROM dm_rooms")
-            row = await cursor.fetchone()
-            total_rooms = int(row["n"]) if row else 0
-
-            cursor = await conn.execute("SELECT COUNT(*) AS n FROM dm_devices")
-            row = await cursor.fetchone()
-            total_devices = int(row["n"]) if row else 0
-
-            # ── Devices grouped by firmware (LEFT JOIN to keep NULL) ─────────
-            cursor = await conn.execute(
-                """
-                SELECT COALESCE(df.name, 'Unknown') AS name,
-                       COUNT(*) AS cnt
-                FROM dm_devices d
-                LEFT JOIN dm_device_firmwares df ON d.firmware_id = df.id
-                GROUP BY df.id
-                ORDER BY cnt DESC
-                """
+            return self.json(
+                StatsDto(
+                    buildings=hierarchy["buildings"],
+                    floors=hierarchy["floors"],
+                    rooms=hierarchy["rooms"],
+                    devices=hierarchy["devices"],
+                    by_firmware=await stats.devices_by_firmware(),
+                    by_model=await stats.devices_by_model(),
+                    models_count=settings["models"],
+                    firmwares_count=settings["firmwares"],
+                    functions_count=settings["functions"],
+                    deployment=await stats.deployment_totals(),
+                    deployment_by_firmware=await stats.deployment_by_firmware(),
+                    deployment_by_model=await stats.deployment_by_model(),
+                ).to_api_dict()
             )
-            by_firmware = [
-                {"name": row["name"], "count": int(row["cnt"])}
-                for row in await cursor.fetchall()
-            ]
-
-            # ── Devices grouped by model ─────────────────────────────────────
-            cursor = await conn.execute(
-                """
-                SELECT COALESCE(dm.name, 'Unknown') AS name,
-                       COUNT(*) AS cnt
-                FROM dm_devices d
-                LEFT JOIN dm_device_models dm ON d.model_id = dm.id
-                GROUP BY dm.id
-                ORDER BY cnt DESC
-                """
-            )
-            by_model = [
-                {"name": row["name"], "count": int(row["cnt"])}
-                for row in await cursor.fetchall()
-            ]
-
-            # ── Settings counts (models, firmwares, functions) ───────────────
-            cursor = await conn.execute("SELECT COUNT(*) AS n FROM dm_device_models")
-            row = await cursor.fetchone()
-            models_count = int(row["n"]) if row else 0
-
-            cursor = await conn.execute("SELECT COUNT(*) AS n FROM dm_device_firmwares")
-            row = await cursor.fetchone()
-            firmwares_count = int(row["n"]) if row else 0
-
-            cursor = await conn.execute("SELECT COUNT(*) AS n FROM dm_device_functions")
-            row = await cursor.fetchone()
-            functions_count = int(row["n"]) if row else 0
-
-            # ── Deployment statistics (global) ────────────────────────────────
-            cursor = await conn.execute(
-                """
-                SELECT
-                    COUNT(*) AS total,
-                    SUM(CASE WHEN last_deploy_status = 'done' THEN 1 ELSE 0 END) AS success,
-                    SUM(CASE WHEN last_deploy_status = 'fail' THEN 1 ELSE 0 END) AS fail
-                FROM dm_devices
-                WHERE last_deploy_status IS NOT NULL
-                """
-            )
-            row = await cursor.fetchone()
-            deploy_stats = {
-                "total": int(row["total"]) if row else 0,
-                "success": int(row["success"]) if row else 0,
-                "fail": int(row["fail"]) if row else 0,
-            }
-
-            # ── Deployment statistics by firmware ─────────────────────────────
-            cursor = await conn.execute(
-                """
-                SELECT
-                    COALESCE(df.name, 'Unknown') AS name,
-                    COUNT(*) AS total,
-                    SUM(CASE WHEN d.last_deploy_status = 'done' THEN 1 ELSE 0 END) AS success,
-                    SUM(CASE WHEN d.last_deploy_status = 'fail' THEN 1 ELSE 0 END) AS fail
-                FROM dm_devices d
-                LEFT JOIN dm_device_firmwares df ON d.firmware_id = df.id
-                WHERE d.last_deploy_status IS NOT NULL
-                GROUP BY df.id
-                ORDER BY total DESC
-                """
-            )
-            deploy_by_firmware = [
-                {
-                    "name": row["name"],
-                    "total": int(row["total"]),
-                    "success": int(row["success"]),
-                    "fail": int(row["fail"]),
-                }
-                for row in await cursor.fetchall()
-            ]
-
-            # ── Deployment statistics by model ────────────────────────────────
-            cursor = await conn.execute(
-                """
-                SELECT
-                    COALESCE(dm.name, 'Unknown') AS name,
-                    COUNT(*) AS total,
-                    SUM(CASE WHEN d.last_deploy_status = 'done' THEN 1 ELSE 0 END) AS success,
-                    SUM(CASE WHEN d.last_deploy_status = 'fail' THEN 1 ELSE 0 END) AS fail,
-                    CAST(SUM(CASE WHEN d.last_deploy_status = 'done' THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS success_rate
-                FROM dm_devices d
-                LEFT JOIN dm_device_models dm ON d.model_id = dm.id
-                WHERE d.last_deploy_status IS NOT NULL
-                GROUP BY dm.id
-                ORDER BY success_rate ASC, total DESC
-                """
-            )
-            deploy_by_model = [
-                {
-                    "name": row["name"],
-                    "total": int(row["total"]),
-                    "success": int(row["success"]),
-                    "fail": int(row["fail"]),
-                }
-                for row in await cursor.fetchall()
-            ]
-
-            return self.json(StatsDto(
-                buildings=total_buildings,
-                floors=total_floors,
-                rooms=total_rooms,
-                devices=total_devices,
-                by_firmware=by_firmware,
-                by_model=by_model,
-                models_count=models_count,
-                firmwares_count=firmwares_count,
-                functions_count=functions_count,
-                deployment=deploy_stats,
-                deployment_by_firmware=deploy_by_firmware,
-                deployment_by_model=deploy_by_model,
-            ).to_api_dict())
 
         except Exception as err:
             _LOGGER.exception("Failed to compute stats", exc_info=err)

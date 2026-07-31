@@ -189,6 +189,15 @@ class DatabaseManager:
             await self._connection.execute("PRAGMA busy_timeout = 5000")
         return self._connection
 
+    async def checkpoint(self) -> None:
+        """Flush all pending WAL frames into the main database file.
+
+        Truncates the write-ahead log so a subsequent file-level snapshot
+        (e.g. a backup export) contains the latest committed state.
+        """
+        conn = await self.get_connection()
+        await conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+
     async def initialize(self) -> None:
         """Create all database tables if they do not exist.
 
@@ -229,9 +238,7 @@ class DatabaseManager:
 
             await self._run_migrations(db)
 
-            _LOGGER.info(
-                "Database initialized successfully with all tables"
-            )
+            _LOGGER.info("Database initialized successfully with all tables")
         except Exception as err:
             _LOGGER.error("Failed to initialize database: %s", err)
             raise
@@ -260,17 +267,13 @@ class DatabaseManager:
         cursor = await db.execute("SELECT name FROM dm_migrations")
         applied = {row[0] for row in await cursor.fetchall()}
 
-        files = sorted(
-            f for f in migrations_dir.glob("[0-9]*.py")
-        )
+        files = sorted(f for f in migrations_dir.glob("[0-9]*.py"))
 
         for mig_file in files:
             if mig_file.name in applied:
                 continue
             try:
-                spec = importlib.util.spec_from_file_location(
-                    mig_file.stem, mig_file
-                )
+                spec = importlib.util.spec_from_file_location(mig_file.stem, mig_file)
                 module = importlib.util.module_from_spec(spec)  # type: ignore[arg-type]
                 spec.loader.exec_module(module)  # type: ignore[union-attr]
                 await module.run(db)
@@ -281,6 +284,4 @@ class DatabaseManager:
                 await db.commit()
                 _LOGGER.info("Applied migration: %s", mig_file.name)
             except Exception as err:
-                _LOGGER.warning(
-                    "Migration %s skipped: %s", mig_file.name, err
-                )
+                _LOGGER.warning("Migration %s skipped: %s", mig_file.name, err)

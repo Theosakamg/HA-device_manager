@@ -29,6 +29,8 @@ from .persistence.repositories import (
     DeviceFunctionRepository,
     SettingsRepository,
     ActivityLogRepository,
+    StatsRepository,
+    MaintenanceRepository,
 )
 from .persistence.database_manager import DatabaseManager
 from .utils.crypto import generate_key
@@ -97,6 +99,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "device_function": DeviceFunctionRepository(db_manager),
         "settings": SettingsRepository(db_manager),
         "activity_log": ActivityLogRepository(db_manager),
+        "stats": StatsRepository(db_manager),
+        "maintenance": MaintenanceRepository(db_manager),
     }
     hass.data[DOMAIN][DATA_KEY_REPOS] = repos
 

@@ -45,7 +45,7 @@ utils/                  Cross-cutting stdlib-only helpers (crypto, case_convert)
 | `firmware/tasmota/`        | Tasmota client + provision/update/maintenance treatment.                       |
 | `firmware/wled/`           | WLED provision treatment.                                                       |
 | `firmware/zigbee/`         | Zigbee provision treatment.                                                     |
-| `managers/`                | `*Manager` orchestrators + `deploy`, `network_scanner`, `csv_import_service`.    |
+| `managers/`                | `*Manager` orchestrators (`deploy_manager`, `provision_manager`, `update_manager`, `maintenance_manager`) + `network_scanner`, `csv_import_service`. |
 | `api/`                     | `HomeAssistantView` subclasses (`*_controller.py`) + `crud`/`base` helpers.     |
 | `ha/`                      | HA service registration and HA device lookup.                                   |
 | `utils/`                   | Pure, dependency-free helpers.                                                  |

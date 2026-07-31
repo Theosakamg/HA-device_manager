@@ -46,7 +46,6 @@ provisioning/
 │
 ├── deploy.py                 # Deploy and scan operations
 ├── utility.py                # Utility functions and config management
-├── .env.sample              # Environment configuration template
 └── legacy/                   # Old implementation (archived)
     ├── common.py
     ├── contract.py
@@ -453,33 +452,31 @@ All Zigbee devices are configured in a batch:
 **From Python:**
 ```python
 from pathlib import Path
-from custom_components.device_manager.provisioning.deploy import deploy
+from custom_components.device_manager.managers.deploy_manager import DeployManager
+
+manager = DeployManager(db_path=Path('/path/to/database.db'))
 
 # Deploy all enabled devices (for all deployable firmwares from DB)
-deploy(
-    db_path=Path('/path/to/database.db'),
+manager.deploy(
     firmware_types=None,  # No filter = all devices
     mac_filter=None       # No filter = all devices
 )
 
 # Deploy only devices with Tasmota or WLED firmware
 # (adapters are still loaded based on DB deployable firmwares)
-deploy(
-    db_path=db_path,
+manager.deploy(
     firmware_types=['tasmota', 'wled'],  # Filter devices by firmware
     mac_filter=None
 )
 
 # Deploy only specific devices by MAC address
-deploy(
-    db_path=db_path,
+manager.deploy(
     firmware_types=None,
     mac_filter=['aa:bb:cc:dd:ee:ff', '11:22:33:44:55:66']
 )
 
 # Combine both filters: only Tasmota devices with specific MACs
-deploy(
-    db_path=db_path,
+manager.deploy(
     firmware_types=['tasmota'],
     mac_filter=['aa:bb:cc:dd:ee:ff']
 )
@@ -519,9 +516,9 @@ curl -X POST \
 **From Python:**
 ```python
 from pathlib import Path
-from custom_components.device_manager.provisioning.deploy import scan
+from custom_components.device_manager.managers.deploy_manager import DeployManager
 
-stats = scan(db_path=Path('/path/to/database.db'))
+stats = DeployManager(db_path=Path('/path/to/database.db')).scan()
 
 print(f"Total devices: {stats['total']}")
 print(f"Mapped: {stats['mapped']}")
@@ -541,7 +538,7 @@ curl -X POST http://localhost:8123/api/device_manager/scan
 
 ### Environment Variables (.env)
 
-The provisioning system uses environment variables or database settings for configuration. See `.env.sample` for all available options.
+The provisioning system uses environment variables or database settings for configuration. `.env` / `.env.sample` live at the root of the deployed module (`custom_components/device_manager/.env`), not under `firmware/`, so they resolve identically whether the module is bind-mounted (dev) or copied via `install.sh` (prod). See `.env.sample` for all available options.
 
 **Network Scanning:**
 ```bash

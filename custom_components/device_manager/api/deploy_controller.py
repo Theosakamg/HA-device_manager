@@ -3,7 +3,7 @@
 import logging
 
 from .base import BaseView, get_repos, get_db_path, rate_limit, csrf_protect, emit_activity_log, fmt_entity_label
-from ..managers.deploy import deploy, scan, DeployInProgressError
+from ..managers.deploy_manager import DeployManager, DeployInProgressError
 from ..managers.network_scanner import NetworkScanError
 from ..firmware.base.utility import update_runtime_configs
 from ..dto import ScanReportDto
@@ -43,8 +43,9 @@ class DeployAPIView(BaseView):
             mac_filter = mac_filter.split(",")
 
         db_path = get_db_path(request)
+        manager = DeployManager(db_path)
         try:
-            await hass.async_add_executor_job(deploy, db_path, firmware_types, mac_filter)
+            await hass.async_add_executor_job(manager.deploy, firmware_types, mac_filter)
         except DeployInProgressError as exc:
             _LOGGER.warning("Deploy rejected: %s", exc)
             return self.json({"error": str(exc)}, status_code=409)
@@ -89,8 +90,9 @@ class DevicesScanAPIView(BaseView):
         settings = await get_repos(request)["settings"].get_all()
         update_runtime_configs(settings)
         db_path = get_db_path(request)
+        manager = DeployManager(db_path)
         try:
-            stats = await hass.async_add_executor_job(scan, db_path)
+            stats = await hass.async_add_executor_job(manager.scan)
         except DeployInProgressError as exc:
             _LOGGER.warning("Scan rejected: %s", exc)
             return self.json({"error": str(exc)}, status_code=409)

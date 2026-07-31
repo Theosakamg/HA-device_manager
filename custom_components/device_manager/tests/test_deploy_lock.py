@@ -1,4 +1,4 @@
-"""Tests for the deploy()/scan() concurrency lock in managers/deploy.py.
+"""Tests for the deploy()/scan() concurrency lock in managers/deploy_manager.py.
 
 Verifies that a second deploy() or scan() call raises DeployInProgressError
 immediately (instead of racing with an in-progress run on the same SQLite
@@ -15,7 +15,7 @@ import helpers  # provided via sys.path by run_tests.py
 assert_raises = helpers.assert_raises
 
 # ---------------------------------------------------------------------------
-# Bootstrap: load managers/deploy.py with its heavier dependencies
+# Bootstrap: load managers/deploy_manager.py with its heavier dependencies
 # (ProvisioningManager, FirmwareFactory, NetworkScanner, DatabaseManager,
 # DeviceRepository, Initializer) stubbed out, since this test only exercises
 # the module-level concurrency lock, not the actual deploy/scan logic.
@@ -60,15 +60,14 @@ sys.modules["custom_components.device_manager.persistence.repositories"] = _repo
 
 # Module under test.
 _deploy_module = helpers.load_module(
-    "managers/deploy.py",
+    "managers/deploy_manager.py",
     package="custom_components.device_manager.managers",
     module_name="deploy_module",
 )
 
-deploy = _deploy_module.deploy
-scan = _deploy_module.scan
+DeployManager = _deploy_module.DeployManager
 DeployInProgressError = _deploy_module.DeployInProgressError
-_DEPLOY_LOCK = _deploy_module._DEPLOY_LOCK
+_DEPLOY_LOCK = DeployManager._DEPLOY_LOCK
 
 
 # ---------------------------------------------------------------------------
@@ -80,7 +79,7 @@ def test_deploy_raises_when_already_in_progress():
     assert _DEPLOY_LOCK.acquire(blocking=False), "test setup: lock should be free"
     try:
         with assert_raises(DeployInProgressError):
-            deploy(db_path="/tmp/dm-test.sqlite")
+            DeployManager("/tmp/dm-test.sqlite").deploy()
     finally:
         _DEPLOY_LOCK.release()
 
@@ -90,35 +89,35 @@ def test_scan_raises_when_deploy_in_progress():
     assert _DEPLOY_LOCK.acquire(blocking=False), "test setup: lock should be free"
     try:
         with assert_raises(DeployInProgressError):
-            scan(db_path="/tmp/dm-test.sqlite")
+            DeployManager("/tmp/dm-test.sqlite").scan()
     finally:
         _DEPLOY_LOCK.release()
 
 
 def test_deploy_releases_lock_on_success():
     """deploy() releases the lock after a successful run and forwards args."""
-    with patch.object(_deploy_module, "_deploy_impl") as mock_impl:
-        deploy(db_path="/tmp/dm-test.sqlite", firmware_types=["Tasmota"])
+    with patch.object(DeployManager, "_deploy_impl") as mock_impl:
+        DeployManager("/tmp/dm-test.sqlite").deploy(firmware_types=["Tasmota"])
 
-    mock_impl.assert_called_once_with("/tmp/dm-test.sqlite", ["Tasmota"], None)
+    mock_impl.assert_called_once_with(["Tasmota"], None)
     assert not _DEPLOY_LOCK.locked(), "lock must be released after a successful deploy"
 
 
 def test_deploy_releases_lock_even_if_impl_raises():
     """deploy() releases the lock even if the underlying implementation raises."""
-    with patch.object(_deploy_module, "_deploy_impl", side_effect=RuntimeError("boom")):
+    with patch.object(DeployManager, "_deploy_impl", side_effect=RuntimeError("boom")):
         with assert_raises(RuntimeError, match="boom"):
-            deploy(db_path="/tmp/dm-test.sqlite")
+            DeployManager("/tmp/dm-test.sqlite").deploy()
 
     assert not _DEPLOY_LOCK.locked(), "lock must be released even after a failed deploy"
 
 
 def test_scan_releases_lock_on_success():
     """scan() releases the lock after a successful run and returns _scan_impl's result."""
-    with patch.object(_deploy_module, "_scan_impl", return_value={"total": 0}) as mock_impl:
-        result = scan(db_path="/tmp/dm-test.sqlite")
+    with patch.object(DeployManager, "_scan_impl", return_value={"total": 0}) as mock_impl:
+        result = DeployManager("/tmp/dm-test.sqlite").scan()
 
-    mock_impl.assert_called_once_with("/tmp/dm-test.sqlite")
+    mock_impl.assert_called_once_with()
     assert result == {"total": 0}
     assert not _DEPLOY_LOCK.locked(), "lock must be released after a successful scan"
 

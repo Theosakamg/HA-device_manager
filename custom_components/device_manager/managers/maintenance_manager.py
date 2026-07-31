@@ -15,11 +15,7 @@ from ..firmware.tasmota.client import BatchInProgressError, TasmotaRuntimeError
 __all__ = [
     "BatchInProgressError",
     "TasmotaRuntimeError",
-    "restart_device",
-    "get_status",
-    "switch_ap",
-    "check_unavailable",
-    "force_ap_batch",
+    "MaintenanceManager",
 ]
 
 _MAINTENANCE_BACKENDS: Dict[str, ModuleType] = {
@@ -27,34 +23,43 @@ _MAINTENANCE_BACKENDS: Dict[str, ModuleType] = {
 }
 
 
-def _backend(firmware: str) -> ModuleType:
-    """Return the maintenance backend module for *firmware*."""
-    try:
-        return _MAINTENANCE_BACKENDS[firmware]
-    except KeyError as err:
-        raise ValueError(f"No maintenance backend for firmware '{firmware}'") from err
+class MaintenanceManager:
+    """Dispatches runtime maintenance operations to a per-firmware backend.
 
+    The firmware family is selected once at construction; every method then
+    forwards to that backend. Only Tasmota is implemented today.
+    """
 
-def restart_device(db_path, mac, settings, use_mqtt=False, firmware="tasmota"):
-    """Restart a single device via its firmware maintenance backend."""
-    return _backend(firmware).restart_device(db_path, mac, settings, use_mqtt)
+    def __init__(self, firmware: str = "tasmota") -> None:
+        """Resolve the maintenance backend for *firmware*.
 
+        Args:
+            firmware: Firmware family key (defaults to ``"tasmota"``).
 
-def get_status(db_path, mac, settings, firmware="tasmota"):
-    """Query a single device's status via its firmware maintenance backend."""
-    return _backend(firmware).get_status(db_path, mac, settings)
+        Raises:
+            ValueError: If no maintenance backend is registered for *firmware*.
+        """
+        try:
+            self._backend = _MAINTENANCE_BACKENDS[firmware]
+        except KeyError as err:
+            raise ValueError(f"No maintenance backend for firmware '{firmware}'") from err
 
+    def restart_device(self, db_path, mac, settings, use_mqtt=False):
+        """Restart a single device via its firmware maintenance backend."""
+        return self._backend.restart_device(db_path, mac, settings, use_mqtt)
 
-def switch_ap(db_path, mac, settings, ap_id=1, firmware="tasmota"):
-    """Switch a single device's active AP via its firmware maintenance backend."""
-    return _backend(firmware).switch_ap(db_path, mac, settings, ap_id)
+    def get_status(self, db_path, mac, settings):
+        """Query a single device's status via its firmware maintenance backend."""
+        return self._backend.get_status(db_path, mac, settings)
 
+    def switch_ap(self, db_path, mac, settings, ap_id=1):
+        """Switch a single device's active AP via its firmware maintenance backend."""
+        return self._backend.switch_ap(db_path, mac, settings, ap_id)
 
-def check_unavailable(db_path, settings, mac_filter=None, firmware="tasmota"):
-    """Report offline devices via the firmware maintenance backend (batch)."""
-    return _backend(firmware).check_unavailable(db_path, settings, mac_filter)
+    def check_unavailable(self, db_path, settings, mac_filter=None):
+        """Report offline devices via the firmware maintenance backend (batch)."""
+        return self._backend.check_unavailable(db_path, settings, mac_filter)
 
-
-def force_ap_batch(db_path, settings, ap_id=1, mac_filter=None, firmware="tasmota"):
-    """Force the active AP fleet-wide via the firmware maintenance backend."""
-    return _backend(firmware).force_ap_batch(db_path, settings, ap_id, mac_filter)
+    def force_ap_batch(self, db_path, settings, ap_id=1, mac_filter=None):
+        """Force the active AP fleet-wide via the firmware maintenance backend."""
+        return self._backend.force_ap_batch(db_path, settings, ap_id, mac_filter)

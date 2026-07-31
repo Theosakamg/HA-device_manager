@@ -45,8 +45,7 @@ class SQLiteExportAPIView(BaseView):
 
             # Flush all pending WAL frames to the main file so the snapshot is
             # complete and consistent.
-            conn = await db_manager.get_connection()
-            await conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            await db_manager.checkpoint()
 
             # Read the database file outside the event loop to avoid blocking.
             loop = asyncio.get_event_loop()
@@ -55,9 +54,7 @@ class SQLiteExportAPIView(BaseView):
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"device_manager_{timestamp}.db"
 
-            _LOGGER.info(
-                "SQLite DB exported: %d bytes → %s", len(data), filename
-            )
+            _LOGGER.info("SQLite DB exported: %d bytes → %s", len(data), filename)
             return web.Response(
                 body=data,
                 content_type="application/octet-stream",

@@ -4,7 +4,7 @@ Runtime maintenance operations for Tasmota devices: restart, status probe,
 WiFi AP switching and fleet-wide availability / AP-forcing batches. Each public
 function runs synchronously inside a Home Assistant executor thread and talks to
 devices over HTTP (default) or MQTT (optional), mirroring the
-``managers/deploy.py`` pattern (sync entry points, own DB connection, a
+``managers/deploy_manager.py`` pattern (sync entry points, own DB connection, a
 module-level lock for batch operations).
 """
 
