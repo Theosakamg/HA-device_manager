@@ -26,7 +26,7 @@ ha_http.HomeAssistantView = _FakeHAView  # type: ignore[attr-defined]
 
 # Stub the base controller module
 base_ctrl_stub = types.ModuleType(
-    "custom_components.device_manager.controllers.base"
+    "custom_components.device_manager.api.base"
 )
 
 
@@ -49,17 +49,18 @@ sys.modules["custom_components"] = types.ModuleType("custom_components")
 sys.modules["custom_components.device_manager"] = types.ModuleType(
     "custom_components.device_manager"
 )
-sys.modules["custom_components.device_manager.controllers"] = types.ModuleType(
-    "custom_components.device_manager.controllers"
+sys.modules["custom_components.device_manager.api"] = types.ModuleType(
+    "custom_components.device_manager.api"
 )
 sys.modules[
-    "custom_components.device_manager.controllers.base"
+    "custom_components.device_manager.api.base"
 ] = base_ctrl_stub
 
 # Now load the actual module under test
+helpers.stub_dto()
 ctrl_module = helpers.load_module(
-    "controllers/ha_floors_controller.py",
-    package="custom_components.device_manager.controllers",
+    "api/ha_floors_controller.py",
+    package="custom_components.device_manager.api",
     module_name="ha_floors_controller",
 )
 

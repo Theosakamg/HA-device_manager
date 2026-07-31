@@ -28,7 +28,7 @@ export class DeviceClient extends CrudClient<DmDevice> {
   /** Restart a single Tasmota device (HTTP by default, MQTT optional). */
   async tasmotaRestart(
     mac: string,
-    useMqtt = false,
+    useMqtt = false
   ): Promise<{ mac: string; transport: string; ok: boolean }> {
     return this.post("/tasmota/restart", { mac, use_mqtt: useMqtt });
   }
@@ -36,29 +36,31 @@ export class DeviceClient extends CrudClient<DmDevice> {
   /** Trigger an OTA upgrade on a single Tasmota device. */
   async tasmotaUpgrade(
     mac: string,
-    useMqtt = false,
+    useMqtt = false
   ): Promise<{ mac: string; transport: string; ok: boolean }> {
     return this.post("/tasmota/upgrade", { mac, use_mqtt: useMqtt });
   }
 
   /** Query the full status of a single Tasmota device. */
-  async tasmotaStatus(
-    mac: string,
-  ): Promise<{ mac: string; online: boolean; status: Record<string, unknown> }> {
+  async tasmotaStatus(mac: string): Promise<{
+    mac: string;
+    online: boolean;
+    status: Record<string, unknown>;
+  }> {
     return this.post("/tasmota/status", { mac });
   }
 
   /** Switch the active WiFi AP of a single Tasmota device. */
   async tasmotaSwitchAp(
     mac: string,
-    apId = 1,
-  ): Promise<{ mac: string; ap_id: number; ok: boolean }> {
+    apId = 1
+  ): Promise<{ mac: string; apId: number; ok: boolean }> {
     return this.post("/tasmota/switch-ap", { mac, ap_id: apId });
   }
 
   /** Ping every (or a filtered subset of) device and report which are offline. */
   async tasmotaCheckUnavailable(
-    macs?: string[],
+    macs?: string[]
   ): Promise<{ checked: number; online: string[]; offline: string[] }> {
     return this.post("/tasmota/check-unavailable", { macs });
   }
@@ -66,15 +68,20 @@ export class DeviceClient extends CrudClient<DmDevice> {
   /** Switch the active AP on every (or filtered) device. */
   async tasmotaForceAp(
     apId = 1,
-    macs?: string[],
-  ): Promise<{ total: number; switched: string[]; failed: string[]; ssid: string }> {
+    macs?: string[]
+  ): Promise<{
+    total: number;
+    switched: string[];
+    failed: string[];
+    ssid: string;
+  }> {
     return this.post("/tasmota/force-ap", { ap_id: apId, macs });
   }
 
   /** Trigger OTA upgrade only on devices older than a target version. */
   async tasmotaUpdateFirmware(
     version: string,
-    macs?: string[],
+    macs?: string[]
   ): Promise<{
     total: number;
     upgraded: string[];

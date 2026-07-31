@@ -42,7 +42,11 @@ _TEST_MODULES = [
     "test_network_scanner",
     "test_tasmota_adapter",
     "test_deploy_lock",
-    "test_tasmota_runtime",
+    "test_scan_report_dto",
+    "test_import_result_dto",
+    "test_stats_dto",
+    "test_hierarchy_dto",
+    "test_ha_sync_result_dto",
 ]
 
 

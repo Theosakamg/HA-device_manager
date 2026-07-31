@@ -35,33 +35,35 @@ for _mod_name, _mod in [
 ]:
     sys.modules.setdefault(_mod_name, _mod)
 
-# Stub services.database_manager
-_db_manager_stub = types.ModuleType("custom_components.device_manager.services.database_manager")
+# Stub persistence.database_manager
+_db_manager_stub = types.ModuleType("custom_components.device_manager.persistence.database_manager")
 _db_manager_stub.DatabaseManager = object  # type: ignore[attr-defined]
 
-# Stub repositories
-_repos_stub = types.ModuleType("custom_components.device_manager.repositories")
+# Stub persistence.repositories
+_repos_stub = types.ModuleType("custom_components.device_manager.persistence.repositories")
 _repos_stub.DeviceRepository = object  # type: ignore[attr-defined]
 
-# Stub provisioning.utility
-_prov_utility_stub = types.ModuleType("custom_components.device_manager.provisioning.utility")
+# Stub firmware.base.utility
+_prov_utility_stub = types.ModuleType("custom_components.device_manager.firmware.base.utility")
 _prov_utility_stub.get_config = lambda key, default='': default  # type: ignore[attr-defined]
 
 for _k, _v in [
     ("custom_components", types.ModuleType("custom_components")),
     ("custom_components.device_manager", types.ModuleType("custom_components.device_manager")),
-    ("custom_components.device_manager.services", types.ModuleType("custom_components.device_manager.services")),
-    ("custom_components.device_manager.services.database_manager", _db_manager_stub),
-    ("custom_components.device_manager.repositories", _repos_stub),
-    ("custom_components.device_manager.provisioning", types.ModuleType("custom_components.device_manager.provisioning")),
-    ("custom_components.device_manager.provisioning.utility", _prov_utility_stub),
+    ("custom_components.device_manager.persistence", types.ModuleType("custom_components.device_manager.persistence")),
+    ("custom_components.device_manager.persistence.database_manager", _db_manager_stub),
+    ("custom_components.device_manager.persistence.repositories", _repos_stub),
+    ("custom_components.device_manager.firmware", types.ModuleType("custom_components.device_manager.firmware")),
+    ("custom_components.device_manager.firmware.base", types.ModuleType("custom_components.device_manager.firmware.base")),
+    ("custom_components.device_manager.firmware.base.utility", _prov_utility_stub),
+    ("custom_components.device_manager.managers", types.ModuleType("custom_components.device_manager.managers")),
 ]:
     sys.modules.setdefault(_k, _v)
 
 # Load scanner module
 _scanner_module = helpers.load_module(
-    "provisioning/core/scanner.py",
-    package="custom_components.device_manager.provisioning.core",
+    "managers/network_scanner.py",
+    package="custom_components.device_manager.managers",
     module_name="scanner_module",
 )
 

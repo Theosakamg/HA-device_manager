@@ -25,7 +25,7 @@ ha_http.HomeAssistantView = _FakeHAView  # type: ignore[attr-defined]
 
 # Stub the base controller module
 base_ctrl_stub = types.ModuleType(
-    "custom_components.device_manager.controllers.base"
+    "custom_components.device_manager.api.base"
 )
 
 class _BaseView(_FakeHAView):
@@ -46,28 +46,29 @@ sys.modules["custom_components.device_manager"] = types.ModuleType(
     "custom_components.device_manager"
 )
 sys.modules[
-    "custom_components.device_manager.controllers"
-] = types.ModuleType("custom_components.device_manager.controllers")
+    "custom_components.device_manager.api"
+] = types.ModuleType("custom_components.device_manager.api")
 sys.modules[
-    "custom_components.device_manager.controllers.base"
+    "custom_components.device_manager.api.base"
 ] = base_ctrl_stub
 
-# Stub ..utils.ha_device_lookup (used by ha_groups_controller for MAC → HA device lookup)
-sys.modules["custom_components.device_manager.utils"] = types.ModuleType(
-    "custom_components.device_manager.utils"
+# Stub ..ha.device_lookup (used by ha_groups_controller for MAC → HA device lookup)
+sys.modules["custom_components.device_manager.ha"] = types.ModuleType(
+    "custom_components.device_manager.ha"
 )
 ha_device_lookup_stub = types.ModuleType(
-    "custom_components.device_manager.utils.ha_device_lookup"
+    "custom_components.device_manager.ha.device_lookup"
 )
 ha_device_lookup_stub.get_ha_device = lambda hass, mac: None  # type: ignore[attr-defined]
 sys.modules[
-    "custom_components.device_manager.utils.ha_device_lookup"
+    "custom_components.device_manager.ha.device_lookup"
 ] = ha_device_lookup_stub
 
 # Now load the actual module under test
+helpers.stub_dto()
 ctrl_module = helpers.load_module(
-    "controllers/ha_groups_controller.py",
-    package="custom_components.device_manager.controllers",
+    "api/ha_groups_controller.py",
+    package="custom_components.device_manager.api",
     module_name="ha_groups_controller",
 )
 

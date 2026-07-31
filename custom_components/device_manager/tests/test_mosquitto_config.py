@@ -19,7 +19,7 @@ import helpers  # provided via sys.path by run_tests.py
 helpers.stub_ha_modules()
 helpers.stub_aiohttp()
 
-_base_stub = types.ModuleType("custom_components.device_manager.controllers.base")
+_base_stub = types.ModuleType("custom_components.device_manager.api.base")
 _base_stub.BaseView = object  # type: ignore[attr-defined]
 _base_stub.rate_limit = lambda **_kw: (lambda f: f)  # type: ignore[attr-defined]
 _base_stub.csrf_protect = lambda f: f  # type: ignore[attr-defined]
@@ -36,15 +36,15 @@ _const_stub.SETTING_BUS_PASSWORD = "bus_password"  # type: ignore[attr-defined]
 for _mod_name, _mod in [
     ("custom_components", types.ModuleType("custom_components")),
     ("custom_components.device_manager", types.ModuleType("custom_components.device_manager")),
-    ("custom_components.device_manager.controllers", types.ModuleType("custom_components.device_manager.controllers")),
-    ("custom_components.device_manager.controllers.base", _base_stub),
+    ("custom_components.device_manager.api", types.ModuleType("custom_components.device_manager.api")),
+    ("custom_components.device_manager.api.base", _base_stub),
     ("custom_components.device_manager.const", _const_stub),
 ]:
     sys.modules.setdefault(_mod_name, _mod)  # type: ignore[arg-type]
 
 _ctrl_module = helpers.load_module(
-    "controllers/maintenance_controller.py",
-    package="custom_components.device_manager.controllers",
+    "api/maintenance_controller.py",
+    package="custom_components.device_manager.api",
     module_name="maintenance_controller",
 )
 

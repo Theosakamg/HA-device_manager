@@ -240,6 +240,8 @@ export class DmImportView extends LitElement {
         created: 0,
         updated: 0,
         skipped: 0,
+        targetResolved: 0,
+        targetFailed: 0,
         errors: [String(err)],
         logs: [],
       };

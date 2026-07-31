@@ -77,10 +77,11 @@ class TestAsyncUnloadEntry(unittest.TestCase):
             "custom_components",
             "custom_components.device_manager",
             "custom_components.device_manager.const",
-            "custom_components.device_manager.controllers",
-            "custom_components.device_manager.repositories",
-            "custom_components.device_manager.services",
-            "custom_components.device_manager.services.database_manager",
+            "custom_components.device_manager.api",
+            "custom_components.device_manager.persistence",
+            "custom_components.device_manager.persistence.repositories",
+            "custom_components.device_manager.persistence.database_manager",
+            "custom_components.device_manager.ha",
             "custom_components.device_manager.utils",
             "custom_components.device_manager.utils.crypto",
         ]:
@@ -97,7 +98,7 @@ class TestAsyncUnloadEntry(unittest.TestCase):
         _const.FRONTEND_JS_FILENAME = "device-manager.js"  # type: ignore[attr-defined]
         _const.PANEL_COMPONENT_NAME = "dm-app-shell"  # type: ignore[attr-defined]
         _const.CRYPTO_KEY_FILENAME = "dm/.device_manager.key"  # type: ignore[attr-defined]
-        sys.modules["custom_components.device_manager.controllers"].ALL_VIEWS = []  # type: ignore[attr-defined]
+        sys.modules["custom_components.device_manager.api"].ALL_VIEWS = []  # type: ignore[attr-defined]
         sys.modules["custom_components.device_manager.utils.crypto"].generate_key = lambda: "testkey"  # type: ignore[attr-defined]
 
         repo_names = [
@@ -105,23 +106,24 @@ class TestAsyncUnloadEntry(unittest.TestCase):
             "DeviceRepository", "DeviceModelRepository", "DeviceFirmwareRepository",
             "DeviceFunctionRepository", "SettingsRepository", "ActivityLogRepository",
         ]
-        repos_mod = sys.modules["custom_components.device_manager.repositories"]
+        repos_mod = sys.modules["custom_components.device_manager.persistence.repositories"]
         for name in repo_names:
             setattr(repos_mod, name, MagicMock())
 
-        db_manager_mod = sys.modules["custom_components.device_manager.services.database_manager"]
+        db_manager_mod = sys.modules["custom_components.device_manager.persistence.database_manager"]
         db_manager_mod.DatabaseManager = MagicMock  # type: ignore[attr-defined]
 
-        services_mod = sys.modules["custom_components.device_manager.services"]
-        services_mod.database_manager = db_manager_mod  # type: ignore[attr-defined]
+        persistence_mod = sys.modules["custom_components.device_manager.persistence"]
+        persistence_mod.database_manager = db_manager_mod  # type: ignore[attr-defined]
 
         # Stub the Tasmota service registration module imported by __init__.py.
-        service_reg_name = "custom_components.device_manager.services.service_registration"
+        service_reg_name = "custom_components.device_manager.ha.service_registration"
         service_reg_mod = types.ModuleType(service_reg_name)
         service_reg_mod.async_register_services = lambda hass: None  # type: ignore[attr-defined]
         service_reg_mod.async_unregister_services = lambda hass: None  # type: ignore[attr-defined]
         sys.modules[service_reg_name] = service_reg_mod
-        services_mod.service_registration = service_reg_mod  # type: ignore[attr-defined]
+        ha_mod = sys.modules["custom_components.device_manager.ha"]
+        ha_mod.service_registration = service_reg_mod  # type: ignore[attr-defined]
 
         # Import the module under test
         import importlib.util

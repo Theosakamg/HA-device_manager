@@ -243,6 +243,8 @@ export interface ImportResult {
   created: number;
   updated: number;
   skipped: number;
+  targetResolved: number;
+  targetFailed: number;
   errors: string[];
   logs: ImportLogEntry[];
 }

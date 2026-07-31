@@ -22,48 +22,55 @@ def _load_device_controller():
     for pkg in (
         "custom_components",
         "custom_components.device_manager",
-        "custom_components.device_manager.controllers",
-        "custom_components.device_manager.models",
+        "custom_components.device_manager.api",
+        "custom_components.device_manager.persistence",
+        "custom_components.device_manager.persistence.models",
         "custom_components.device_manager.utils",
+        "custom_components.device_manager.ha",
     ):
         sys.modules.setdefault(pkg, types.ModuleType(pkg))
 
     # Mock .crud
-    crud_mod = types.ModuleType("custom_components.device_manager.controllers.crud")
+    crud_mod = types.ModuleType("custom_components.device_manager.api.crud")
     crud_mod.CrudListView = type("CrudListView", (), {})  # type: ignore[attr-defined]
     crud_mod.CrudDetailView = type("CrudDetailView", (), {})  # type: ignore[attr-defined]
     crud_mod._handle_errors = lambda name: (lambda f: f)  # type: ignore[attr-defined]
-    sys.modules["custom_components.device_manager.controllers.crud"] = crud_mod
+    sys.modules["custom_components.device_manager.api.crud"] = crud_mod
 
     # Mock .base
-    base_ctrl_mod = types.ModuleType("custom_components.device_manager.controllers.base")
+    base_ctrl_mod = types.ModuleType("custom_components.device_manager.api.base")
     base_ctrl_mod.get_repos = lambda r: {}  # type: ignore[attr-defined]
-    sys.modules["custom_components.device_manager.controllers.base"] = base_ctrl_mod
+    sys.modules["custom_components.device_manager.api.base"] = base_ctrl_mod
 
-    # Mock ..models.base
-    models_base_mod = types.ModuleType("custom_components.device_manager.models.base")
+    # Mock ..persistence.models.base
+    models_base_mod = types.ModuleType("custom_components.device_manager.persistence.models.base")
     models_base_mod.SerializableMixin = object  # type: ignore[attr-defined]
-    sys.modules["custom_components.device_manager.models.base"] = models_base_mod
+    sys.modules["custom_components.device_manager.persistence.models.base"] = models_base_mod
 
-    # Mock ..models.device
-    models_device_mod = types.ModuleType("custom_components.device_manager.models.device")
+    # Mock ..persistence.models.device
+    models_device_mod = types.ModuleType("custom_components.device_manager.persistence.models.device")
     models_device_mod.DmDevice = object  # type: ignore[attr-defined]
-    sys.modules["custom_components.device_manager.models.device"] = models_device_mod
+    sys.modules["custom_components.device_manager.persistence.models.device"] = models_device_mod
 
     # Mock ..utils.case_convert
     case_convert_mod = types.ModuleType("custom_components.device_manager.utils.case_convert")
     case_convert_mod.to_snake_case_dict = lambda d: d  # type: ignore[attr-defined]
     sys.modules["custom_components.device_manager.utils.case_convert"] = case_convert_mod
 
-    # Mock ..utils.ha_device_lookup
-    ha_lookup_mod = types.ModuleType("custom_components.device_manager.utils.ha_device_lookup")
+    # Mock ..ha.device_lookup
+    ha_lookup_mod = types.ModuleType("custom_components.device_manager.ha.device_lookup")
     ha_lookup_mod.get_ha_sw_version = lambda hass, mac: None  # type: ignore[attr-defined]
-    sys.modules["custom_components.device_manager.utils.ha_device_lookup"] = ha_lookup_mod
+    sys.modules["custom_components.device_manager.ha.device_lookup"] = ha_lookup_mod
+
+    # Mock ..dto (DeviceDto used for serialization)
+    dto_mod = types.ModuleType("custom_components.device_manager.dto")
+    dto_mod.DeviceDto = object  # type: ignore[attr-defined]
+    sys.modules["custom_components.device_manager.dto"] = dto_mod
 
     return helpers.load_module(
-        "controllers/device_controller.py",
-        package="custom_components.device_manager.controllers",
-        module_name="custom_components.device_manager.controllers.device_controller",
+        "api/device_controller.py",
+        package="custom_components.device_manager.api",
+        module_name="custom_components.device_manager.api.device_controller",
     )
 
 

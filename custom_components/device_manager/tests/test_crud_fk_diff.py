@@ -29,14 +29,15 @@ ha_http.HomeAssistantView = _FakeHAView  # type: ignore[attr-defined]
 for pkg in (
     "custom_components",
     "custom_components.device_manager",
-    "custom_components.device_manager.controllers",
-    "custom_components.device_manager.models",
+    "custom_components.device_manager.api",
+    "custom_components.device_manager.persistence",
+    "custom_components.device_manager.persistence.models",
     "custom_components.device_manager.utils",
 ):
     sys.modules.setdefault(pkg, types.ModuleType(pkg))
 
 # Stub .base controller
-base_ctrl_stub = types.ModuleType("custom_components.device_manager.controllers.base")
+base_ctrl_stub = types.ModuleType("custom_components.device_manager.api.base")
 
 
 class _BaseView(_FakeHAView):
@@ -50,12 +51,12 @@ base_ctrl_stub.csrf_protect = lambda f: f  # type: ignore[attr-defined]
 base_ctrl_stub.rate_limit = lambda **kw: (lambda f: f)  # type: ignore[attr-defined]
 base_ctrl_stub.emit_activity_log = lambda *a, **kw: None  # type: ignore[attr-defined]
 base_ctrl_stub.fmt_entity_label = lambda t, n, i, s="": f"{t} - {n} [id={i}]"  # type: ignore[attr-defined]
-sys.modules["custom_components.device_manager.controllers.base"] = base_ctrl_stub
+sys.modules["custom_components.device_manager.api.base"] = base_ctrl_stub
 
 # Stub models.base
-models_base_stub = types.ModuleType("custom_components.device_manager.models.base")
+models_base_stub = types.ModuleType("custom_components.device_manager.persistence.models.base")
 models_base_stub.SerializableMixin = object  # type: ignore[attr-defined]
-sys.modules["custom_components.device_manager.models.base"] = models_base_stub
+sys.modules["custom_components.device_manager.persistence.models.base"] = models_base_stub
 
 # Stub utils.case_convert
 case_convert_stub = types.ModuleType("custom_components.device_manager.utils.case_convert")
@@ -64,9 +65,9 @@ sys.modules["custom_components.device_manager.utils.case_convert"] = case_conver
 
 # Load the actual crud module
 crud_mod = helpers.load_module(
-    "controllers/crud.py",
-    package="custom_components.device_manager.controllers",
-    module_name="custom_components.device_manager.controllers.crud",
+    "api/crud.py",
+    package="custom_components.device_manager.api",
+    module_name="custom_components.device_manager.api.crud",
 )
 
 _build_update_diff = crud_mod._build_update_diff

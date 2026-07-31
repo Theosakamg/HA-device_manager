@@ -1,0 +1,513 @@
+"""Zigbee firmware adapter.
+
+Handles provisioning of Zigbee devices via Zigbee2MQTT bridge.
+"""
+
+import errno
+import json
+import logging
+import os
+from datetime import datetime
+from pathlib import Path
+from typing import List, Dict, Optional, Any
+
+import yaml  # type: ignore[import-untyped]
+import threading
+import subprocess
+
+import paho.mqtt.client as mqtt_client
+from paho.mqtt.publish import single as mqtt_single
+
+from ..base.firmware_adapter import FirmwareAdapter
+from ..base.utility import get_config
+from ...persistence.models.device import DmDevice
+
+logger = logging.getLogger(__name__)
+
+
+# Constants
+FIRMWARE_TYPE = "Zigbee"
+FOLDER_BACKUP = "dm/backup/zigbee"
+ZIGBEE_CONFIG_FILE = "/tmp/devices.yml"
+
+
+class ZigbeeAdapter(FirmwareAdapter):
+    """Adapter for provisioning Zigbee devices via Zigbee2MQTT."""
+
+    def __init__(self, manager) -> None:
+        """Initialize the Zigbee adapter.
+
+        Args:
+            manager: ProvisioningManager instance.
+        """
+        super().__init__(manager)
+        self.backup_path: Optional[str] = None
+        self.zigbee_devices: Dict[str, Dict] = {}
+        self.devices_to_configure: List[DmDevice] = []
+        self._create_backup_folder()
+        self._create_temp_config_file()
+
+    def get_firmware_type(self) -> str:
+        """Return firmware type."""
+        return FIRMWARE_TYPE
+
+    def _create_backup_folder(self) -> None:
+        """Create backup folder for config dumps."""
+        backup_dir = os.path.join(
+            os.getcwd(),
+            FOLDER_BACKUP,
+            datetime.now().strftime('%Y-%m-%d_%H-%M-%S'),
+        )
+
+        try:
+            os.makedirs(backup_dir, exist_ok=True)
+            self.backup_path = backup_dir
+            logger.debug(f"Created backup folder: {backup_dir}")
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                logger.error(f"Failed to create backup folder: {e}")
+                raise
+
+    def _create_temp_config_file(self) -> None:
+        """Create temporary config file for devices."""
+        if not os.path.exists(ZIGBEE_CONFIG_FILE):
+            Path(ZIGBEE_CONFIG_FILE).touch()
+
+    def _get_mqtt_params(self) -> Dict[str, Any]:
+        """Get MQTT connection parameters."""
+        return {
+            'hostname': get_config('BUS_HOST', 'localhost'),
+            'port': int(get_config('BUS_PORT', '1883')),
+            'auth': {
+                'username': get_config('BUS_USERNAME', 'admin'),
+                'password': get_config('BUS_PASSWORD', 'mqtt_password'),
+            }
+        }
+
+    def _mqtt_publish(self, topic: str, payload: Optional[str] = None) -> None:
+        """Publish MQTT message.
+
+        Args:
+            topic: MQTT topic.
+            payload: Optional message payload.
+        """
+        try:
+            mqtt_params = self._get_mqtt_params()
+            mqtt_single(
+                topic,
+                payload=payload,
+                hostname=mqtt_params['hostname'],
+                port=mqtt_params['port'],
+                auth=mqtt_params['auth']
+            )
+            logger.debug(f"Published to {topic}: {payload}")
+        except Exception as e:
+            logger.error(f"Failed to publish MQTT message: {e}")
+            raise
+
+    def _mqtt_get(self, topic: str, timeout: int = 5):
+        """Subscribe to MQTT topic and get first message, with a real timeout.
+
+        Args:
+            topic: MQTT topic.
+            timeout: Timeout in seconds.
+
+        Returns:
+            Parsed JSON message, raw string, or None on timeout/error.
+        """
+        result = [None]
+        event = threading.Event()
+
+        def on_connect(client, userdata, flags, rc):
+            if rc == 0:
+                client.subscribe(topic)
+            else:
+                logger.error(f"MQTT connect failed (rc={rc}) for topic: {topic}")
+                event.set()
+
+        def on_message(client, userdata, message):
+            try:
+                result[0] = message.payload.decode('utf-8')
+            except Exception as decode_err:
+                logger.warning(f"Failed to decode MQTT payload: {decode_err}")
+            event.set()
+
+        try:
+            mqtt_params = self._get_mqtt_params()
+            client = mqtt_client.Client()
+            client.username_pw_set(
+                mqtt_params['auth']['username'],
+                mqtt_params['auth']['password'],
+            )
+            client.on_connect = on_connect
+            client.on_message = on_message
+            client.connect(
+                mqtt_params['hostname'],
+                mqtt_params['port'],
+                keepalive=60,
+            )
+            client.loop_start()
+            received = event.wait(timeout=timeout)
+            client.loop_stop()
+            client.disconnect()
+
+            if not received or result[0] is None:
+                logger.warning(f"Timeout waiting for MQTT message on: {topic}")
+                return None
+
+            try:
+                return json.loads(result[0])
+            except json.JSONDecodeError:
+                return result[0]
+
+        except Exception as e:
+            logger.error(f"Failed to receive MQTT message from {topic}: {e}")
+            return None
+
+    def _check_bridge(self) -> bool:
+        """Check if Zigbee2MQTT bridge is online.
+
+        Returns:
+            True if bridge is online.
+        """
+        mqtt_prefix = self.manager.get_setting('mqtt_topic_prefix', 'home')
+        state = self._mqtt_get(f"{mqtt_prefix}/bridge/state")
+
+        # Z2M v1 publishes a plain string; v2 publishes {"state": "online"}
+        if isinstance(state, dict):
+            return bool(state.get('state') == 'online')
+        return bool(state == "online")
+
+    def _get_zigbee_devices(self) -> Dict[str, Dict]:
+        """Get devices from Zigbee2MQTT bridge.
+
+        Returns:
+            Dictionary mapping IEEE addresses to device info.
+        """
+        mqtt_prefix = self.manager.get_setting('mqtt_topic_prefix', 'home')
+        devices_list = self._mqtt_get(f"{mqtt_prefix}/bridge/devices")
+
+        if not isinstance(devices_list, list):
+            logger.warning("Failed to get Zigbee devices from bridge")
+            return {}
+
+        result = {}
+        for device in devices_list:
+            if device.get("type") == "EndDevice":
+                ieee = device.get("ieee_address")
+                if ieee:
+                    result[ieee] = {
+                        'friendly_name': device.get("friendly_name", ""),
+                        'model': device.get("model", ""),
+                    }
+
+        logger.info(f"Found {len(result)} Zigbee devices on bridge")
+        return result
+
+    def can_deploy(self, device: DmDevice) -> bool:
+        """Check if device can be deployed.
+
+        For Zigbee devices, we check if they're registered on the bridge.
+
+        Args:
+            device: Device to check.
+
+        Returns:
+            True if device can be deployed.
+        """
+        if not self.is_compatible(device):
+            return False
+
+        # Zigbee devices don't need IP, they use MAC (IEEE address)
+        if not device.mac:
+            logger.warning("Device has no MAC address")
+            return False
+
+        # Check if device exists on bridge
+        if not self.zigbee_devices:
+            self.zigbee_devices = self._get_zigbee_devices()
+
+        if device.mac.lower() not in self.zigbee_devices:
+            logger.warning(f"Zigbee device {device.mac} not found on bridge")
+            return False
+
+        return True
+
+    def process(self, device: DmDevice) -> None:
+        """Process/deploy a Zigbee device.
+
+        For Zigbee, we collect devices and configure them in post_process.
+
+        Args:
+            device: Device to process.
+        """
+        logger.info(f"Preparing Zigbee device: {device.mac}")
+
+        self.validate(device)
+        self._dump_config(device)
+        self.devices_to_configure.append(device)
+
+        logger.debug(f"Zigbee device {device.mac} queued for configuration")
+
+    def post_process(self, devices: List[DmDevice]) -> None:
+        """Post-process all Zigbee devices.
+
+        Updates the Zigbee2MQTT configuration for compatibility with both v1 and v2:
+        - For Z2M v1: uploads devices.yml via SCP and restarts the bridge
+        - For Z2M v2: configures devices via MQTT API to avoid race condition where
+          Z2M overwrites devices.yml on shutdown before our SCP-uploaded config is read back
+
+        Args:
+            devices: All processed devices.
+        """
+        if not self.devices_to_configure:
+            logger.info("No Zigbee devices to configure")
+            return
+
+        logger.info(f"Configuring {len(self.devices_to_configure)} Zigbee devices")
+
+        # Build device configuration - only for the devices being deployed
+        zigbee_config = self._build_devices_config()
+
+        # Download existing configuration from bridge to avoid losing other devices
+        existing_config = self._download_config_from_bridge()
+
+        # Merge: keep existing devices and update/add only the new ones
+        merged_config = {**existing_config, **zigbee_config}
+
+        # Write merged configuration
+        with open(ZIGBEE_CONFIG_FILE, 'w') as f:
+            yaml.dump(merged_config, f, default_flow_style=False)
+
+        logger.info(f"Wrote Zigbee configuration to {ZIGBEE_CONFIG_FILE}")
+
+        # Upload configuration to bridge (Z2M v1 compatibility)
+        self._upload_config_to_bridge()
+
+        # Configure devices via MQTT API (Z2M v2 compatibility)
+        for device in self.devices_to_configure:
+            self._configure_device_via_mqtt(device)
+
+        # Restart bridge to apply changes (Z2M v1 compatibility)
+        self._restart_bridge()
+
+    def _configure_device_via_mqtt(self, device: DmDevice) -> None:
+        """Configure a Zigbee device via the Zigbee2MQTT MQTT API.
+
+        Uses the bridge request API to rename the device and set its options
+        without requiring a bridge restart. This avoids the race condition
+        where Z2M overwrites devices.yml on shutdown before our file upload
+        is applied (a regression introduced with Zigbee2MQTT v2).
+
+        Args:
+            device: Device to configure.
+        """
+        mqtt_prefix = self.manager.get_setting('mqtt_topic_prefix', 'home')
+        ieee = device.mac.lower()
+
+        display_name = device.display_name()
+        friendly_name = self._get_device_friendly_name(device)
+
+        # Step 1: rename the device (IEEE addr -> friendly name)
+        rename_payload = json.dumps({"from": ieee, "to": friendly_name})
+        rename_topic = f"{mqtt_prefix}/bridge/request/device/rename"
+        try:
+            self._mqtt_publish(rename_topic, rename_payload)
+            logger.info(f"Renamed {ieee} -> {friendly_name}")
+        except Exception as e:
+            logger.error(f"Failed to rename device {ieee}: {e}")
+            return
+
+        # Step 2: set homeassistant options on the device
+        ha_options: Dict[str, Any] = {'name': display_name}
+        if device._room.name:
+            ha_options['device'] = {'suggested_area': device._room.name}
+
+        options_payload = json.dumps({
+            "id": friendly_name,
+            "options": {"homeassistant": ha_options},
+        })
+        options_topic = f"{mqtt_prefix}/bridge/request/device/options"
+        try:
+            self._mqtt_publish(options_topic, options_payload)
+            logger.info(f"Set options for {friendly_name}: {ha_options}")
+        except Exception as e:
+            logger.error(f"Failed to set options for {friendly_name}: {e}")
+
+    def _dump_config(self, device: DmDevice) -> None:
+        """Dump device configuration to backup file.
+
+        Args:
+            device: Device to dump.
+        """
+        if not self.backup_path:
+            return
+
+        hostname = device.hostname() or device.mac
+        filename = f"mac-{device.mac}-{hostname}.json"
+        filepath = os.path.join(self.backup_path, filename)
+
+        config = {
+            "mac": device.mac,
+            "hostname": hostname,
+            "friendly_name": device.display_name(),
+            "mqtt_topic": device.mqtt_topic(),
+        }
+
+        with open(filepath, 'w') as f:
+            json.dump(config, f, indent=2)
+
+        logger.debug(f"Config dumped to: {filepath}")
+
+    def _build_devices_config(self) -> Dict:
+        """Build Zigbee2MQTT device configuration.
+
+        Returns:
+            Dictionary of device configurations.
+        """
+        config = {}
+
+        for device in self.devices_to_configure:
+            ieee = device.mac.lower()
+            display_name = device.display_name()
+            friendly_name = self._get_device_friendly_name(device)
+
+            device_config: Dict[str, Any] = {
+                'friendly_name': friendly_name,
+                'homeassistant': {
+                    'name': display_name,
+                }
+            }
+
+            # Add suggested_area if room name is available
+            if device._room.name:
+                device_config['homeassistant']['device'] = {
+                    'suggested_area': device._room.name
+                }
+
+            config[ieee] = device_config
+
+        return config
+
+    def _upload_config_to_bridge(self) -> None:
+        """Upload device configuration to Zigbee2MQTT bridge."""
+        bridge_config_path = get_config('BRIDGE_DEVICES_CONFIG_PATH', None)
+        bridge_host = get_config('BRIDGE_HOST', None)
+
+        if not bridge_config_path:
+            logger.warning("BRIDGE_DEVICES_CONFIG_PATH not configured, skipping upload")
+            return
+
+        if not bridge_host:
+            logger.warning("BRIDGE_HOST not configured, skipping upload")
+            return
+
+        ssh_key = get_config('SCAN_SCRIPT_PRIVATE_KEY_FILE', '')
+
+        cmd = ['scp']
+        if ssh_key:
+            cmd += ['-i', ssh_key]
+        cmd += ['-o', 'LogLevel=ERROR', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+        cmd += [ZIGBEE_CONFIG_FILE, f'{bridge_host}:{bridge_config_path}']
+
+        result = subprocess.run(
+            ['bash', '-c', ' '.join(cmd)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+
+        if result.returncode != 0:
+            stderr_output = result.stderr.decode('utf-8').strip()
+            logger.error(f"Failed to push config file (exit {result.returncode}): {stderr_output}")
+        else:
+            logger.info("Config file pushed successfully.")
+
+    def _download_config_from_bridge(self) -> Dict[str, object]:
+        """Download existing device configuration from Zigbee2MQTT bridge.
+
+        This ensures we preserve devices that were already configured on the bridge.
+
+        Returns:
+            Dictionary of existing device configurations, or empty dict if not available.
+        """
+        bridge_config_path = get_config('BRIDGE_DEVICES_CONFIG_PATH', None)
+        bridge_host = get_config('BRIDGE_HOST', None)
+
+        if not bridge_config_path or not bridge_host:
+            logger.debug("Bridge config path or host not configured, skipping download")
+            return {}
+
+        ssh_key = get_config('SCAN_SCRIPT_PRIVATE_KEY_FILE', '')
+        temp_download_file = f"{ZIGBEE_CONFIG_FILE}.remote"
+
+        cmd = ['scp']
+        if ssh_key:
+            cmd += ['-i', ssh_key]
+        cmd += ['-o', 'LogLevel=ERROR', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null']
+        cmd += [f'{bridge_host}:{bridge_config_path}', temp_download_file]
+
+        try:
+            result = subprocess.run(
+                ['bash', '-c', ' '.join(cmd)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=10
+            )
+
+            if result.returncode != 0:
+                stderr_output = result.stderr.decode('utf-8').strip()
+                logger.warning(f"Failed to download config from bridge (exit {result.returncode}): {stderr_output}")
+                return {}
+
+            # Load the downloaded config
+            if os.path.exists(temp_download_file):
+                with open(temp_download_file, 'r') as f:
+                    raw_config = yaml.safe_load(f)
+                    config = raw_config if isinstance(raw_config, dict) else {}
+                os.remove(temp_download_file)
+                logger.info(f"Downloaded {len(config)} devices from bridge")
+                return config
+
+        except subprocess.TimeoutExpired:
+            logger.warning("Timeout downloading config from bridge")
+        except Exception as e:
+            logger.warning(f"Error downloading config from bridge: {e}")
+
+        return {}
+
+    def _restart_bridge(self) -> None:
+        """Restart Zigbee2MQTT bridge to apply configuration."""
+        mqtt_prefix = self.manager.get_setting('mqtt_topic_prefix', 'home')
+
+        try:
+            self._mqtt_publish(f"{mqtt_prefix}/bridge/request/restart", "{}")
+            logger.info("Sent restart request to Zigbee2MQTT bridge")
+        except Exception as e:
+            logger.error(f"Failed to restart bridge: {e}")
+            raise
+
+    def _get_device_friendly_name(self, device: DmDevice) -> str:
+        """Construct a friendly name for the device.
+
+        Args:
+            device: Device to construct name for.
+        """
+        # Build friendly_name without building slug (mqtt_prefix is added by Z2M)
+        function_slug = device._refs.function_name.lower().replace(" ", "_")
+
+        if (
+            device._floor.slug
+            and device._room.slug
+            and function_slug
+            and device.position_slug
+        ):
+            friendly_name = (
+                f"{device._floor.slug}/"
+                f"{device._room.slug}/"
+                f"{function_slug}/"
+                f"{device.position_slug}"
+            ).lower()
+        else:
+            friendly_name = f"zigbee_{device.mac.replace(':', '_')}"
+
+        return friendly_name

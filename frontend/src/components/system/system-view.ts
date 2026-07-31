@@ -698,7 +698,7 @@ export class DmSystemView extends LitElement {
                       <tr class="text-warning">
                         <td>${i18n.t("maint_scan_stat_not_found")}</td>
                         <td>
-                          <strong>${this._scanResult.stats.not_found}</strong>
+                          <strong>${this._scanResult.stats.notFound}</strong>
                         </td>
                       </tr>
                       <tr
@@ -714,16 +714,16 @@ export class DmSystemView extends LitElement {
                         </td>
                       </tr>
                     </table>
-                    ${this._scanResult.stats.error_details?.length
+                    ${this._scanResult.stats.errorDetails?.length
                       ? html`<details style="margin-top:8px;font-size:12px">
                           <summary
                             style="cursor:pointer;color:var(--error-color,#f44336)"
                           >
                             ${i18n.t("maint_scan_stat_error_details")}
-                            (${this._scanResult.stats.error_details.length})
+                            (${this._scanResult.stats.errorDetails.length})
                           </summary>
                           <ul style="margin:4px 0;padding-left:16px">
-                            ${this._scanResult.stats.error_details.map(
+                            ${this._scanResult.stats.errorDetails.map(
                               (e) => html`<li>${e}</li>`
                             )}
                           </ul>
