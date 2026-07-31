@@ -78,7 +78,6 @@ class TestAsyncUnloadEntry(unittest.TestCase):
             "custom_components.device_manager.const",
             "custom_components.device_manager.api",
             "custom_components.device_manager.persistence",
-            "custom_components.device_manager.persistence.repositories",
             "custom_components.device_manager.persistence.database_manager",
             "custom_components.device_manager.ha",
             "custom_components.device_manager.utils",
@@ -92,30 +91,13 @@ class TestAsyncUnloadEntry(unittest.TestCase):
         _const.DB_NAME = "device_manager.db"  # type: ignore[attr-defined]
         _const.DOMAIN = "device_manager"  # type: ignore[attr-defined]
         _const.DATA_KEY_DB = DATA_KEY_DB  # type: ignore[attr-defined]
-        _const.DATA_KEY_REPOS = "repos"  # type: ignore[attr-defined]
+        _const.DATA_KEY_CRYPTO = "crypto_key"  # type: ignore[attr-defined]
         _const.STATIC_URL_BASE = "/device_manager_static"  # type: ignore[attr-defined]
         _const.FRONTEND_JS_FILENAME = "device-manager.js"  # type: ignore[attr-defined]
         _const.PANEL_COMPONENT_NAME = "dm-app-shell"  # type: ignore[attr-defined]
         _const.CRYPTO_KEY_FILENAME = "dm/.device_manager.key"  # type: ignore[attr-defined]
         sys.modules["custom_components.device_manager.api"].ALL_VIEWS = []  # type: ignore[attr-defined]
         sys.modules["custom_components.device_manager.utils.crypto"].generate_key = lambda: "testkey"  # type: ignore[attr-defined]
-
-        repo_names = [
-            "BuildingRepository",
-            "FloorRepository",
-            "RoomRepository",
-            "DeviceRepository",
-            "DeviceModelRepository",
-            "DeviceFirmwareRepository",
-            "DeviceFunctionRepository",
-            "SettingsRepository",
-            "ActivityLogRepository",
-            "StatsRepository",
-            "MaintenanceRepository",
-        ]
-        repos_mod = sys.modules["custom_components.device_manager.persistence.repositories"]
-        for name in repo_names:
-            setattr(repos_mod, name, MagicMock())
 
         db_manager_mod = sys.modules["custom_components.device_manager.persistence.database_manager"]
         db_manager_mod.DatabaseManager = MagicMock  # type: ignore[attr-defined]

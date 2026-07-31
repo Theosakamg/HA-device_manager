@@ -5,7 +5,8 @@ DB_NAME = "dm/device_manager.db"
 
 # Keys used in hass.data[DOMAIN]
 DATA_KEY_DB = "db"
-DATA_KEY_REPOS = "repos"
+DATA_KEY_REPOS = "repos"  # kept for backward compat (tests/migration)
+DATA_KEY_CRYPTO = "crypto_key"
 
 # Frontend / static assets
 STATIC_URL_BASE = "/device_manager_static"

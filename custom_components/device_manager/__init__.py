@@ -10,8 +10,8 @@ from homeassistant.helpers.typing import ConfigType
 
 from .const import (
     CRYPTO_KEY_FILENAME,
+    DATA_KEY_CRYPTO,
     DATA_KEY_DB,
-    DATA_KEY_REPOS,
     DB_NAME,
     DOMAIN,
     FRONTEND_JS_FILENAME,
@@ -19,19 +19,6 @@ from .const import (
     STATIC_URL_BASE,
 )
 from .api import ALL_VIEWS
-from .persistence.repositories import (
-    BuildingRepository,
-    FloorRepository,
-    RoomRepository,
-    DeviceRepository,
-    DeviceModelRepository,
-    DeviceFirmwareRepository,
-    DeviceFunctionRepository,
-    SettingsRepository,
-    ActivityLogRepository,
-    StatsRepository,
-    MaintenanceRepository,
-)
 from .persistence.database_manager import DatabaseManager
 from .utils.crypto import generate_key
 
@@ -88,21 +75,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     crypto_key = await hass.async_add_executor_job(_load_or_create_key, key_path)
     _LOGGER.debug("Encryption key ready (path: %s)", key_path)
 
-    # Create repositories
-    repos = {
-        "building": BuildingRepository(db_manager),
-        "floor": FloorRepository(db_manager),
-        "room": RoomRepository(db_manager, crypto_key=crypto_key),
-        "device": DeviceRepository(db_manager),
-        "device_model": DeviceModelRepository(db_manager),
-        "device_firmware": DeviceFirmwareRepository(db_manager),
-        "device_function": DeviceFunctionRepository(db_manager),
-        "settings": SettingsRepository(db_manager),
-        "activity_log": ActivityLogRepository(db_manager),
-        "stats": StatsRepository(db_manager),
-        "maintenance": MaintenanceRepository(db_manager),
-    }
-    hass.data[DOMAIN][DATA_KEY_REPOS] = repos
+    # Store the encryption key so request handlers can build repositories on demand.
+    hass.data[DOMAIN][DATA_KEY_CRYPTO] = crypto_key
 
     # Register all API views
     for view_class in ALL_VIEWS:
