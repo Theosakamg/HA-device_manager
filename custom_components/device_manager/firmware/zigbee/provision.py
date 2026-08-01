@@ -19,7 +19,7 @@ import paho.mqtt.client as mqtt_client
 from paho.mqtt.publish import single as mqtt_single
 
 from ..base.firmware_adapter import FirmwareAdapter
-from ..base.utility import get_config
+from ..base.config import get_config
 from ...persistence.models.device import DmDevice
 
 logger = logging.getLogger(__name__)

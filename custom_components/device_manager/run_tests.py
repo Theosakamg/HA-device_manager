@@ -49,6 +49,10 @@ _TEST_MODULES = [
     "test_maintenance_repository",
     "test_hierarchy_dto",
     "test_ha_sync_result_dto",
+    # Kept last: this module installs sys.modules stubs (persistence,
+    # firmware.base.config) at import time; running it after the repository
+    # suites avoids those stubs shadowing the real modules.
+    "test_tasmota_runtime",
 ]
 
 

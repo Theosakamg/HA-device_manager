@@ -59,7 +59,20 @@ def _load_device_controller():
 
     # Mock ..ha.device_lookup
     ha_lookup_mod = types.ModuleType("custom_components.device_manager.ha.device_lookup")
-    ha_lookup_mod.get_ha_sw_version = lambda hass, mac: None  # type: ignore[attr-defined]
+
+    class _StubHaDeviceLookup:
+        """Minimal stand-in for HaDeviceLookup used by device_controller."""
+
+        def __init__(self, hass):
+            self._hass = hass
+
+        def get_sw_version(self, mac):
+            return None
+
+        def get_sw_up_to_date(self, sw_version):
+            return None
+
+    ha_lookup_mod.HaDeviceLookup = _StubHaDeviceLookup  # type: ignore[attr-defined]
     sys.modules["custom_components.device_manager.ha.device_lookup"] = ha_lookup_mod
 
     # Mock ..dto (DeviceDto used for serialization)

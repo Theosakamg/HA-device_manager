@@ -12,6 +12,8 @@ from .const import (
     CRYPTO_KEY_FILENAME,
     DATA_KEY_CRYPTO,
     DATA_KEY_DB,
+    DATA_KEY_SERVICE_REGISTRAR,
+    DATA_KEY_UPSTREAM_UNSUB,
     DB_NAME,
     DOMAIN,
     FRONTEND_JS_FILENAME,
@@ -83,9 +85,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.http.register_view(view_class())
 
     # Register Tasmota runtime services (restart, upgrade, status, ...)
-    from .ha.service_registration import async_register_services
+    from .ha.service_registration import TasmotaServiceRegistrar
 
-    async_register_services(hass)
+    service_registrar = TasmotaServiceRegistrar(hass)
+    service_registrar.register()
+    hass.data[DOMAIN][DATA_KEY_SERVICE_REGISTRAR] = service_registrar
 
     # Register sidebar panel as a native HA custom panel (web component)
     frontend.async_register_built_in_panel(
@@ -103,6 +107,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         require_admin=False,
     )
 
+    # Ensure the upstream Tasmota version reference sensor exists. Deferred until
+    # HA has finished starting so a user-provided sensor always takes precedence.
+    from homeassistant.helpers.start import async_at_started
+    from .ha.upstream_version import UpstreamVersionSensor
+
+    async def _ensure_upstream(_hass: HomeAssistant) -> None:
+        unsub = await UpstreamVersionSensor(hass).async_ensure()
+        if unsub is not None:
+            hass.data[DOMAIN][DATA_KEY_UPSTREAM_UNSUB] = unsub
+
+    async_at_started(hass, _ensure_upstream)
+
     _LOGGER.info("Device Manager setup complete")
     return True
 
@@ -111,11 +127,15 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     _LOGGER.info("Unloading Device Manager config entry")
     # Unregister Tasmota runtime services
-    from .ha.service_registration import async_unregister_services
-
-    async_unregister_services(hass)
+    service_registrar = hass.data.get(DOMAIN, {}).get(DATA_KEY_SERVICE_REGISTRAR)
+    if service_registrar is not None:
+        service_registrar.unregister()
     # Remove the sidebar panel so it can be re-registered on reload
     frontend.async_remove_panel(hass, "device_manager")
+    # Cancel the upstream version refresh timer if we started one
+    unsub = hass.data.get(DOMAIN, {}).get(DATA_KEY_UPSTREAM_UNSUB)
+    if unsub:
+        unsub()
     # Close database connection
     db_manager = hass.data.get(DOMAIN, {}).get(DATA_KEY_DB)
     if db_manager:

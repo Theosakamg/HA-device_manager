@@ -1,6 +1,34 @@
+"""Firmware runtime configuration.
+
+Loads runtime values from the module-level ``.env`` file and lets DB-stored
+settings override them before each deploy/scan. Firmware provisioning modules
+(``firmware/tasmota|wled|zigbee``) and the network scanner read values through
+:func:`get_config`.
+"""
+
 import logging
 import os
+
 from dotenv import load_dotenv
+
+from ...const import (
+    SETTING_BRIDGE_DEVICES_CONFIG_PATH,
+    SETTING_BRIDGE_HOST,
+    SETTING_BUS_HOST,
+    SETTING_BUS_PASSWORD,
+    SETTING_BUS_PORT,
+    SETTING_BUS_USERNAME,
+    SETTING_DEVICE_PASS,
+    SETTING_NTP_SERVER1,
+    SETTING_SCAN_SCRIPT_CONTENT,
+    SETTING_SCAN_SSH_HOST,
+    SETTING_SCAN_SSH_KEY_FILE,
+    SETTING_SCAN_SSH_USER,
+    SETTING_WIFI1_PASSWORD,
+    SETTING_WIFI1_SSID,
+    SETTING_WIFI2_PASSWORD,
+    SETTING_WIFI2_SSID,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -39,24 +67,26 @@ def load_configs() -> dict:
 
 CONFIGS = load_configs()
 
-# Mapping: DB settings key → env variable name used by provisioning modules
+# Mapping: DB settings key → env variable name used by provisioning modules.
+# Keys reference the SETTING_* constants (single source of truth in const.py) so
+# a settings-key rename cannot silently drift from this mapping.
 _DB_TO_ENV_KEY: dict[str, str] = {
-    "scan_ssh_key_file": "SCAN_SCRIPT_PRIVATE_KEY_FILE",
-    "scan_ssh_user": "SCAN_SCRIPT_SSH_USER",
-    "scan_ssh_host": "SCAN_SCRIPT_SSH_HOST",
-    "scan_script_content": "SCAN_SCRIPT_CONTENT",
-    "device_pass": "DEVICE_PASS",
-    "ntp_server1": "NTP_SRV1",
-    "wifi1_ssid": "WF1_SSID",
-    "wifi1_password": "WF1_PASSWORD",
-    "wifi2_ssid": "WF2_SSID",
-    "wifi2_password": "WF2_PASSWORD",
-    "bus_host": "BUS_HOST",
-    "bus_port": "BUS_PORT",
-    "bus_username": "BUS_USERNAME",
-    "bus_password": "BUS_PASSWORD",
-    "bridge_host": "BRIDGE_HOST",
-    "bridge_devices_config_path": "BRIDGE_DEVICES_CONFIG_PATH",
+    SETTING_SCAN_SSH_KEY_FILE: "SCAN_SCRIPT_PRIVATE_KEY_FILE",
+    SETTING_SCAN_SSH_USER: "SCAN_SCRIPT_SSH_USER",
+    SETTING_SCAN_SSH_HOST: "SCAN_SCRIPT_SSH_HOST",
+    SETTING_SCAN_SCRIPT_CONTENT: "SCAN_SCRIPT_CONTENT",
+    SETTING_DEVICE_PASS: "DEVICE_PASS",
+    SETTING_NTP_SERVER1: "NTP_SRV1",
+    SETTING_WIFI1_SSID: "WF1_SSID",
+    SETTING_WIFI1_PASSWORD: "WF1_PASSWORD",
+    SETTING_WIFI2_SSID: "WF2_SSID",
+    SETTING_WIFI2_PASSWORD: "WF2_PASSWORD",
+    SETTING_BUS_HOST: "BUS_HOST",
+    SETTING_BUS_PORT: "BUS_PORT",
+    SETTING_BUS_USERNAME: "BUS_USERNAME",
+    SETTING_BUS_PASSWORD: "BUS_PASSWORD",
+    SETTING_BRIDGE_HOST: "BRIDGE_HOST",
+    SETTING_BRIDGE_DEVICES_CONFIG_PATH: "BRIDGE_DEVICES_CONFIG_PATH",
 }
 
 

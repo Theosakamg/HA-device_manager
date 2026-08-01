@@ -45,10 +45,10 @@ _scanner_stub = types.ModuleType("custom_components.device_manager.managers.netw
 _scanner_stub.NetworkScanner = object  # type: ignore[attr-defined]
 sys.modules["custom_components.device_manager.managers.network_scanner"] = _scanner_stub
 
-_utility_stub = types.ModuleType("custom_components.device_manager.firmware.base.utility")
-_utility_stub.Initializer = object  # type: ignore[attr-defined]
-_utility_stub.get_config = lambda key, default='': default  # type: ignore[attr-defined]
-sys.modules["custom_components.device_manager.firmware.base.utility"] = _utility_stub
+_config_stub = types.ModuleType("custom_components.device_manager.firmware.base.config")
+_config_stub.Initializer = object  # type: ignore[attr-defined]
+_config_stub.get_config = lambda key, default='': default  # type: ignore[attr-defined]
+sys.modules["custom_components.device_manager.firmware.base.config"] = _config_stub
 
 _db_manager_stub = types.ModuleType("custom_components.device_manager.persistence.database_manager")
 _db_manager_stub.DatabaseManager = object  # type: ignore[attr-defined]

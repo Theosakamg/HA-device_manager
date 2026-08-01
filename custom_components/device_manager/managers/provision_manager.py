@@ -3,11 +3,16 @@
 Replaces the legacy GlobalManager and DevicesManager.
 """
 
+import asyncio
 import logging
 from typing import List, Optional
 
 from ..persistence.database_manager import DatabaseManager
-from ..persistence.repositories import DeviceRepository, DeviceFirmwareRepository
+from ..persistence.repositories import (
+    DeviceRepository,
+    DeviceFirmwareRepository,
+    SettingsRepository,
+)
 from ..persistence.models.device import DmDevice
 
 logger = logging.getLogger(__name__)
@@ -94,7 +99,6 @@ class ProvisioningManager:
         Returns:
             List of DmDevice instances.
         """
-        import asyncio
         return asyncio.run(self.load_devices(mac_filter, enabled_only, states_filter))
 
     def get_devices(self) -> List[DmDevice]:
@@ -126,7 +130,6 @@ class ProvisioningManager:
             Dictionary of settings.
         """
         try:
-            from ..persistence.repositories import SettingsRepository
             repo = SettingsRepository(self.db)
             self._settings = await repo.get_all()
             logger.debug(f"Loaded {len(self._settings)} settings")
@@ -187,5 +190,4 @@ class ProvisioningManager:
         Returns:
             List of firmware names.
         """
-        import asyncio
         return asyncio.run(self.load_deployable_firmwares())

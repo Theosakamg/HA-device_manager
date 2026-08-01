@@ -7,7 +7,31 @@ though 14.10.0 is newer), which produced wrong upgrade decisions. This module
 parses versions into numeric tuples so comparisons are numerically correct.
 """
 
+import re
 from typing import Tuple
+
+_VERSION_RE = re.compile(r"(\d+\.\d+\.\d+)")
+
+
+def extract_version(raw: str) -> str:
+    """Extract the first ``X.Y.Z`` version substring from an arbitrary string.
+
+    Unlike :func:`parse_tasmota_version`, this handles values that embed the
+    version inside surrounding text, e.g. ``"Tasmota v15.5.0 Sylvan"`` ->
+    ``"15.5.0"`` or ``"15.5.0(release)"`` -> ``"15.5.0"``. Returns ``""`` when
+    no dotted numeric triple is present.
+
+    Args:
+        raw: Any string that may contain a version (e.g. a sensor state or a
+            device-reported firmware string).
+
+    Returns:
+        The normalized ``"X.Y.Z"`` string, or ``""`` when none is found.
+    """
+    if not raw:
+        return ""
+    match = _VERSION_RE.search(raw)
+    return match.group(1) if match else ""
 
 
 def parse_tasmota_version(version: str) -> Tuple[int, ...]:

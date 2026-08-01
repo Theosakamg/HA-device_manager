@@ -15,7 +15,7 @@ from typing import Any, Optional
 import requests  # type: ignore[import-untyped]
 
 from ..base.firmware_adapter import FirmwareAdapter
-from ..base.utility import get_config
+from ..base.config import get_config
 from ...persistence.models.device import DmDevice
 
 logger = logging.getLogger(__name__)

@@ -34,7 +34,7 @@ from ..const import (
     SERVICE_TASMOTA_UPDATE_FIRMWARE,
     SERVICE_TASMOTA_UPGRADE,
 )
-from ..persistence.repositories import SettingsRepository
+from ..persistence.repositories import ActivityLogRepository, SettingsRepository
 from ..firmware.tasmota.target import TasmotaTargetError, resolve_device_id_to_mac
 from ..managers.maintenance_manager import MaintenanceManager
 from ..managers.update_manager import UpdateManager
@@ -42,153 +42,21 @@ from ..managers.update_manager import UpdateManager
 _LOGGER = logging.getLogger(__name__)
 
 
-def _db_path(hass: HomeAssistant) -> Path:
-    """Return the SQLite DB path used by the integration."""
-    return Path(hass.config.config_dir) / DB_NAME
+class TasmotaServiceRegistrar:
+    """Registers/unregisters the Tasmota runtime HA services for one ``hass``.
 
+    Bridges HA service calls to the synchronous maintenance/update managers:
+    resolves ``device_id`` targets to MACs, loads settings, runs the blocking
+    network/DB work in an executor thread, writes an activity-log entry
+    attributed to the calling HA user, and returns the response dict for
+    services declaring ``SupportsResponse.OPTIONAL``.
 
-async def _load_settings(hass: HomeAssistant) -> Dict[str, Any]:
-    """Load the current settings dict from the DB."""
-    db = hass.data[DOMAIN][DATA_KEY_DB]
-    repo = SettingsRepository(db)
-    return await repo.get_all()
+    Construct once per config-entry setup, call :meth:`register`, and keep the
+    instance so :meth:`unregister` can be called on unload.
+    """
 
-
-async def _resolve_mac(hass: HomeAssistant, call: ServiceCall) -> str:
-    """Resolve the call's ``device_id`` to a MAC, raising for invalid input."""
-    device_id = call.data.get("device_id")
-    if not device_id:
-        raise ServiceValidationError("device_id is required")
-    try:
-        return resolve_device_id_to_mac(hass, device_id)
-    except TasmotaTargetError as err:
-        raise ServiceValidationError(str(err)) from err
-
-
-def _get_username(hass: HomeAssistant, call: ServiceCall) -> str:
-    """Best-effort resolution of the calling HA user (for activity logging)."""
-    user_id = getattr(call.context, "user_id", None)
-    if not user_id:
-        return "system"
-    user = hass.auth.async_get_user(user_id) if hasattr(hass.auth, "async_get_user") else None
-    return getattr(user, "name", None) or "system"
-
-
-async def _log(hass: HomeAssistant, call: ServiceCall, message: str, result: str) -> None:
-    """Emit an activity-log entry for a service invocation."""
-    try:
-        from ..persistence.repositories import ActivityLogRepository
-
-        db = hass.data[DOMAIN][DATA_KEY_DB]
-        repo = ActivityLogRepository(db)
-        await repo.log_entry(
-            user=_get_username(hass, call),
-            event_type="action",
-            entity_type="device",
-            message=f"[{call.service}] {message}",
-            result=result,
-        )
-    except Exception as err:  # noqa: BLE001 - logging must never break a service
-        _LOGGER.debug("Failed to write activity log: %s", err)
-
-
-def async_register_services(hass: HomeAssistant) -> None:
-    """Register all Tasmota runtime services on *hass*."""
-
-    maintenance = MaintenanceManager()
-    update = UpdateManager()
-
-    async def _restart(call: ServiceCall) -> ServiceResponse:
-        mac = await _resolve_mac(hass, call)
-        settings = await _load_settings(hass)
-        use_mqtt = bool(call.data.get("use_mqtt", False))
-        result = await hass.async_add_executor_job(
-            maintenance.restart_device, _db_path(hass), mac, settings, use_mqtt
-        )
-        await _log(hass, call, f"Restart {mac}", "success")
-        return dict(result)
-
-    async def _upgrade(call: ServiceCall) -> ServiceResponse:
-        mac = await _resolve_mac(hass, call)
-        settings = await _load_settings(hass)
-        use_mqtt = bool(call.data.get("use_mqtt", False))
-        result = await hass.async_add_executor_job(
-            update.upgrade_device, _db_path(hass), mac, settings, use_mqtt
-        )
-        await _log(hass, call, f"Upgrade {mac}", "success")
-        return dict(result)
-
-    async def _status(call: ServiceCall) -> ServiceResponse:
-        mac = await _resolve_mac(hass, call)
-        settings = await _load_settings(hass)
-        result = await hass.async_add_executor_job(
-            maintenance.get_status, _db_path(hass), mac, settings
-        )
-        return dict(result)
-
-    async def _switch_ap(call: ServiceCall) -> ServiceResponse:
-        mac = await _resolve_mac(hass, call)
-        settings = await _load_settings(hass)
-        ap_id = int(call.data.get("ap_id", 1))
-        result = await hass.async_add_executor_job(
-            maintenance.switch_ap, _db_path(hass), mac, settings, ap_id
-        )
-        await _log(hass, call, f"Switch AP{ap_id} {mac}", "success")
-        return dict(result)
-
-    async def _check_unavailable(call: ServiceCall) -> ServiceResponse:
-        settings = await _load_settings(hass)
-        mac_filter = call.data.get("mac_filter") or None
-        result = await hass.async_add_executor_job(
-            maintenance.check_unavailable, _db_path(hass), settings, mac_filter
-        )
-        return dict(result)
-
-    async def _force_ap(call: ServiceCall) -> ServiceResponse:
-        settings = await _load_settings(hass)
-        ap_id = int(call.data.get("ap_id", 1))
-        mac_filter = call.data.get("mac_filter") or None
-        result = await hass.async_add_executor_job(
-            maintenance.force_ap_batch, _db_path(hass), settings, ap_id, mac_filter
-        )
-        await _log(hass, call, f"Force AP{ap_id} (batch)", "success")
-        return dict(result)
-
-    async def _update_firmware(call: ServiceCall) -> ServiceResponse:
-        settings = await _load_settings(hass)
-        target_version = str(call.data.get("version", ""))
-        if not target_version:
-            raise ServiceValidationError("version is required")
-        mac_filter = call.data.get("mac_filter") or None
-        result = await hass.async_add_executor_job(
-            update.update_firmware_batch,
-            _db_path(hass),
-            settings,
-            target_version,
-            mac_filter,
-        )
-        await _log(hass, call, f"Update firmware -> {target_version} (batch)", "success")
-        return dict(result)
-
-    handlers = {
-        SERVICE_TASMOTA_RESTART: _restart,
-        SERVICE_TASMOTA_UPGRADE: _upgrade,
-        SERVICE_TASMOTA_STATUS: _status,
-        SERVICE_TASMOTA_SWITCH_AP: _switch_ap,
-        SERVICE_TASMOTA_CHECK_UNAVAILABLE: _check_unavailable,
-        SERVICE_TASMOTA_FORCE_AP: _force_ap,
-        SERVICE_TASMOTA_UPDATE_FIRMWARE: _update_firmware,
-    }
-
-    for name, handler in handlers.items():
-        hass.services.async_register(
-            DOMAIN, name, handler, supports_response=SupportsResponse.OPTIONAL
-        )
-
-
-def async_unregister_services(hass: HomeAssistant) -> None:
-    """Remove all Tasmota runtime services from *hass*."""
-    for name in (
+    #: Services owned by this registrar, in registration order.
+    _SERVICE_NAMES = (
         SERVICE_TASMOTA_RESTART,
         SERVICE_TASMOTA_UPGRADE,
         SERVICE_TASMOTA_STATUS,
@@ -196,8 +64,159 @@ def async_unregister_services(hass: HomeAssistant) -> None:
         SERVICE_TASMOTA_CHECK_UNAVAILABLE,
         SERVICE_TASMOTA_FORCE_AP,
         SERVICE_TASMOTA_UPDATE_FIRMWARE,
-    ):
-        hass.services.async_remove(DOMAIN, name)
+    )
+
+    def __init__(self, hass: HomeAssistant) -> None:
+        """Bind the registrar to a Home Assistant instance and its managers."""
+        self._hass = hass
+        self._maintenance = MaintenanceManager()
+        self._update = UpdateManager()
+
+    # -- helpers -----------------------------------------------------------
+
+    def _db_path(self) -> Path:
+        """Return the SQLite DB path used by the integration."""
+        return Path(self._hass.config.config_dir) / DB_NAME
+
+    async def _load_settings(self) -> Dict[str, Any]:
+        """Load the current settings dict from the DB."""
+        db = self._hass.data[DOMAIN][DATA_KEY_DB]
+        repo = SettingsRepository(db)
+        return await repo.get_all()
+
+    async def _resolve_mac(self, call: ServiceCall) -> str:
+        """Resolve the call's ``device_id`` to a MAC, raising for invalid input."""
+        device_id = call.data.get("device_id")
+        if not device_id:
+            raise ServiceValidationError("device_id is required")
+        try:
+            return resolve_device_id_to_mac(self._hass, device_id)
+        except TasmotaTargetError as err:
+            raise ServiceValidationError(str(err)) from err
+
+    def _get_username(self, call: ServiceCall) -> str:
+        """Best-effort resolution of the calling HA user (for activity logging)."""
+        user_id = getattr(call.context, "user_id", None)
+        if not user_id:
+            return "system"
+        user = (
+            self._hass.auth.async_get_user(user_id)
+            if hasattr(self._hass.auth, "async_get_user")
+            else None
+        )
+        return getattr(user, "name", None) or "system"
+
+    async def _log(self, call: ServiceCall, message: str, result: str) -> None:
+        """Emit an activity-log entry for a service invocation."""
+        try:
+            db = self._hass.data[DOMAIN][DATA_KEY_DB]
+            repo = ActivityLogRepository(db)
+            await repo.log_entry(
+                user=self._get_username(call),
+                event_type="action",
+                entity_type="device",
+                message=f"[{call.service}] {message}",
+                result=result,
+            )
+        except Exception as err:  # noqa: BLE001 - logging must never break a service
+            _LOGGER.debug("Failed to write activity log: %s", err)
+
+    # -- service handlers --------------------------------------------------
+
+    async def _restart(self, call: ServiceCall) -> ServiceResponse:
+        mac = await self._resolve_mac(call)
+        settings = await self._load_settings()
+        use_mqtt = bool(call.data.get("use_mqtt", False))
+        result = await self._hass.async_add_executor_job(
+            self._maintenance.restart_device, self._db_path(), mac, settings, use_mqtt
+        )
+        await self._log(call, f"Restart {mac}", "success")
+        return dict(result)
+
+    async def _upgrade(self, call: ServiceCall) -> ServiceResponse:
+        mac = await self._resolve_mac(call)
+        settings = await self._load_settings()
+        use_mqtt = bool(call.data.get("use_mqtt", False))
+        result = await self._hass.async_add_executor_job(
+            self._update.upgrade_device, self._db_path(), mac, settings, use_mqtt
+        )
+        await self._log(call, f"Upgrade {mac}", "success")
+        return dict(result)
+
+    async def _status(self, call: ServiceCall) -> ServiceResponse:
+        mac = await self._resolve_mac(call)
+        settings = await self._load_settings()
+        result = await self._hass.async_add_executor_job(
+            self._maintenance.get_status, self._db_path(), mac, settings
+        )
+        return dict(result)
+
+    async def _switch_ap(self, call: ServiceCall) -> ServiceResponse:
+        mac = await self._resolve_mac(call)
+        settings = await self._load_settings()
+        ap_id = int(call.data.get("ap_id", 1))
+        result = await self._hass.async_add_executor_job(
+            self._maintenance.switch_ap, self._db_path(), mac, settings, ap_id
+        )
+        await self._log(call, f"Switch AP{ap_id} {mac}", "success")
+        return dict(result)
+
+    async def _check_unavailable(self, call: ServiceCall) -> ServiceResponse:
+        settings = await self._load_settings()
+        mac_filter = call.data.get("mac_filter") or None
+        result = await self._hass.async_add_executor_job(
+            self._maintenance.check_unavailable, self._db_path(), settings, mac_filter
+        )
+        return dict(result)
+
+    async def _force_ap(self, call: ServiceCall) -> ServiceResponse:
+        settings = await self._load_settings()
+        ap_id = int(call.data.get("ap_id", 1))
+        mac_filter = call.data.get("mac_filter") or None
+        result = await self._hass.async_add_executor_job(
+            self._maintenance.force_ap_batch, self._db_path(), settings, ap_id, mac_filter
+        )
+        await self._log(call, f"Force AP{ap_id} (batch)", "success")
+        return dict(result)
+
+    async def _update_firmware(self, call: ServiceCall) -> ServiceResponse:
+        settings = await self._load_settings()
+        target_version = str(call.data.get("version", ""))
+        if not target_version:
+            raise ServiceValidationError("version is required")
+        mac_filter = call.data.get("mac_filter") or None
+        result = await self._hass.async_add_executor_job(
+            self._update.update_firmware_batch,
+            self._db_path(),
+            settings,
+            target_version,
+            mac_filter,
+        )
+        await self._log(call, f"Update firmware -> {target_version} (batch)", "success")
+        return dict(result)
+
+    # -- registration ------------------------------------------------------
+
+    def register(self) -> None:
+        """Register all Tasmota runtime services on the bound ``hass``."""
+        handlers = {
+            SERVICE_TASMOTA_RESTART: self._restart,
+            SERVICE_TASMOTA_UPGRADE: self._upgrade,
+            SERVICE_TASMOTA_STATUS: self._status,
+            SERVICE_TASMOTA_SWITCH_AP: self._switch_ap,
+            SERVICE_TASMOTA_CHECK_UNAVAILABLE: self._check_unavailable,
+            SERVICE_TASMOTA_FORCE_AP: self._force_ap,
+            SERVICE_TASMOTA_UPDATE_FIRMWARE: self._update_firmware,
+        }
+        for name, handler in handlers.items():
+            self._hass.services.async_register(
+                DOMAIN, name, handler, supports_response=SupportsResponse.OPTIONAL
+            )
+
+    def unregister(self) -> None:
+        """Remove all Tasmota runtime services from the bound ``hass``."""
+        for name in self._SERVICE_NAMES:
+            self._hass.services.async_remove(DOMAIN, name)
 
 
 # Reference const so linters don't flag the import as unused when service

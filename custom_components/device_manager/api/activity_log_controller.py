@@ -1,5 +1,8 @@
 """API controller for activity log operations."""
 
+import csv
+import io
+import json
 import logging
 
 from aiohttp import web
@@ -75,10 +78,6 @@ class ActivityLogExportAPIView(BaseView):
         Query parameters:
             format  'csv' or 'json' (default 'json')
         """
-        import csv
-        import io
-        import json
-
         fmt = request.query.get("format", "json").lower()
         if fmt not in ("csv", "json"):
             return self.json({"error": "Invalid format. Use 'csv' or 'json'."}, status_code=400)

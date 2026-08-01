@@ -101,6 +101,13 @@ export interface DmDevice {
    * local database. `null`/undefined when the device isn't registered in HA.
    */
   swVersion?: string | null;
+  /**
+   * Whether {@link swVersion} matches the latest published Tasmota release
+   * (compared as cleaned `X.Y.Z`). `true` = up to date, `false` = a different
+   * version, `null`/undefined when the comparison can't be made. Computed
+   * server-side, never persisted.
+   */
+  swUpToDate?: boolean | null;
 }
 
 /**

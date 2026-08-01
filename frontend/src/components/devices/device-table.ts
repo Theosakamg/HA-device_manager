@@ -85,8 +85,8 @@ export class DmDeviceTable extends LitElement {
   @state() private _linkCopied = false;
   @state() private _selectedIds = new Set<number>();
   @state() private _batchMode = false;
-  @state() private _batchDeploying = false;
-  @state() private _batchResult: "success" | "error" | null = null;
+  @state() private _batchBusy: "deploy" | "restart" | "upgrade" | null = null;
+  @state() private _batchResult: { ok: boolean; message: string } | null = null;
 
   private static readonly _STORAGE_KEY = "dm-device-filters";
 
@@ -713,7 +713,20 @@ export class DmDeviceTable extends LitElement {
                       <td>${device.refs?.functionName ?? "—"}</td>
                       <td>${device.positionName}</td>
                       <td>${device.refs?.firmwareName ?? "—"}</td>
-                      <td>${device.swVersion ?? "—"}</td>
+                      <td>
+                        ${device.swUpToDate == null
+                          ? (device.swVersion ?? "—")
+                          : html`<span
+                              class="version-badge ${device.swUpToDate
+                                ? "version-badge-uptodate"
+                                : "version-badge-outdated"}"
+                              title=${device.swUpToDate
+                                ? i18n.t("device_firmware_up_to_date")
+                                : i18n.t("device_firmware_outdated")}
+                              >${device.swUpToDate ? "✓" : "↑"}
+                              ${device.swVersion ?? "—"}</span
+                            >`}
+                      </td>
                       <td>${device.refs?.modelName ?? "—"}</td>
                       <td class="mac">${device.refs?.targetMac ?? "—"}</td>
                       <td class="deploy-status">
@@ -983,21 +996,23 @@ export class DmDeviceTable extends LitElement {
 
   private _renderBatchToolbar() {
     if (!this._batchMode) return nothing;
+    const noneSelected = this._selectedIds.size === 0;
+    const busy = this._batchBusy !== null;
     return html`
       <div class="batch-toolbar">
         <span class="batch-count">
           <span class="batch-count-badge">${this._selectedIds.size}</span>
           ${i18n.t("batch_selected")}
         </span>
-        ${this._batchResult === "success"
-          ? html`<span class="batch-result batch-result-ok"
-              >✓ ${i18n.t("batch_deploy_triggered")}</span
+        ${this._batchResult
+          ? html`<span
+              class="batch-result ${this._batchResult.ok
+                ? "batch-result-ok"
+                : "batch-result-err"}"
+              >${this._batchResult.ok ? "✓" : "✗"}
+              ${this._batchResult.message}</span
             >`
-          : this._batchResult === "error"
-            ? html`<span class="batch-result batch-result-err"
-                >✗ ${i18n.t("batch_deploy_error")}</span
-              >`
-            : nothing}
+          : nothing}
         <button
           class="btn btn-secondary"
           @click=${() => {
@@ -1007,26 +1022,70 @@ export class DmDeviceTable extends LitElement {
           ${i18n.t("batch_clear_selection")}
         </button>
         <button
+          class="btn btn-secondary"
+          ?disabled=${noneSelected || busy}
+          @click=${this._restartSelected}
+        >
+          🔄
+          ${this._batchBusy === "restart"
+            ? "…"
+            : i18n.t("batch_restart_selected")}
+        </button>
+        <button
+          class="btn btn-secondary"
+          ?disabled=${noneSelected || busy}
+          @click=${this._upgradeSelected}
+        >
+          ⬆️
+          ${this._batchBusy === "upgrade"
+            ? "…"
+            : i18n.t("batch_upgrade_selected")}
+        </button>
+        <button
           class="btn btn-primary"
-          ?disabled=${this._batchDeploying}
+          ?disabled=${noneSelected || busy}
           @click=${this._deploySelected}
         >
-          🚀 ${this._batchDeploying ? "…" : i18n.t("batch_deploy_selected")}
+          🚀
+          ${this._batchBusy === "deploy"
+            ? "…"
+            : i18n.t("batch_deploy_selected")}
         </button>
       </div>
     `;
   }
 
+  /** MAC addresses of the currently selected devices. */
+  private _selectedMacs(): string[] {
+    return this._devices
+      .filter((d) => d.id != null && this._selectedIds.has(d.id))
+      .map((d) => d.mac);
+  }
+
+  /** Build a "label — N ✓[, M ✗]" summary for a batch result. */
+  private _batchSummary(label: string, ok: number, failed: number): string {
+    return failed > 0
+      ? `${label} — ${ok} ✓, ${failed} ✗`
+      : `${label} — ${ok} ✓`;
+  }
+
+  /** Clear the batch result feedback after a short delay. */
+  private _scheduleResultClear(delay = 4000) {
+    setTimeout(() => {
+      this._batchResult = null;
+    }, delay);
+  }
+
   private async _deploySelected() {
     if (this._selectedIds.size === 0) return;
-    this._batchDeploying = true;
+    this._batchBusy = "deploy";
     this._batchResult = null;
     try {
-      const macs = this._devices
-        .filter((d) => d.id != null && this._selectedIds.has(d.id))
-        .map((d) => d.mac);
-      await this._client.deployBatch(macs);
-      this._batchResult = "success";
+      await this._client.deployBatch(this._selectedMacs());
+      this._batchResult = {
+        ok: true,
+        message: i18n.t("batch_deploy_triggered"),
+      };
       setTimeout(async () => {
         await this._load();
         this._batchResult = null;
@@ -1034,12 +1093,56 @@ export class DmDeviceTable extends LitElement {
       }, 3000);
     } catch (err) {
       console.error("Batch deploy failed:", err);
-      this._batchResult = "error";
-      setTimeout(() => {
-        this._batchResult = null;
-      }, 4000);
+      this._batchResult = { ok: false, message: i18n.t("batch_deploy_error") };
+      this._scheduleResultClear();
     }
-    this._batchDeploying = false;
+    this._batchBusy = null;
+  }
+
+  /** Restart every selected Tasmota device (batch). */
+  private async _restartSelected() {
+    if (this._selectedIds.size === 0) return;
+    this._batchBusy = "restart";
+    this._batchResult = null;
+    try {
+      const res = await this._client.tasmotaRestartBatch(this._selectedMacs());
+      this._batchResult = {
+        ok: true,
+        message: this._batchSummary(
+          i18n.t("batch_restart_done"),
+          res.restarted.length,
+          res.failed.length
+        ),
+      };
+    } catch (err) {
+      console.error("Batch restart failed:", err);
+      this._batchResult = { ok: false, message: i18n.t("batch_restart_error") };
+    }
+    this._batchBusy = null;
+    this._scheduleResultClear();
+  }
+
+  /** Trigger an OTA upgrade on every selected Tasmota device (batch). */
+  private async _upgradeSelected() {
+    if (this._selectedIds.size === 0) return;
+    this._batchBusy = "upgrade";
+    this._batchResult = null;
+    try {
+      const res = await this._client.tasmotaUpgradeBatch(this._selectedMacs());
+      this._batchResult = {
+        ok: true,
+        message: this._batchSummary(
+          i18n.t("batch_upgrade_done"),
+          res.upgraded.length,
+          res.failed.length
+        ),
+      };
+    } catch (err) {
+      console.error("Batch upgrade failed:", err);
+      this._batchResult = { ok: false, message: i18n.t("batch_upgrade_error") };
+    }
+    this._batchBusy = null;
+    this._scheduleResultClear();
   }
 
   /** Restart a single Tasmota device (per-row action). */

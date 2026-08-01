@@ -29,6 +29,8 @@ from .tasmota_runtime_controller import (
     TasmotaCheckUnavailableAPIView,
     TasmotaForceApAPIView,
     TasmotaUpdateFirmwareAPIView,
+    TasmotaRestartBatchAPIView,
+    TasmotaUpgradeBatchAPIView,
 )
 
 ALL_VIEWS = [
@@ -73,4 +75,6 @@ ALL_VIEWS = [
     TasmotaCheckUnavailableAPIView,
     TasmotaForceApAPIView,
     TasmotaUpdateFirmwareAPIView,
+    TasmotaRestartBatchAPIView,
+    TasmotaUpgradeBatchAPIView,
 ]

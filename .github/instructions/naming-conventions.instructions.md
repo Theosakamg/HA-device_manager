@@ -116,6 +116,41 @@ model(s): it **adds or removes** properties, **flattens** nested objects, or
   that read the source `snake_case`. This keeps them trivially unit-testable by
   direct `importlib` load (see `tests/test_*_dto.py`).
 
+## 3.2 Classes vs. module functions — prefer OOP for cohesive behavior
+
+Group **cohesive behavior into a class**; keep only genuinely pure, stateless
+helpers as module-level functions. When a set of module-level functions all take
+the same first argument, share configuration, or read/write common state, that
+is an object asking to exist — make it one.
+
+- **Introduce a class** when the code has an identity or holds collaborators /
+  configuration, or exposes several related operations over the same subject.
+  Name it by its role (§3): `*Manager`, `*Adapter`, `*Repository`, or a concrete
+  noun. Bind shared dependencies in `__init__` (e.g. `hass`, a backend), and
+  expose the operations as methods instead of threading the same parameter
+  through free functions. Current examples:
+
+  | Class                    | Module                          | Binds / groups                                  |
+  | ------------------------ | ------------------------------- | ----------------------------------------------- |
+  | `HaDeviceLookup`         | `ha/device_lookup.py`           | `hass`; device + version lookups                |
+  | `UpstreamVersionSensor`  | `ha/upstream_version.py`        | `hass`; fetch + refresh + ensure                |
+  | `TasmotaServiceRegistrar`| `ha/service_registration.py`    | `hass` + managers; service handlers             |
+  | `TasmotaMaintenance`     | `firmware/tasmota/maintenance.py` | restart / status / AP / batches (backend)     |
+  | `TasmotaUpdate`          | `firmware/tasmota/update.py`    | OTA upgrade + version-gated batch (backend)     |
+
+- **Keep module-level functions** for pure, stateless, single-purpose helpers
+  that take their whole input as arguments and hold no state — the sanctioned
+  Python idiom. Do not wrap these in a class "just for OOP". These stay
+  functional: `utils/case_convert.py`, `utils/` crypto helpers,
+  `firmware/tasmota/common.py` (URL / topic / command builders),
+  `firmware/tasmota/version.py` (version parsing/compare),
+  `managers/device_loader.py` (stateless load/filter helpers).
+
+- **Never** wrap framework-mandated module entry points in a class: Home
+  Assistant's `async_setup_entry` / `async_unload_entry` in `__init__.py`, the
+  `upgrade()` function of each `persistence/migrations/NNNN_*.py`, and
+  `run_tests.py` stay as module-level functions.
+
 ## 4. Relative import depth
 
 Moving a file one level deeper changes its relative import depth. From inside a
@@ -128,7 +163,29 @@ needs one extra dot:
 Imports **within** the same top-level package resolve normally
 (`from ..models.device import DmDevice` inside `persistence/`).
 
-## 5. Adding a new firmware family
+## 5. Import placement — no lazy imports to break cycles
+
+Imports go at the **top of the module**, grouped stdlib / third-party / local
+(PEP 8). Seeing every dependency in a single read is a feature — keep it that
+way. A function-local ("lazy") import is allowed **only** when the reason is one
+of the following and is obvious from the surrounding code:
+
+- **Optional / heavy third-party dependency** not declared in `manifest.json`
+  `requirements`, imported only on the code path that needs it and guarded so
+  its absence degrades gracefully (e.g. `paho.mqtt.publish` on the MQTT path).
+- **Plugin / optional-family loader** that must survive a missing package via
+  `try/except ImportError` (e.g. `firmware/base/firmware_factory.py`).
+- **Home Assistant startup deferral** inside `__init__.py`
+  (`async_setup_entry` / `async_unload_entry`) or HA registry helpers imported
+  at call time — the HA-idiomatic way to keep the integration's import light.
+- **Typing-only** symbols, placed under `if TYPE_CHECKING:`.
+
+**Never** use a lazy import to break a *circular* import. A circular import is a
+signal that the one-directional layering of section 1 is violated: fix the
+dependency direction (move the shared piece down a layer, or invert it) instead
+of papering over it with a deferred import.
+
+## 6. Adding a new firmware family
 
 1. Create `firmware/<name>/` with an `__init__.py` and `provision.py`.
 2. Implement an adapter subclassing `firmware.base.firmware_adapter.FirmwareAdapter`,

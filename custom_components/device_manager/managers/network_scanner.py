@@ -2,6 +2,7 @@
 
 """
 
+import asyncio
 import logging
 import os
 import subprocess
@@ -11,7 +12,7 @@ import yaml  # type: ignore[import-untyped]
 
 from ..persistence.database_manager import DatabaseManager
 from ..persistence.repositories import DeviceRepository
-from ..firmware.base.utility import get_config
+from ..firmware.base.config import get_config
 
 logger = logging.getLogger(__name__)
 
@@ -188,8 +189,6 @@ class NetworkScanner:
         Returns:
             Statistics dictionary.
         """
-        import asyncio
-
         # Run the scan
         self.run_network_scan()
 

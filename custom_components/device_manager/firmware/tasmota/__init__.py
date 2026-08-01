@@ -6,5 +6,5 @@ Split by treatment:
   * ``maintenance`` - restart, status, AP switching and availability batches.
 
 ``client`` provides the shared low-level HTTP/MQTT/DB infrastructure and
-``shared`` the pure URL / MQTT-topic helpers used across treatments.
+``common`` the pure URL / MQTT-topic helpers used across treatments.
 """

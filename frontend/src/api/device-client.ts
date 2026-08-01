@@ -90,4 +90,20 @@ export class DeviceClient extends CrudClient<DmDevice> {
   }> {
     return this.post("/tasmota/update-firmware", { version, macs });
   }
+
+  /** Restart a selected set of Tasmota devices (batch). */
+  async tasmotaRestartBatch(
+    macs: string[],
+    useMqtt = false
+  ): Promise<{ total: number; restarted: string[]; failed: string[] }> {
+    return this.post("/tasmota/restart-batch", { macs, use_mqtt: useMqtt });
+  }
+
+  /** Trigger an unconditional OTA upgrade on a selected set of devices (batch). */
+  async tasmotaUpgradeBatch(
+    macs: string[],
+    useMqtt = false
+  ): Promise<{ total: number; upgraded: string[]; failed: string[] }> {
+    return this.post("/tasmota/upgrade-batch", { macs, use_mqtt: useMqtt });
+  }
 }
