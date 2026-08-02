@@ -5,7 +5,7 @@ import logging
 from .base import BaseView, get_repos, get_db_path, rate_limit, csrf_protect, emit_activity_log, fmt_entity_label
 from ..managers.deploy_manager import DeployManager, DeployInProgressError
 from ..managers.network_scanner import NetworkScanError
-from ..firmware.base.utility import update_runtime_configs
+from ..firmware.base.config import update_runtime_configs
 from ..dto import ScanReportDto
 
 _LOGGER = logging.getLogger(__name__)

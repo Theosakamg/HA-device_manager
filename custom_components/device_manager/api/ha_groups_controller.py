@@ -25,7 +25,7 @@ from aiohttp import web
 
 from .base import BaseView, get_repos, csrf_protect, emit_activity_log
 from ..dto import HaSyncResultDto
-from ..ha.device_lookup import get_ha_device
+from ..ha.device_lookup import HaDeviceLookup
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -133,7 +133,7 @@ def _resolve_device_entities(hass: Any, mac: str, domain: str) -> list[str]:
     except Exception:
         return []
 
-    ha_device = get_ha_device(hass, mac)
+    ha_device = HaDeviceLookup(hass).get_device(mac)
 
     if ha_device is None:
         _LOGGER.debug("[resolve] mac=%s → not found in HA device registry", mac)

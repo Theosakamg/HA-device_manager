@@ -15,7 +15,7 @@ from ..persistence.repositories import DeviceRepository
 from .provision_manager import ProvisioningManager
 from ..firmware.base.firmware_factory import FirmwareFactory
 from .network_scanner import NetworkScanner
-from ..firmware.base.utility import Initializer
+from ..firmware.base.config import Initializer
 
 logger = logging.getLogger(__name__)
 

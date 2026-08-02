@@ -59,7 +59,19 @@ sys.modules["custom_components.device_manager.ha"] = types.ModuleType(
 ha_device_lookup_stub = types.ModuleType(
     "custom_components.device_manager.ha.device_lookup"
 )
-ha_device_lookup_stub.get_ha_device = lambda hass, mac: None  # type: ignore[attr-defined]
+
+
+class _StubHaDeviceLookup:
+    """Minimal stand-in for HaDeviceLookup: never resolves a device."""
+
+    def __init__(self, hass):
+        self._hass = hass
+
+    def get_device(self, mac):
+        return None
+
+
+ha_device_lookup_stub.HaDeviceLookup = _StubHaDeviceLookup  # type: ignore[attr-defined]
 sys.modules[
     "custom_components.device_manager.ha.device_lookup"
 ] = ha_device_lookup_stub

@@ -43,9 +43,9 @@ _db_manager_stub.DatabaseManager = object  # type: ignore[attr-defined]
 _repos_stub = types.ModuleType("custom_components.device_manager.persistence.repositories")
 _repos_stub.DeviceRepository = object  # type: ignore[attr-defined]
 
-# Stub firmware.base.utility
-_prov_utility_stub = types.ModuleType("custom_components.device_manager.firmware.base.utility")
-_prov_utility_stub.get_config = lambda key, default='': default  # type: ignore[attr-defined]
+# Stub firmware.base.config
+_config_stub = types.ModuleType("custom_components.device_manager.firmware.base.config")
+_config_stub.get_config = lambda key, default='': default  # type: ignore[attr-defined]
 
 for _k, _v in [
     ("custom_components", types.ModuleType("custom_components")),
@@ -55,7 +55,7 @@ for _k, _v in [
     ("custom_components.device_manager.persistence.repositories", _repos_stub),
     ("custom_components.device_manager.firmware", types.ModuleType("custom_components.device_manager.firmware")),
     ("custom_components.device_manager.firmware.base", types.ModuleType("custom_components.device_manager.firmware.base")),
-    ("custom_components.device_manager.firmware.base.utility", _prov_utility_stub),
+    ("custom_components.device_manager.firmware.base.config", _config_stub),
     ("custom_components.device_manager.managers", types.ModuleType("custom_components.device_manager.managers")),
 ]:
     sys.modules.setdefault(_k, _v)

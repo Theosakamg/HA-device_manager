@@ -1,5 +1,6 @@
 """API controller for user-configurable settings."""
 
+import hashlib
 import logging
 import re
 
@@ -103,7 +104,6 @@ class SettingsAPIView(BaseView):
 
         # Security audit logging for scan_script_content changes
         if "scan_script_content" in filtered:
-            import hashlib
             script_hash = hashlib.sha256(filtered["scan_script_content"].encode()).hexdigest()
             _LOGGER.warning(
                 "SECURITY: scan_script_content modified (length: %d, hash: %s)",

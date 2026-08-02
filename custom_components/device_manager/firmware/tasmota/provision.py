@@ -15,8 +15,8 @@ import requests  # type: ignore[import-untyped]
 from requests.auth import HTTPBasicAuth  # type: ignore[import-untyped]
 
 from ..base.firmware_adapter import FirmwareAdapter
-from . import shared
-from ..base.utility import get_config
+from . import common
+from ..base.config import get_config
 from ...persistence.models.device import DmDevice
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,6 @@ DEVICE_USER = "admin"
 
 # Commands
 _CMD_DUMP = "dl"
-_CMD_CMND = "cm"
 _CMD_REBOOT = "."
 
 # MQTT
@@ -176,8 +175,8 @@ class TasmotaAdapter(FirmwareAdapter):
         logger.info(f"Successfully deployed Tasmota device: {device.mac}")
 
     def _sanitize_data(self, data: str) -> str:
-        """Sanitize data for URL encoding (delegates to shared)."""
-        return shared.sanitize_data(data)
+        """Sanitize data for URL encoding (delegates to common)."""
+        return common.sanitize_data(data)
 
     def _build_url(self, ip: str, cmd: str, data: Optional[str] = None) -> str:
         """Build and sanitize URL for Tasmota HTTP API.
@@ -190,7 +189,7 @@ class TasmotaAdapter(FirmwareAdapter):
         Returns:
             Sanitized URL string.
         """
-        return shared.build_url(ip, cmd, data)
+        return common.build_url(ip, cmd, data)
 
     def _referer_headers(self, ip: Optional[str]) -> Dict[str, str]:
         """Build a self-referencing Referer header for Tasmota HTTP API calls.
@@ -210,7 +209,7 @@ class TasmotaAdapter(FirmwareAdapter):
         Returns:
             Headers dict with a self-referencing Referer.
         """
-        return shared.referer_headers(ip)
+        return common.referer_headers(ip)
 
     def _dump_config(self, device: DmDevice) -> None:
         """Dump device configuration to backup file.
@@ -278,12 +277,9 @@ class TasmotaAdapter(FirmwareAdapter):
         # Build command string
         action = ';'.join(f"{key} {val}" for key, val in configs.items())
 
-        if use_backlog:
-            data = f"&cmnd=Backlog0 {action}"
-        else:
-            data = f"&cmnd={action}"
+        command = f"{common.CMD_BACKLOG} {action}" if use_backlog else action
 
-        url = self._build_url(device.ip, _CMD_CMND, data)
+        url = common.build_command_url(device.ip, command)
         password = get_config('DEVICE_PASS', 'p4ssW0rD')
 
         # Mask sensitive data for logging
@@ -461,7 +457,7 @@ class TasmotaAdapter(FirmwareAdapter):
             Topic location string (e.g., "home/l0/room").
         """
         mqtt_prefix = self.manager.get_setting('mqtt_topic_prefix', 'home')
-        return shared.mqtt_topic_location(device, mqtt_prefix)
+        return common.mqtt_topic_location(device, mqtt_prefix)
 
     def _get_mqtt_topic_device(self, device: DmDevice) -> str:
         """Get MQTT topic device part.
@@ -472,7 +468,7 @@ class TasmotaAdapter(FirmwareAdapter):
         Returns:
             Topic device string (e.g., "/function/position").
         """
-        return shared.mqtt_topic_device(device)
+        return common.mqtt_topic_device(device)
 
     def _configure_interlock(self, device: DmDevice) -> None:
         """Configure interlock settings.

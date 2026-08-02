@@ -45,7 +45,7 @@ provisioning/
 │   └── zigbee.py             # Zigbee2MQTT device provisioning
 │
 ├── deploy.py                 # Deploy and scan operations
-├── utility.py                # Utility functions and config management
+├── config.py                 # Runtime config: .env loading + DB overrides + get_config
 └── legacy/                   # Old implementation (archived)
     ├── common.py
     ├── contract.py
@@ -585,7 +585,7 @@ BRIDGE_DEVICES_CONFIG_PATH=/opt/zigbee2mqtt/data/devices.yaml
 
 Settings can also be stored in the database via the `settings` table. Database settings take precedence over `.env` file values.
 
-The `utility.update_runtime_configs(settings)` function merges DB settings into the runtime configuration before each deploy/scan operation.
+The `config.update_runtime_configs(settings)` function merges DB settings into the runtime configuration before each deploy/scan operation.
 
 ---
 

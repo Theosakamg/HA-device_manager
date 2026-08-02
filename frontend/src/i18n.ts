@@ -111,6 +111,8 @@ const translations: { [lang: string]: Translations } = {
     device_model: "Model",
     device_firmware: "Firmware",
     device_firmware_version: "Version",
+    device_firmware_up_to_date: "Up to date",
+    device_firmware_outdated: "Different version",
     device_function: "Function",
     device_target: "Target Device",
     device_link: "Link",
@@ -153,6 +155,12 @@ const translations: { [lang: string]: Translations } = {
     batch_clear_selection: "Clear selection",
     batch_deploy_triggered: "Deployment triggered",
     batch_deploy_error: "Deploy failed",
+    batch_restart_selected: "Restart selected",
+    batch_upgrade_selected: "Upgrade selected",
+    batch_restart_done: "Restart triggered",
+    batch_restart_error: "Restart failed",
+    batch_upgrade_done: "Upgrade triggered",
+    batch_upgrade_error: "Upgrade failed",
 
     // Settings
     settings_title: "Settings",
@@ -519,6 +527,8 @@ const translations: { [lang: string]: Translations } = {
     device_model: "Modèle",
     device_firmware: "Firmware",
     device_firmware_version: "Version",
+    device_firmware_up_to_date: "À jour",
+    device_firmware_outdated: "Version différente",
     device_function: "Fonction",
     device_target: "Équipement Cible",
     device_link: "Lien",
@@ -562,6 +572,12 @@ const translations: { [lang: string]: Translations } = {
     batch_clear_selection: "Effacer la sélection",
     batch_deploy_triggered: "Déploiement déclenché",
     batch_deploy_error: "Échec du déploiement",
+    batch_restart_selected: "Redémarrer la sélection",
+    batch_upgrade_selected: "Mettre à jour la sélection",
+    batch_restart_done: "Redémarrage déclenché",
+    batch_restart_error: "Échec du redémarrage",
+    batch_upgrade_done: "Mise à jour déclenchée",
+    batch_upgrade_error: "Échec de la mise à jour",
 
     // Settings
     settings_title: "Paramètres",

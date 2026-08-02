@@ -92,6 +92,8 @@ class TestAsyncUnloadEntry(unittest.TestCase):
         _const.DOMAIN = "device_manager"  # type: ignore[attr-defined]
         _const.DATA_KEY_DB = DATA_KEY_DB  # type: ignore[attr-defined]
         _const.DATA_KEY_CRYPTO = "crypto_key"  # type: ignore[attr-defined]
+        _const.DATA_KEY_UPSTREAM_UNSUB = "upstream_unsub"  # type: ignore[attr-defined]
+        _const.DATA_KEY_SERVICE_REGISTRAR = "service_registrar"  # type: ignore[attr-defined]
         _const.STATIC_URL_BASE = "/device_manager_static"  # type: ignore[attr-defined]
         _const.FRONTEND_JS_FILENAME = "device-manager.js"  # type: ignore[attr-defined]
         _const.PANEL_COMPONENT_NAME = "dm-app-shell"  # type: ignore[attr-defined]
@@ -108,8 +110,20 @@ class TestAsyncUnloadEntry(unittest.TestCase):
         # Stub the Tasmota service registration module imported by __init__.py.
         service_reg_name = "custom_components.device_manager.ha.service_registration"
         service_reg_mod = types.ModuleType(service_reg_name)
-        service_reg_mod.async_register_services = lambda hass: None  # type: ignore[attr-defined]
-        service_reg_mod.async_unregister_services = lambda hass: None  # type: ignore[attr-defined]
+
+        class _StubServiceRegistrar:
+            """No-op stand-in for TasmotaServiceRegistrar."""
+
+            def __init__(self, hass):
+                self._hass = hass
+
+            def register(self):
+                pass
+
+            def unregister(self):
+                pass
+
+        service_reg_mod.TasmotaServiceRegistrar = _StubServiceRegistrar  # type: ignore[attr-defined]
         sys.modules[service_reg_name] = service_reg_mod
         ha_mod = sys.modules["custom_components.device_manager.ha"]
         ha_mod.service_registration = service_reg_mod  # type: ignore[attr-defined]

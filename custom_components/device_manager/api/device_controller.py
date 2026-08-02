@@ -11,7 +11,7 @@ from .base import get_repos
 from ..persistence.models.base import SerializableMixin
 from ..persistence.models.device import DmDevice
 from ..utils.case_convert import to_snake_case_dict
-from ..ha.device_lookup import get_ha_sw_version
+from ..ha.device_lookup import HaDeviceLookup
 from ..dto import DeviceDto
 
 _LOGGER = logging.getLogger(__name__)
@@ -72,10 +72,14 @@ class DevicesAPIView(CrudListView):
     async def _extra_fields(
         self, entity: SerializableMixin, request: web.Request
     ) -> dict[str, Any]:
-        """Add the live HA firmware version (never persisted locally)."""
+        """Add the live HA firmware version and its up-to-date flag (never persisted)."""
         assert isinstance(entity, DmDevice)
-        hass = request.app["hass"]
-        return {"swVersion": get_ha_sw_version(hass, entity.mac)}
+        lookup = HaDeviceLookup(request.app["hass"])
+        sw_version = lookup.get_sw_version(entity.mac)
+        return {
+            "swVersion": sw_version,
+            "swUpToDate": lookup.get_sw_up_to_date(sw_version),
+        }
 
     @_handle_errors("Device")
     async def post(self, request: web.Request) -> web.Response:
@@ -154,7 +158,11 @@ class DeviceAPIView(CrudDetailView):
     async def _extra_fields(
         self, entity: SerializableMixin, request: web.Request
     ) -> dict[str, Any]:
-        """Add the live HA firmware version (never persisted locally)."""
+        """Add the live HA firmware version and its up-to-date flag (never persisted)."""
         assert isinstance(entity, DmDevice)
-        hass = request.app["hass"]
-        return {"swVersion": get_ha_sw_version(hass, entity.mac)}
+        lookup = HaDeviceLookup(request.app["hass"])
+        sw_version = lookup.get_sw_version(entity.mac)
+        return {
+            "swVersion": sw_version,
+            "swUpToDate": lookup.get_sw_up_to_date(sw_version),
+        }

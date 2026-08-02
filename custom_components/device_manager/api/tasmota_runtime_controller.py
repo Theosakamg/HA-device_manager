@@ -201,6 +201,35 @@ class TasmotaForceApAPIView(BaseView):
         return self.json(result, status_code=200)
 
 
+class TasmotaRestartBatchAPIView(BaseView):
+    """Restart every (or a filtered subset of) device."""
+
+    url = "/api/device_manager/tasmota/restart-batch"
+    name = "api:device_manager:tasmota:restart-batch"
+
+    @rate_limit(requests=5, window=60)
+    @csrf_protect
+    async def post(self, request):
+        hass = request.app["hass"]
+        body = await _read_body(request)
+        settings = await _load_settings(request)
+        use_mqtt = bool(body.get("use_mqtt", False))
+        mac_filter = body.get("macs") or None
+        if isinstance(mac_filter, str):
+            mac_filter = mac_filter.split(",")
+        try:
+            result = await hass.async_add_executor_job(
+                _maintenance.restart_batch, get_db_path(request), settings, mac_filter, use_mqtt
+            )
+        except BatchInProgressError as exc:
+            return self.json({"error": str(exc)}, status_code=409)
+        await emit_activity_log(
+            request, event_type="action", entity_type="device",
+            message=f"Restart {result['total']} device(s) (batch)",
+        )
+        return self.json(result, status_code=200)
+
+
 class TasmotaUpdateFirmwareAPIView(BaseView):
     """Trigger OTA upgrade only on devices older than a target version."""
 
@@ -232,5 +261,34 @@ class TasmotaUpdateFirmwareAPIView(BaseView):
         await emit_activity_log(
             request, event_type="action", entity_type="device",
             message=f"Update firmware -> `{target_version}` (batch)",
+        )
+        return self.json(result, status_code=200)
+
+
+class TasmotaUpgradeBatchAPIView(BaseView):
+    """Trigger an unconditional OTA upgrade on every (or a filtered subset of) device."""
+
+    url = "/api/device_manager/tasmota/upgrade-batch"
+    name = "api:device_manager:tasmota:upgrade-batch"
+
+    @rate_limit(requests=5, window=60)
+    @csrf_protect
+    async def post(self, request):
+        hass = request.app["hass"]
+        body = await _read_body(request)
+        settings = await _load_settings(request)
+        use_mqtt = bool(body.get("use_mqtt", False))
+        mac_filter = body.get("macs") or None
+        if isinstance(mac_filter, str):
+            mac_filter = mac_filter.split(",")
+        try:
+            result = await hass.async_add_executor_job(
+                _update.upgrade_batch, get_db_path(request), settings, mac_filter, use_mqtt
+            )
+        except BatchInProgressError as exc:
+            return self.json({"error": str(exc)}, status_code=409)
+        await emit_activity_log(
+            request, event_type="action", entity_type="device",
+            message=f"Upgrade {result['total']} device(s) (batch)",
         )
         return self.json(result, status_code=200)

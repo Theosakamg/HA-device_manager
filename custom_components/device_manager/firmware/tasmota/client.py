@@ -1,10 +1,14 @@
 """Low-level Tasmota runtime client.
 
 Shared infrastructure for the Tasmota *maintenance* and *update* treatment
-modules: authenticated HTTP command transport, single-publish MQTT transport,
-database access helpers and small pure utilities. These helpers are consumed
-by the sibling ``maintenance`` and ``update`` modules and are not intended to
-be called directly by the ``managers`` or ``api`` layers.
+modules: authenticated HTTP command transport, single-publish MQTT transport
+and small pure utilities. These helpers are consumed by the sibling
+``maintenance`` and ``update`` modules and are not intended to be called
+directly by the ``managers`` or ``api`` layers.
+
+The firmware layer never opens the database: device loading lives in the
+``managers`` layer (``managers.device_loader``). Every treatment function here
+acts only on ``DmDevice`` instances handed to it by its manager.
 
 Migrated from the legacy ``remote_pyscript/tasmota.py`` with these bugs fixed:
   * commands always send the self-referencing Referer header and never place
@@ -13,19 +17,16 @@ Migrated from the legacy ``remote_pyscript/tasmota.py`` with these bugs fixed:
   * firmware version comparison is numeric (see ``firmware.tasmota.version``).
 """
 
-import asyncio
 import logging
 import threading
 import time
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import requests  # type: ignore[import-untyped]
 from requests.auth import HTTPBasicAuth  # type: ignore[import-untyped]
 
-from . import shared
-from ...persistence.database_manager import DatabaseManager
-from ...persistence.repositories import DeviceRepository
+from . import common
+from ..base.config import get_config
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +38,9 @@ HTTP_TIMEOUT = 10
 DEVICE_USER = "admin"
 DEFAULT_PASSWORD = "p4ssW0rD"
 
-# Batch operations (force_ap_batch, update_firmware_batch) each open their own
-# DB connection and iterate every device; serialize them so two concurrent
-# batches don't race on the same SQLite file / hammer the network.
+# Batch operations (force_ap_batch, update_firmware_batch) iterate over every
+# device handed in by their manager; serialize them so two concurrent batches
+# don't hammer the network at once.
 BATCH_LOCK = threading.Lock()
 
 
@@ -56,17 +57,25 @@ class BatchInProgressError(RuntimeError):
 # ---------------------------------------------------------------------------
 
 
-def http_get(ip: str, cmd: str, password: str, data: Optional[str] = None) -> Dict[str, Any]:
+def http_get(ip: str, command: str, settings: Dict[str, Any]) -> Dict[str, Any]:
     """Send an authenticated Tasmota HTTP command with retries.
 
-    Always sends the self-referencing Referer header (required by Tasmota's
-    CSRF protection) and passes credentials via HTTPBasicAuth (never in URL).
+    Builds the ``/cm?cmnd=<command>`` URL (see
+    :func:`firmware.tasmota.common.build_command_url`), always sends the
+    self-referencing Referer header (required by Tasmota's CSRF protection)
+    and authenticates via HTTPBasicAuth with the password resolved from
+    *settings* (see :func:`device_password`), never placing credentials in the
+    URL.
+
+    Takes the whole *settings* dict rather than a pre-extracted password so it
+    stays symmetric with :func:`mqtt_publish`: both transports share the same
+    ``(target, content, settings)`` shape and can read further connection
+    settings later without a signature (and call-site) change.
 
     Args:
         ip: Device IP address.
-        cmd: Command type (e.g. ``"cmnd"``).
-        password: Device web password.
-        data: Optional command payload.
+        command: Raw Tasmota command, e.g. ``"Restart 1"``, ``"Status 0"``.
+        settings: Application settings dict (provides the device web password).
 
     Returns:
         Parsed JSON response (empty dict when the body isn't JSON).
@@ -74,9 +83,9 @@ def http_get(ip: str, cmd: str, password: str, data: Optional[str] = None) -> Di
     Raises:
         TasmotaRuntimeError: When all retries fail.
     """
-    url = shared.build_url(ip, cmd, data)
-    headers = shared.referer_headers(ip)
-    auth = HTTPBasicAuth(DEVICE_USER, password)
+    url = common.build_command_url(ip, command)
+    headers = common.referer_headers(ip)
+    auth = HTTPBasicAuth(DEVICE_USER, device_password(settings))
 
     last_error: Optional[Exception] = None
     for attempt in range(1, NUM_RETRY + 1):
@@ -92,14 +101,14 @@ def http_get(ip: str, cmd: str, password: str, data: Optional[str] = None) -> Di
         except Exception as e:  # noqa: BLE001 - retried below
             last_error = e
             logger.warning(
-                "Tasmota HTTP %s to %s failed (attempt %d/%d): %s",
-                cmd, ip, attempt, NUM_RETRY, e,
+                "Tasmota HTTP command '%s' to %s failed (attempt %d/%d): %s",
+                command, ip, attempt, NUM_RETRY, e,
             )
             if attempt < NUM_RETRY:
                 time.sleep(RETRY_BACKOFF)
 
     raise TasmotaRuntimeError(
-        f"HTTP command '{cmd}' to {ip} failed after {NUM_RETRY} attempts: {last_error}"
+        f"HTTP command '{command}' to {ip} failed after {NUM_RETRY} attempts: {last_error}"
     )
 
 
@@ -129,70 +138,26 @@ def mqtt_publish(topic: str, payload: str, settings: Dict[str, Any]) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Database helpers
-# ---------------------------------------------------------------------------
-
-
-def load_device_by_mac(db: DatabaseManager, mac: str) -> Any:
-    """Load a hydrated DmDevice by MAC (sync wrapper)."""
-
-    async def _find() -> Any:
-        repo = DeviceRepository(db)
-        return await repo.find_by_mac(mac)
-
-    return asyncio.run(_find())
-
-
-def load_all_devices(db: DatabaseManager) -> List[Any]:
-    """Load all hydrated devices (sync wrapper)."""
-
-    async def _all() -> List[Any]:
-        repo = DeviceRepository(db)
-        return await repo.find_all()
-
-    return asyncio.run(_all())
-
-
-def open_db(db_path: Path) -> DatabaseManager:
-    """Open and initialize a DatabaseManager (sync wrapper)."""
-    db = DatabaseManager(db_path)
-
-    async def _init() -> None:
-        await db.initialize()
-
-    asyncio.run(_init())
-    return db
-
-
-def close_db(db: DatabaseManager) -> None:
-    """Close a DatabaseManager (sync wrapper)."""
-
-    async def _close() -> None:
-        await db.close()
-
-    try:
-        asyncio.run(_close())
-    except Exception as e:  # noqa: BLE001
-        logger.debug("Error closing DB: %s", e)
-
-
-# ---------------------------------------------------------------------------
 # Pure utilities
 # ---------------------------------------------------------------------------
 
 
 def device_password(settings: Dict[str, Any]) -> str:
-    """Return the Tasmota web password from settings (with default)."""
-    return str(settings.get("device_pass") or DEFAULT_PASSWORD)
+    """Return the Tasmota web password used to authenticate HTTP commands.
 
-
-def filter_devices(devices: List[Any], mac_filter: Optional[List[str]]) -> List[Any]:
-    """Return devices with an IP, optionally restricted to *mac_filter*."""
-    result = [d for d in devices if getattr(d, "ip", None)]
-    if mac_filter:
-        wanted = {m.upper() for m in mac_filter}
-        result = [d for d in result if d.mac.upper() in wanted]
-    return result
+    Resolution order mirrors the deploy/provision path so runtime commands
+    authenticate with the *same* credentials the device was provisioned with:
+    the DB ``device_pass`` setting, then the ``DEVICE_PASS`` config source
+    (``.env`` / environment, via :func:`firmware.base.config.get_config`),
+    then the built-in default. Reading only the (often empty) DB setting made
+    every post-deploy HTTP command fall back to the default password and fail
+    authentication against a real device.
+    """
+    return str(
+        settings.get("device_pass")
+        or get_config("DEVICE_PASS", None)
+        or DEFAULT_PASSWORD
+    )
 
 
 def extract_version(status: Dict[str, Any]) -> str:

@@ -71,10 +71,10 @@ DeviceFloorRef = _models_device.DeviceFloorRef
 DeviceBuildingRef = _models_device.DeviceBuildingRef
 DeviceLinkedRefs = _models_device.DeviceLinkedRefs
 
-# Stub firmware.base.utility.get_config (reads env/settings in the real app).
-_prov_utility_stub = types.ModuleType("custom_components.device_manager.firmware.base.utility")
-_prov_utility_stub.get_config = lambda key, default='': default  # type: ignore[attr-defined]
-sys.modules["custom_components.device_manager.firmware.base.utility"] = _prov_utility_stub
+# Stub firmware.base.config.get_config (reads env/settings in the real app).
+_config_stub = types.ModuleType("custom_components.device_manager.firmware.base.config")
+_config_stub.get_config = lambda key, default='': default  # type: ignore[attr-defined]
+sys.modules["custom_components.device_manager.firmware.base.config"] = _config_stub
 
 # Real firmware_adapter module (only depends on persistence.models.device, loaded above).
 _firmware_adapter = helpers.load_module(
@@ -83,12 +83,12 @@ _firmware_adapter = helpers.load_module(
 )
 sys.modules["custom_components.device_manager.firmware.base.firmware_adapter"] = _firmware_adapter
 
-# Real tasmota.shared module (pure HTTP/URL/Referer helpers used by provision.py).
-_tasmota_shared = helpers.load_module(
-    "firmware/tasmota/shared.py",
+# Real tasmota.common module (pure HTTP/URL/Referer helpers used by provision.py).
+_tasmota_common = helpers.load_module(
+    "firmware/tasmota/common.py",
     package="custom_components.device_manager.firmware.tasmota",
 )
-sys.modules["custom_components.device_manager.firmware.tasmota.shared"] = _tasmota_shared
+sys.modules["custom_components.device_manager.firmware.tasmota.common"] = _tasmota_common
 
 # Module under test.
 _tasmota_module = helpers.load_module(

@@ -3,9 +3,9 @@
 The Tasmota runtime services are targeted by an HA device registry
 ``device_id`` (a natural device picker in automations and the Developer Tools
 UI). This module resolves that ``device_id`` back to the network MAC address
-that Device Manager uses as its own primary key, so the rest of the runtime
-logic can look the device up in the local DB via
-``DeviceRepository.find_by_mac()``.
+that Device Manager uses as its own primary key, so the maintenance / update
+managers can then load the matching device from the local DB (via
+``managers.device_loader``) before handing it to the firmware treatment layer.
 """
 
 from typing import Any

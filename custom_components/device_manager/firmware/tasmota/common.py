@@ -1,4 +1,4 @@
-"""Shared, pure Tasmota HTTP/MQTT helpers.
+"""Common, pure Tasmota HTTP/MQTT helpers.
 
 Extracted from :class:`~custom_components.device_manager.firmware.tasmota.provision.TasmotaAdapter`
 so that both the deploy-time adapter and the runtime treatments
@@ -13,7 +13,8 @@ These functions take plain values (no ``self``/adapter/manager instance) so
 they can be reused from any context.
 """
 
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
+from urllib.parse import quote, urlencode
 
 from requests.utils import requote_uri  # type: ignore[import-untyped]
 
@@ -27,6 +28,45 @@ MQTT_FULLTOPIC = "{}/%topic%/%prefix%/"
 
 # URL template for the Tasmota HTTP API.
 URL_BASE_TPL = "http://{IP_DEV}/{CMND}?"
+
+# Tasmota HTTP *command* endpoint. Commands are sent as ``/cm?cmnd=<command>``.
+CMND_ENDPOINT = "cm"
+
+# ---------------------------------------------------------------------------
+# Tasmota console commands
+# ---------------------------------------------------------------------------
+# Command *verbs*. Used both as the HTTP ``cmnd=`` command and, for MQTT, as
+# the command-topic suffix (``cmnd/<topic>/Restart``).
+CMD_RESTART = "Restart"
+CMD_UPGRADE = "Upgrade"
+CMD_STATUS = "Status"
+CMD_AP = "AP"
+# Batch prefix: run the following ``;``-separated commands back-to-back with no
+# inter-command delay (``Backlog0 cmd1;cmd2;...``).
+CMD_BACKLOG = "Backlog0"
+
+# Command *payloads* (arguments).
+PAYLOAD_ON = "1"                # Restart 1 / Upgrade 1 (also the MQTT payload)
+PAYLOAD_STATUS_ALL = "0"        # Status 0 -> full status report
+PAYLOAD_STATUS_FIRMWARE = "2"   # Status 2 -> firmware/version report
+
+
+def build_command(verb: str, payload: str = "") -> str:
+    """Compose a Tasmota console command string.
+
+    Centralizes the ``"<verb> <payload>"`` convention so callers reference the
+    named :data:`CMD_RESTART` / :data:`PAYLOAD_ON` constants instead of raw
+    literals scattered across the runtime treatments.
+
+    Args:
+        verb: Command verb (e.g. :data:`CMD_RESTART`).
+        payload: Optional command argument (e.g. :data:`PAYLOAD_ON`).
+
+    Returns:
+        The command string, e.g. ``"Restart 1"`` (or bare ``"Status"`` when no
+        payload is given).
+    """
+    return f"{verb} {payload}" if payload else verb
 
 
 def sanitize_data(data: str) -> str:
@@ -66,6 +106,32 @@ def build_url(ip: str, cmd: str, data: Optional[str] = None) -> str:
         url_full = url_base
 
     return str(requote_uri(url_full))
+
+
+def build_command_url(
+    ip: str, command: str, params: Optional[Dict[str, str]] = None
+) -> str:
+    """Build a Tasmota HTTP *command* URL.
+
+    Centralizes the ``/cm?cmnd=<command>`` convention so callers pass the raw
+    command (e.g. ``"Restart 1"``, ``"Status 0"``, ``"Backlog0 Power1 0"``)
+    plus optional extra query *params*, instead of hand-crafting and
+    pre-encoding query strings. Values are URL-encoded (spaces -> ``%20``).
+
+    Args:
+        ip: Device IP address.
+        command: Raw Tasmota command sent as the ``cmnd`` query parameter.
+        params: Optional extra query parameters.
+
+    Returns:
+        Request-ready URL, e.g. ``"http://10.0.0.5/cm?cmnd=Restart%201"``.
+    """
+    query: Dict[str, str] = {"cmnd": command}
+    if params:
+        query.update(params)
+    encoded = urlencode(query, quote_via=quote)
+    url_base = URL_BASE_TPL.format(IP_DEV=ip, CMND=CMND_ENDPOINT)
+    return str(requote_uri(url_base + encoded))
 
 
 def referer_headers(ip: Optional[str]) -> Dict[str, str]:
@@ -115,24 +181,33 @@ def mqtt_topic_device(device: DmDevice) -> str:
     return f"/{function_slug}/{device.position_slug}"
 
 
-def build_cmnd_topic(device: DmDevice, mqtt_prefix: str) -> str:
-    """Build the full MQTT ``cmnd/`` topic Tasmota listens on for *device*.
+def build_cmnd_topic(device: DmDevice, settings: Dict[str, Any], command: str) -> str:
+    """Build the full MQTT command topic Tasmota listens on for *command*.
 
-    Deterministically derived from the same fields the adapter uses to
-    configure the device's ``FullTopic``/``Topic`` at deploy time (see
+    MQTT counterpart of :func:`build_command`: the HTTP path encodes the verb in
+    the ``cmnd=`` query string, whereas MQTT encodes it as the command-topic
+    suffix (``.../cmnd/<command>``) with the payload carried in the message
+    body. Both are single-call builders, keeping the maintenance / update
+    treatments symmetric across transports.
+
+    The topic is deterministically derived from the same fields the adapter uses
+    to configure the device's ``FullTopic``/``Topic`` at deploy time (see
     ``TasmotaAdapter._configure_device()``), so no dependency on the HA core
     ``tasmota`` integration's MQTT discovery data is needed (that data has
-    already changed shape once across a HA core refactor and broke the
-    original pyscript-based lookup).
+    already changed shape once across a HA core refactor and broke the original
+    pyscript-based lookup).
 
     Args:
         device: Device instance.
-        mqtt_prefix: Configured MQTT topic prefix (``mqtt_topic_prefix`` setting).
+        settings: Application settings dict (provides ``mqtt_topic_prefix``).
+        command: Command verb appended as the topic suffix (e.g. :data:`CMD_RESTART`).
 
     Returns:
-        Full command topic string (e.g. ``"home/l0/room/button/desk/cmnd/"``).
+        Full command topic string (e.g. ``"home/l0/room/button/desk/cmnd/Restart"``).
     """
+    mqtt_prefix = settings.get("mqtt_topic_prefix", "home")
     location = mqtt_topic_location(device, mqtt_prefix)
     topic_device = mqtt_topic_device(device).lstrip("/")
     full_topic = MQTT_FULLTOPIC.format(location)
-    return full_topic.replace("%topic%", topic_device).replace("%prefix%", "cmnd")
+    cmnd_prefix = full_topic.replace("%topic%", topic_device).replace("%prefix%", "cmnd")
+    return f"{cmnd_prefix}{command}"

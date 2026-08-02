@@ -7,6 +7,14 @@ DB_NAME = "dm/device_manager.db"
 DATA_KEY_DB = "db"
 DATA_KEY_REPOS = "repos"  # kept for backward compat (tests/migration)
 DATA_KEY_CRYPTO = "crypto_key"
+DATA_KEY_UPSTREAM_UNSUB = "upstream_unsub"  # daily refresh timer cancel callback
+DATA_KEY_SERVICE_REGISTRAR = "service_registrar"  # TasmotaServiceRegistrar instance
+
+# Reference sensor holding the latest published Tasmota firmware version.
+# The device list compares each device's live firmware against this value to
+# flag it up to date (green) or outdated (orange). Auto-created at startup
+# when absent (see ha/upstream_version.py).
+UPSTREAM_VERSION_SENSOR = "sensor.tasmota_version_upstream"
 
 # Frontend / static assets
 STATIC_URL_BASE = "/device_manager_static"
